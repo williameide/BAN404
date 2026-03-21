@@ -1,0 +1,119 @@
+---
+title: "Compulsory Assignment, BAN404"
+author: "Your Name / Group Members"
+date: today
+format: 
+  html:
+    theme: readable
+    highlight-style: tango
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    df-print: paged
+    number-sections: true
+    embed-resources: true
+execute:
+  echo: true
+  warning: false
+---
+
+Introduction and Setup:
+Here we include the code for running the set up for use of packages later.
+
+
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns # Adding seaborn for nicer plots
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.pipeline import Pipeline
+
+np.random.seed(123)
+
+# Load data
+data = pd.read_csv("datasets/day.csv")
+X = data.drop(columns=["cnt"])
+y = data["cnt"]
+```
+
+
+
+# Task 1
+
+## Question:
+*Describe relevant features of the output variable cnt using descriptive statistics, tables, and graphs. Use descriptive analysis to investigate which predictors appear promising for predicting daily bike rentals. Remove variables that cannot reasonably be assumed to be available at the time a prediction is made, and briefly justify your choices.*
+
+```{python}
+# Your code for Task 1 will go here
+```
+
+
+# Task 2
+
+## Question:
+*Use linear regression to predict cnt. Estimate at least one multiple linear regression model and one more flexible model (for example, a polynomial regression). Use the validation set approach to evaluate predictive performance on test data using an appropriate error measure, and discuss the results.*
+
+```{python}
+# Your code for Task 2 will go here
+```
+
+
+# Task 3
+
+## Question:
+*Use leave-one-out cross‑validation to estimate test error for at least two competing models. Compare the results to those obtained using the validation set in Task 2, and comment on the stability of the estimates.*
+
+```{python}
+# Your code for Task 3 will go here
+```
+
+
+# Task 4
+
+## Question:
+*Predict cnt using a K‑nearest neighbors (KNN) regression model. Standardize the predictors (remove mean and divide by standard deviation) before fitting the model. Use cross‑validation to determine a suitable value of K. Evaluate the predictive performance and compare it to the linear regression results. For the determination of K, the following code is useful (note that, to use it, you will have to define many of the variables first). Explain what it is doing.*
+
+```{python}
+#| eval: false
+
+# code chunk from the assignment pdf
+pipe = Pipeline([
+    ("scaler", StandardScaler()),
+    ("knn", KNeighborsRegressor())
+])
+
+cv = KFold(n_splits=10, shuffle=True, random_state=1)
+Ks = range(1, 41)
+cv_mse = []
+
+for k in Ks:
+    pipe.set_params(knn__n_neighbors=k)
+    fold_errors = []
+    for train_idx, test_idx in cv.split(X):
+        X_train_cv, X_test_cv = X.iloc[train_idx], X.iloc[test_idx]
+        y_train_cv, y_test_cv = y.iloc[train_idx], y.iloc[test_idx]
+        
+        pipe.fit(X_train_cv, y_train_cv)
+        y_pred = pipe.predict(X_test_cv)
+        fold_errors.append(np.mean((y_test_cv - y_pred)**2))
+        
+    cv_mse.append(np.mean(fold_errors))
+```
+
+
+# Task 5
+
+## Question:
+*Argue whether there are indications of nonlinear relationships between cnt and one or more predictors. Fit a flexible model, such as a generalized additive model (GAM), smoothing spline, or regression tree. Evaluate the predictive performance and compare it with earlier models.*
+
+```{python}
+# 
+```
+
+
+
