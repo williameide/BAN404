@@ -49,7 +49,40 @@ y = data["cnt"]
 *Describe relevant features of the output variable cnt using descriptive statistics, tables, and graphs. Use descriptive analysis to investigate which predictors appear promising for predicting daily bike rentals. Remove variables that cannot reasonably be assumed to be available at the time a prediction is made, and briefly justify your choices.*
 
 ```{python}
-# Your code for Task 1 will go here
+# first, we want to look at the summary statistics of the dataset to get an overview and evaluate the data
+data.describe
+
+# Look at summary statistics just for the output variable 'cnt'
+data["cnt"].describe()
+
+# 1. Descriptive statistics for 'cnt'
+display(data['cnt'].describe().to_frame())
+
+# 2. Check for missing values (Data Quality)
+print("\nMissing values in dataset:")
+print(data.isna().sum().sum()) # Should print 0
+
+# 3. Plotting the distribution of 'cnt'
+plt.figure(figsize=(8, 5))
+sns.histplot(data['cnt'], bins=30, kde=True, color='skyblue')
+plt.title('Distribution of Total Daily Bike Rentals (cnt)')
+plt.xlabel('Total Rentals')
+plt.ylabel('Frequency (Days)')
+plt.show()
+
+# 4. Drop unavailable or redundant variables
+# casual and registered are unknown at prediction time. instant and dteday are redundant/unusable.
+columns_to_drop = ['casual', 'registered', 'instant', 'dteday']
+df_clean = data.drop(columns=columns_to_drop)
+
+# 5. Investigate promising predictors using a Correlation Heatmap
+plt.figure(figsize=(10, 8))
+correlation_matrix = df_clean.corr()
+# Focus on correlations with 'cnt' specifically
+sns.heatmap(correlation_matrix[['cnt']].sort_values(by='cnt', ascending=False), 
+            annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+plt.title('Correlation of Predictors with Daily Rentals (cnt)')
+plt.show()
 ```
 
 
