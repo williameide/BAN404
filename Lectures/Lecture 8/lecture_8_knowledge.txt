@@ -1,0 +1,673 @@
+================================================================================
+LECTURE 8 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: ex76.ipynb ---
+[MARKDOWN CELL 1]
+# Exercise 7.6
+
+[MARKDOWN CELL 2]
+## Cross-validation to find optimal degree of polynomial
+
+[CODE CELL 3]
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import statsmodels.formula.api as smf
+from ISLP import load_data
+#from ISLP.models import (poly, ModelSpec as MS)
+
+[CODE CELL 4]
+# Load Wage data
+Wage = load_data("Wage")
+age = Wage["age"]
+wage = Wage["wage"]
+
+[CODE CELL 5]
+# Split intro training/test
+np.random.seed(123)
+n = len(Wage)
+ntrain = n // 2
+ind = np.random.choice(n, size=ntrain, replace=False)
+train = Wage.iloc[ind]
+mask = np.ones(n,dtype=bool)
+mask[ind] = False
+test = Wage[mask]
+
+[CODE CELL 6]
+def polyreg(k, data):
+    return smf.ols(f"wage ~ np.vander(age, {k+1}, increasing=True)", data=data).fit()
+
+[CODE CELL 7]
+K = 20
+MSE = np.zeros(K)
+
+for k in range(1, K+1):
+    reg = polyreg(k,train)
+    pred = reg.predict(test)
+    MSE[k-1] = np.mean((test["wage"] - pred)**2)
+
+print("MSE for polynomial degrees 1..20:", MSE)
+print("Optimal degree:", np.argmin(MSE) + 1)
+
+[CODE CELL 8]
+# Fit selected polynomials for plotting
+reg8 = polyreg(8, Wage)
+reg2 = polyreg(2, Wage)
+
+[CODE CELL 9]
+# Order for plotting
+o = np.argsort(Wage["age"])
+plt.figure()
+plt.scatter(age, wage, color="gray")
+plt.plot(Wage["age"].iloc[o], reg8.predict(Wage).iloc[o], color="red", label="Degree 8")
+plt.plot(Wage["age"].iloc[o], reg2.predict(Wage).iloc[o], color="blue", label="Degree 2")
+plt.xlabel("age")
+plt.ylabel("wage")
+plt.legend()
+plt.show()
+
+[MARKDOWN CELL 10]
+## Cross-validation to find optimal cut-off points
+
+[CODE CELL 11]
+def stepreg(k, data):
+    data = data.copy()
+    data["age_cut"] = pd.cut(data["age"], k)
+    return smf.ols("wage ~ age_cut", data=data).fit()
+
+
+[CODE CELL 12]
+MSE_step = np.zeros(K-1)
+for k in range(2, K+1):
+    reg = stepreg(k, train)
+    pred = reg.predict(test.assign(age_cut=pd.cut(test["age"], k)))
+    MSE_step[k-2] = np.mean((test["wage"] - pred)**2)
+
+[CODE CELL 13]
+print("MSE for step functions with 2..20 cuts:", MSE_step)
+print("Optimal number of cuts:", np.argmin(MSE_step) + 2)
+
+[CODE CELL 14]
+# Fit step function with optimal cuts
+k = 16
+reg = stepreg(k, Wage)
+pred = reg.predict(Wage.assign(age_cut=pd.cut(Wage["age"], k)))
+
+
+[CODE CELL 15]
+# Plot step function
+plt.scatter(age, wage, color="gray")
+plt.step(Wage["age"].iloc[o], pred.iloc[o], color="red", where="mid", label="Step k=16")
+plt.xlabel("age")
+plt.ylabel("wage")
+plt.legend()
+plt.show()
+
+--- SOURCE: lecture8ho.pdf ---
+Nonlinear methods
+
+Non-linear models
+
+▶ Polynomial regression, e.g., linear regression on 𝑋, 𝑋2 and
+𝑋3. 𝑌 is a non-linear funciton of 𝑋, albeit not of the
+regression coeﬀicients.
+
+▶ Step functions - piecewise constant regression
+
+▶ Regression splines - piecewise polynomials
+
+▶ Local regression - regression where data points near (in
+
+predictor space) the one that shall be predicted are weighted
+more than points far away.
+
+▶ Smoothing splines - Least squares with a smoothness penalty
+
+▶ Generalized additive models - a framework to generalize the
+methods above to the case with more than one 𝑥-variable.
+
+Non-linear models
+
+Step function - piecewise constant regression, e.g.,
+
+𝑦 = 𝛽0 + 𝛽1𝐼(𝑥 < 𝑐1) + 𝛽2𝐼(𝑐1 ≤ 𝑥 < 𝑐2) + 𝛽3𝐼(𝑐2 ≤ 𝑥 < 𝑐3)
+
++ 𝛽4𝐼(𝑐3 ≤ 𝑥 < 𝑐4) + 𝛽5𝐼(𝑥 ≥ 𝑐4) + 𝜀
+
+np.random.seed(1)
+n = 100
+x = np.random.uniform(0, 1, n)
+c = np.linspace(0.10, 0.90, 4)
+b = np.array([1, 2, 3, -1, 1])
+y = (
+
+b[0]
++ b[1] * ((x >= c[0]) & (x < c[1]))
++ b[2] * ((x >= c[1]) & (x < c[2]))
++ b[3] * ((x >= c[2]) & (x < c[3]))
++ b[4] * (x >= c[3])
++ 0.1 * np.random.normal(size=n)
+
+)
+plt.scatter(x, y)
+for i in range(4):
+
+plt.axvline(c[i], color="red")
+plt.text(c[i] + 0.02, np.min(y), f"c{i+1}", color="blue")
+
+plt.xlabel("x")
+plt.ylabel("y")
+plt.show()
+
+Piecewise regression
+
+0.00.20.40.60.81.0x01234yc1c2c3c4Estimating a piecewise constant regression
+
+# Show cut points
+print(c)
+
+# Indicator variable
+x1 = (x < c[0])
+
+# First 10 rounded x values
+print(np.round(x, 3)[:10])
+
+# First 10 values of x1
+print(x1[:10])
+
+[0.1
+[0.417 0.72
+[False False
+
+0.36666667 0.63333333 0.9
+
+]
+
+0.
+
+0.302 0.147 0.092 0.186 0.346 0.397 0.539]
+True False False False False]
+
+True False False
+
+Estimating a piecewise constant regression
+
+# Create indicator variables
+x2 = ((x >= c[0]) & (x < c[1])).astype(int)
+x3 = ((x >= c[1]) & (x < c[2])).astype(int)
+x4 = ((x >= c[2]) & (x < c[3])).astype(int)
+x5 = (x >= c[3]).astype(int)
+
+# Design matrix
+X_reg = pd.DataFrame({
+
+"x2": x2,
+"x3": x3,
+"x4": x4,
+"x5": x5
+
+})
+
+X_reg = sm.add_constant(X_reg)
+
+# Fit regression
+reg = sm.OLS(y, X_reg).fit()
+
+print(reg.summary())
+
+Estimating a piecewise constant regression
+
+R-squared:
+Adj. R-squared:
+F-statistic:
+Prob (F-statistic):
+Log-Likelihood:
+AIC:
+BIC:
+
+y
+OLS
+Least Squares
+Wed, 18 Feb 2026
+13:43:04
+100
+95
+4
+nonrobust
+
+OLS Regression Results
+==============================================================================
+0.997
+Dep. Variable:
+0.997
+Model:
+Method:
+7203.
+5.37e-117
+Date:
+99.414
+Time:
+-188.8
+No. Observations:
+Df Residuals:
+-175.8
+Df Model:
+Covariance Type:
+==============================================================================
+0.975]
+------------------------------------------------------------------------------
+1.086
+const
+2.040
+x2
+3.041
+x3
+-0.962
+x4
+x5
+1.053
+==============================================================================
+2.201
+Omnibus:
+1.706
+Prob(Omnibus):
+0.426
+Skew:
+Kurtosis:
+7.82
+==============================================================================
+
+Durbin-Watson:
+Jarque-Bera (JB):
+Prob(JB):
+Cond. No.
+
+1.0313
+1.9750
+2.9756
+-1.0273
+0.9728
+
+37.233
+60.105
+90.055
+-31.092
+24.237
+
+0.976
+1.910
+2.910
+-1.093
+0.893
+
+0.028
+0.033
+0.033
+0.033
+0.040
+
+0.000
+0.000
+0.000
+0.000
+0.000
+
+2.261
+0.323
+-0.184
+3.524
+
+std err
+
+[0.025
+
+P>|t|
+
+coef
+
+t
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+
+The same as estimating means in each region
+
+# Means within segments
+print(np.mean(y[x2==1]).round(3))
+print(np.mean(y[x3==1]).round(3))
+print(np.mean(y[x4==1]).round(3))
+
+# Coefficients
+b = reg.params
+
+# (intercept + each slope coefficient)
+segment_means_from_reg = np.round(b.iloc[0] + b.iloc[1:4], 6)
+
+print(segment_means_from_reg.round(3).tolist())
+
+3.006
+4.007
+0.004
+[3.006, 4.007, 0.004]
+
+Example with Wage data
+
+20304050607080age50100150200250300wageExample with Wage data
+
+# Load Wage data
+Wage = load_data("Wage")
+age = Wage["age"]
+
+age_cut = pd.cut(age, 4)
+print(age_cut.value_counts().sort_index())
+
+# Fit regression with categorical age groups
+fit = smf.ols("wage ~ C(pd.cut(age, 4))", data=Wage).fit()
+
+print(fit.summary().tables[1])
+
+age
+(17.938, 33.5]
+(33.5, 49.0]
+(49.0, 64.5]
+(64.5, 80.0]
+Name: count, dtype: int64
+=============================================================================================================================
+
+750
+1399
+779
+72
+
+coef
+
+std err
+
+t
+
+P>|t|
+
+[0.025
+
+0.975]
+
+-----------------------------------------------------------------------------------------------------------------------------
+Intercept
+C(pd.cut(age, 4))[T.Interval(33.5, 49.0, closed='right')]
+C(pd.cut(age, 4))[T.Interval(49.0, 64.5, closed='right')]
+C(pd.cut(age, 4))[T.Interval(64.5, 80.0, closed='right')]
+=============================================================================================================================
+
+91.264
+
+20.466
+
+19.610
+
+-2.139
+
+97.053
+
+27.641
+
+27.719
+
+17.420
+
+94.1584
+24.0535
+23.6646
+7.6406
+
+63.790
+13.148
+11.443
+1.532
+
+0.000
+0.000
+0.000
+0.126
+
+1.476
+1.829
+2.068
+4.987
+
+Basis functions
+
+▶ Transform 𝑥 to other quantities 𝑏1(𝑥), 𝑏2(𝑥), ..., 𝑏𝐾(𝑥)
+▶ Example 1: 𝑏1(𝑥) = 𝑥, 𝑏2(𝑥) = 𝑥2, 𝑏3(𝑥) = 𝑥3 Use linear
+
+regression of 𝑦 on 𝑏1(𝑥), 𝑏2(𝑥) and 𝑏3(𝑥)
+
+𝑦 = 𝛽0 + 𝛽1𝑏1(𝑥) + ... + 𝛽𝐾𝑏𝐾(𝑥) + 𝜀
+
+▶ Example 2: 𝑏𝑘(𝑥) = 𝐼(𝑐𝑘 ≤ 𝑥 < 𝑐𝑘+1)
+▶ Example 3: 𝑦 is a periodic function of 𝑥. Then
+𝑏𝑘(𝑥) = sin(𝛼𝑘𝑥) are good basis functions.
+
+Regression splines
+
+Piecewise polynomials
+
+𝑦𝑖 = 𝛽0 + 𝛽1𝑥𝑖 + 𝛽2𝑥2
+
+𝑖 + 𝜀
+
+▶ Different polynomials in each segment. import numpy as np
+
+import matplotlib.pyplot as plt
+
+▶ Not connected at the knots 𝜉1, 𝜉2, ..., 𝜉𝐾 (c instead of 𝜉 in
+
+the figure).
+
+0.00.20.40.60.81.0x0.91.01.11.2yc1c2c3c4Regression splines
+
+▶ Knot the pieces together.
+
+▶ Constraints:
+
+▶ Curve must be continuous
+▶ First two derivatives continuous, i.e. a smooth curve.
+
+Cubic spline basis
+
+(𝑏0(𝑥), 𝑏1(𝑥), 𝑏2(𝑥), 𝑏3(𝑥), 𝑏4(𝑥), ..., 𝑏𝐾+3(𝑥))
+= (1, 𝑥, 𝑥2, 𝑥3, ℎ(𝑥, 𝜉1), ..., ℎ(𝑥, 𝜉𝐾))
+
+and their first two derivatives are continuous.
+
+ℎ(𝑥, 𝜉) = (𝑥 − 𝜉)3
+
++ = {
+
+(𝑥 − 𝜉)3
+0
+
+if 𝑥 > 𝜉
+otherwise
+
+𝑦 = 𝛽0 + 𝛽1𝑏1(𝑥) + ... + 𝛽𝐾+3𝑏𝐾+3(𝑥) + 𝜀
+
+Cross-validation to determine number and placement of knots.
+
+Example with Wage data
+
+20304050607080age50100150200250300wageKernel estimators
+
+▶
+
+𝑦 = 𝑓(𝑥) + 𝜀
+
+▶ K nearest neighbors(KNN)
+
+̂𝑓(𝑥0) =
+
+1
+𝐾
+
+𝐾
+∑
+𝑘=1
+
+𝑦(𝑘)
+
+where 𝑦(1), ..., 𝑦(𝐾) are the 𝑦’s corresponding to the 𝐾 𝑥’s
+closest to 𝑥0
+
+▶ Nadaraya-Watson estimator
+
+̂𝑓(𝑥0) =
+
+𝑛
+∑
+𝑖=1
+
+𝑤𝑖𝑦𝑖
+
+where ∑𝑛
+
+𝑖=1 𝑤𝑖 = 1 and 𝑤𝑖 = 𝐾(𝑥𝑖 − 𝑥0)
+
+▶ 𝐾 is a so called kernel.
+
+Example of a kernel
+
+𝐾(𝑥𝑖 − 𝑥0) =
+
+𝜙 ( 𝑥𝑖−𝑥0
+)
+𝑖=1 𝜙 ( 𝑥−𝑥0
+ℎ )
+
+ℎ
+
+∑𝑛
+
+where 𝜙 is the standard normal density.
+
+If we want to predict 𝑦 based for an observation with 𝑥 = −2 we
+should give high weights fo observations with 𝑥 close to −2.
+
+3210123x0.0000.0050.0100.0150.020Kernel weightK(x-0,1) and K(x+2)K(x-0,1)K(x+2)Implementation in Python
+
+402002040x4003002001000100200300yImplementation in Python
+
+402002040x4003002001000100200300yKNNNW (h=5)Implementation in Python
+
+from scipy.stats import norm
+
+# Kernel function
+def K(x0, x, h=0.2):
+
+weights = norm.pdf((x - x0) / h)
+return weights / np.sum(weights)
+
+# Nadaraya-Watson estimator
+def nw(x0, x, y, h=0.2):
+w = K(x0, x, h)
+return np.sum(w * y)
+
+# KNN estimator
+def knn(x0, x, y, K=None):
+
+if K is None:
+
+K = int(np.sqrt(len(x)))
+
+dist = np.abs(x - x0)
+nearest_idx = np.argsort(dist)[:K]
+return np.mean(y[nearest_idx])
+
+# Predictions
+ypred_knn = np.array([knn(x0, x, y) for x0 in x])
+ypred_nw
+
+= np.array([nw(x0, x, y, h=5) for x0 in x])
+
+Determining K by LOOCV
+
+Choose 𝐾 = 6
+
+051015202530K30004000500060007000LOO-MSELeave-one-out MSE for KNNDetermining K by LOOCV
+
+# MSE function
+def mse(err):
+
+return np.mean(err**2)
+
+n = len(x)
+msemat = np.zeros(30)
+
+# Leave-one-out KNN for K = 1..30
+for k in range(1, 31):
+
+ypred = np.zeros(n)
+for i in range(n):
+
+trainx = np.delete(x, i)
+trainy = np.delete(y, i)
+testx = x[i]
+ypred[i] = knn(testx, trainx, trainy, K=k)
+
+err = y - ypred
+msemat[k-1] = mse(err)
+
+Determining h in Nadaraya-Watson by LOOCV
+
+# LOOCV for Nadaraya-Watson to select bandwidth h
+n = len(x)
+hval = np.linspace(0.1, 10, 30)
+msemat = np.zeros(30)
+
+for k, h in enumerate(hval):
+ypred = np.zeros(n)
+for i in range(n):
+
+trainx = np.delete(x, i)
+trainy = np.delete(y, i)
+testx = x[i]
+ypred[i] = nw(testx, trainx, trainy, h=h)
+
+err = y - ypred
+msemat[k] = mse(err)
+
+# Print best h
+best_h = hval[np.argmin(msemat)]
+print("Best h (min LOOCV MSE):", round(best_h,3))
+
+Best h (min LOOCV MSE): 2.831
+
+Determining h in Nadaraya-Watson by LOOCV
+
+0246810h32003400360038004000420044004600LOO-MSELeave-one-out MSE for KNNOptimal KNN and optimal Nadaraya-Watson
+
+402002040x4003002001000100200300yKNN (K=6)NW (h=2.83)Local linear regression at 𝑥 = 𝑥0
+
+▶ Same principle as in the kernel methods: Weight observations
+
+with 𝑥-values close to 𝑥0 highly.
+▶ Solve the minimization problem
+
+min
+𝛽0,𝛽1
+
+𝑛
+∑
+𝑖=1
+
+𝑤𝑖(𝑦𝑖 − 𝛽0 − 𝛽1𝑥𝑖)2
+
+where, e.g., 𝑤𝑖 = 𝜙 ( 𝑥𝑖−𝑥0
+be found by cross-validation.
+
+ℎ
+
+). ℎ is called the bandwith and can
+
+▶
+
+̂𝑓(𝑥0) = ̂𝛽0 + ̂𝛽1𝑥0

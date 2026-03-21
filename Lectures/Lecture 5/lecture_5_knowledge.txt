@@ -1,0 +1,607 @@
+================================================================================
+LECTURE 5 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: ex55.py ---
+
+# Read libraries
+import numpy as np
+import pandas as pd
+from ISLP import load_data
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+# (a)
+Default = load_data("Default")
+logreg1 = smf.glm('default ~ income + balance', data=Default, family=sm.families.Binomial()).fit()
+print(logreg1.summary())
+
+# (b)
+n = len(Default)
+ntrain = n // 2
+ind = np.random.choice(n, size=ntrain, replace=False)
+
+train = Default.iloc[ind]
+test = Default.drop(ind)
+
+# Fit logistic regression model on training data
+logreg2 = smf.glm('default ~ income + balance', data=train, family=sm.families.Binomial()).fit()
+# Can also use smf.logit but the default has to be decoded as a numerical
+print(logreg2.summary())
+
+# Predict probabilities on test data
+prob2 = logreg2.predict(test)
+
+# Convert probabilities to class predictions with threshold 0.5
+pred2 = prob2 > 0.5
+
+# Confusion matrix: rows = true labels, columns = predicted labels
+conf_mat = pd.crosstab(test['default'], ~pred2)
+print(conf_mat)
+
+# Validation accuracy
+accuracy = np.trace(conf_mat) / ntrain
+print(f'Validation accuracy: {accuracy:.4f}')
+
+# (c)
+# The error is around 0.97 each time but varies since the
+# training/test division is not identical each time
+
+# (d)
+
+# Fit logistic regression model on training data
+logreg3 = smf.glm('default ~ income + balance + student', data=train, family=sm.families.Binomial()).fit()
+# Can also use smf.logit but the default has to be decoded as a numerical
+print(logreg3.summary())
+
+# Predict probabilities on test data
+prob3 = logreg3.predict(test)
+
+# Convert probabilities to class predictions with threshold 0.5
+pred3 = prob3 > 0.5
+
+# Confusion matrix: rows = true labels, columns = predicted labels
+conf_mat = pd.crosstab(test['default'], ~pred3)
+print(conf_mat)
+
+# Validation accuracy
+accuracy = np.trace(conf_mat) / ntrain
+print(f'Validation accuracy: {accuracy:.4f}')
+
+
+# Extra task: LOOCV
+
+
+nsmall = 500
+
+# Sample nsmall rows without replacement
+small = Default.sample(nsmall, random_state=42).reset_index(drop=True)
+
+pred4 = np.zeros(nsmall, dtype=bool)
+
+for i in range(nsmall):
+    # Leave one out
+    training = small.drop(i)
+    test = small.iloc[i:i+1]
+
+    # Fit logistic regression on training data
+    logreg4 = smf.glm('default ~ income + balance + student', data=training, family=sm.families.Binomial()).fit()
+
+    # Predict probability on left-out test data
+    prob4 = logreg4.predict(test).values[0]
+
+    # Classify with 0.5 threshold
+    pred4[i] = prob4 > 0.5
+
+# Confusion matrix and accuracy
+conf_mat = pd.crosstab(small['default'], ~pred4)
+accuracy = np.trace(conf_mat) / nsmall
+
+print("Confusion matrix:\n", conf_mat)
+print(f"LOOCV accuracy: {accuracy:.4f}")
+
+
+# Check the function LeaveOneOut in the library sklearn.model_selection
+# to see how this can be done more efficiently
+
+--- SOURCE: lecture5.pdf ---
+Resampling methods
+
+The sampling distribution
+
+▶
+
+Ex: 𝑋1, 𝑋2, ..., 𝑋𝑛 independent and identically distributed (iid)
+
+stochastic variables, drawn from 𝑋 ∼ 𝐹 where
+𝐹 is an unknown CDF
+We would like to estimate 𝜇 = 𝐸(𝑋) with 𝑋
+
+▶ Sampling distribution: Distribution of 𝑋 = 1
+
+𝑛 ∑𝑛
+
+𝑖=1 𝑋𝑖
+
+The sampling distribution - An example
+
+▶ 𝑋 =height of a randomly choosen Norwegian adult
+
+▶ Want to estimate the expected height, 𝜇 = 𝐸(𝑋)
+
+▶ Draw a sample of 𝑛 = 100, 𝑥1, 𝑥2, ..., 𝑥𝑛
+▶ Estimate
+
+̂𝜇 = 𝑥 (one single value)
+
+▶ The sampling distribution of
+
+̂𝜇 is the distribution (histogram)
+
+of the 𝑥 if we repeatedly sampled 100 observations.
+
+▶ In this example we examplify with estimating the parameter
+𝜇 = 𝐸(𝑋) but the arguments and concepts go through for
+any estimated quantity based on a random sample.
+
+A sample of 100 obervations
+
+x.head()
+print(float(x.mean()))
+print(float(x.std()))
+
+180.50421582313302
+15.604488103781733
+
+𝑥1 = 180.504
+
+Another sample of 100 obervations
+
+x.head()
+print(float(x.mean()))
+print(float(x.std()))
+
+179.46625523393115
+14.563459111041837
+
+𝑥2 = 179.466
+
+1000 different samples of 100 observations each
+
+174176178180182184186Mean050010001500200025003000Histogram of mean(x)1000 different samples of 100 observations each
+
+▶ Large sample approximation: The central limit theorem
+
+implies that the distribution of 𝑋 can be approximated by
+𝑁 (𝜇, 𝜎2
+
+𝑛 ) for large samples
+
+▶ 𝑋 approx 𝑁 (180, 2.25)
+
+▶ In this case we know what 𝜇 and 𝜎 are since we have
+
+generated the population ourselves.
+
+With the large sample approximation
+
+𝑋 ∼ 𝑁 (180, 2.25)
+
+174176178180182184186Mean0.000.050.100.150.200.25Histogram of mean(x)Can we estimate this distribution if we only have one single
+sample?
+
+▶ Yes, there are several methods
+
+▶ Large sample approximation: The central limit theorem
+
+implies that the distribution of 𝑋 can be approximated by
+𝑁 (𝜇, 𝜎2
+
+𝑛 ) for large samples. Plug in estimators for 𝜇 and 𝜎.
+▶ Let us go back to the more realistic situation where only the
+
+first sample is available.
+
+The first sample again
+
+▶ 𝑥1 = 179.466
+▶ 𝑠1 = 15.604
+▶ Our approximation for the sample distribution of 𝑋 is
+
+𝑁 (179.466, 15.6042
+
+)
+
+100
+
+Estimate of the sampling distribution
+
+1761781801821840.000.050.100.150.200.2595% confidence interval for 𝜇
+
+1761781801821840.000.050.100.150.200.25When can we use this?
+
+▶ We have used a large sample approximation, i.e. it is based on
+the assumption that we have “large enough” sample. What if
+𝑛 is small?
+
+▶ In other situations we might be unable to derive the
+
+asymptotic distribution, e.g. in situations were the standard
+central limit theory does not apply.
+
+▶ Resampling methods are methods which replicates the idea of
+
+sampling from a population described above.
+
+▶ The difference is that we sample from our sample instead of
+
+from the population. Hence the term resampling.
+
+▶ A situation we will often encounter is that we would like to
+
+compute 𝐸((𝑌𝑖 − ̂𝑓(𝑋𝑖))2) and often a resampling method is
+a good, and feasible, approach to do this.
+
+Cross-validation
+
+▶ Cross-validation is the idea of
+
+▶ splitting the data in training and test data
+▶ train (estimate) the model on the training data and
+▶ evaluate predictions on the test data
+
+▶ We will talk about three (or perhaps only two) different
+
+approaches
+
+▶ Validation set approach
+▶ Leave-one-out cross-validation
+▶ k-fold cross-validation
+
+Validation set approach
+
+▶ We examplify with the computation of testMSE
+
+▶ Data: (X1, 𝑦1)..., (X𝑛, 𝑦𝑛)
+1. Re-order all observations randomly: (X(1), 𝑦(1))..., (X(𝑛), 𝑦(𝑛))
+
+2. Let the first, say 𝑚 = [𝑛/2], be the training data
+
+(X(1), 𝑦(1))..., (X(𝑚), 𝑦(𝑚))
+
+and the rest test data
+
+(X(𝑚+1), 𝑦(𝑚+1))..., (X(𝑛), 𝑦(𝑛))
+
+3. Fit the model, 𝑓 to the training data and obtain
+
+̂𝑓
+
+4. Evaluate
+
+̂𝑓 on the test data
+
+testMSE =
+
+1
+𝑛 − 𝑚
+
+𝑛
+∑
+𝑖=𝑚+1
+
+(𝑌𝑖 − ̂𝑓(𝑋𝑖))2
+
+Example on Auto data
+
+# Read data
+from ISLP import load_data
+Auto = load_data("Auto")
+
+# Split into training and test data
+n = len(Auto)
+ntrain = n // 2
+Auto = Auto.reset_index(drop=True)
+draw = np.random.choice(n, size=n//2, replace=False)
+print(draw[:5])
+train = Auto.iloc[draw, :]
+test = Auto.drop(draw)
+
+# reset index to 0..n-1
+
+[145 136 119 196 302]
+
+mpg against horsepower
+
+5075100125150175200225horsepower1015202530354045mpgmpg vs horsepowermpg against horsepower
+
+R-squared:
+Adj. R-squared:
+F-statistic:
+Prob (F-statistic):
+Log-Likelihood:
+AIC:
+BIC:
+
+mpg
+OLS
+Least Squares
+Wed, 04 Feb 2026
+13:59:38
+196
+194
+1
+nonrobust
+
+OLS Regression Results
+==============================================================================
+0.602
+Dep. Variable:
+0.600
+Model:
+293.7
+Method:
+1.09e-40
+Date:
+-593.36
+Time:
+1191.
+No. Observations:
+Df Residuals:
+1197.
+Df Model:
+Covariance Type:
+==============================================================================
+0.975]
+------------------------------------------------------------------------------
+42.152
+39.723
+Intercept
+horsepower
+-0.139
+-17.136
+==============================================================================
+2.016
+Omnibus:
+6.733
+Prob(Omnibus):
+0.0345
+Skew:
+Kurtosis:
+310.
+==============================================================================
+
+Durbin-Watson:
+Jarque-Bera (JB):
+Prob(JB):
+Cond. No.
+
+6.749
+0.034
+0.454
+3.040
+
+40.1582
+-0.1573
+
+38.164
+-0.175
+
+1.011
+0.009
+
+0.000
+0.000
+
+std err
+
+[0.025
+
+P>|t|
+
+coef
+
+t
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+
+5075100125150175200225horsepower51015202530354045mpgmpg vs horsepower with regression lineDataRegression lineA polynomial regression
+
+R-squared:
+Adj. R-squared:
+F-statistic:
+Prob (F-statistic):
+Log-Likelihood:
+AIC:
+BIC:
+
+mpg
+OLS
+Least Squares
+Wed, 04 Feb 2026
+13:59:38
+196
+193
+2
+nonrobust
+
+OLS Regression Results
+==============================================================================
+0.706
+Dep. Variable:
+0.703
+Model:
+231.9
+Method:
+4.71e-52
+Date:
+-563.67
+Time:
+1133.
+No. Observations:
+Df Residuals:
+1143.
+Df Model:
+Covariance Type:
+======================================================================================
+0.975]
+--------------------------------------------------------------------------------------
+63.746
+Intercept
+-0.417
+horsepower
+I(horsepower ** 2)
+0.002
+==============================================================================
+1.978
+Omnibus:
+9.548
+Prob(Omnibus):
+0.00845
+Skew:
+Kurtosis:
+1.24e+05
+==============================================================================
+
+Durbin-Watson:
+Jarque-Bera (JB):
+Prob(JB):
+Cond. No.
+
+58.9446
+-0.4997
+0.0014
+
+24.212
+-11.846
+8.264
+
+6.398
+0.041
+0.124
+4.052
+
+54.143
+-0.583
+0.001
+
+0.000
+0.000
+0.000
+
+2.434
+0.042
+0.000
+
+std err
+
+[0.025
+
+P>|t|
+
+coef
+
+t
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 1.24e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+Predicting on test data
+
+MSE mod1 = 23.09537533018262
+MSE mod2 = 19.68555512088344
+
+Leave-one-out (LOO) CV
+
+-Data: (X1, 𝑦1)..., (X𝑛, 𝑦𝑛)
+
+1. Leave the first observation, 𝑖 = 1, out of the sample to form
+
+training data (X2, 𝑦2)..., (X𝑛, 𝑦𝑛)
+
+2. Fit the model, 𝑓 to the training data and obtain
+̂𝑓 on the test data (X1, 𝑦1)
+
+3. Evaluate
+
+̂𝑓
+
+testMSE1 = (𝑌1 − ̂𝑓(𝑋1))2
+
+4. Repeat 1-3 to obtain testMSE𝑖 for 𝑖 = 1, 2, ..., 𝑛
+
+5. Compute
+
+testMSE =
+
+1
+𝑛
+
+𝑛
+∑
+𝑖=1
+
+testMSE𝑖
+
+Auto data
+
+n = len(Auto)
+MSE1 = np.zeros(n)
+MSE2 = np.zeros(n)
+
+for i in range(n):
+
+# Leave out the i-th observation
+train = Auto.drop(i)
+test = Auto.iloc[i:i+1] # keep as DataFrame for predict()
+
+# Fit models
+mod1 = smf.ols('mpg ~ horsepower', data=train).fit()
+mod2 = smf.ols('mpg ~ horsepower + I(horsepower ** 2)', data=train).fit()
+
+# Predict on the left-out observation
+pred1 = mod1.predict(test).values[0]
+pred2 = mod2.predict(test).values[0]
+
+# Compute squared errors
+MSE1[i] = (test['mpg'].values[0] - pred1) ** 2
+MSE2[i] = (test['mpg'].values[0] - pred2) ** 2
+
+MSE1 = 24.23
+
+MSE2 = 19.25
+
+k-fold CV
+
+▶ k groups of size 𝑛
+𝑘
+𝑘 -out CV”
+
+▶ “Leave- 𝑛
+
+▶ 𝑘 = 𝑛 = Leave-one-out
+
+▶ Choose smaller 𝑘 if the method is computationally demanding
+
+Pros and cons with the different approaches
+
+Validation set
+
+Estimation uncertainty Worst
+Computational time
+
+Best
+
+LOO
+Best
+Worst
+
+k-fold
+Intermediate
+Intermediate
+
+There are also bias-variance considerations to be made. More on
+that on the next tutorial.

@@ -1,0 +1,639 @@
+================================================================================
+LECTURE 3 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: ex413_a_d.py ---
+# (a)
+
+# Read libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from ISLP import load_data
+
+# First look at data
+Weekly = load_data('Weekly')
+Weekly.describe(include = 'all').round(3)
+print(Weekly.head())
+print(Weekly.columns)
+
+# Time series plot of Today
+fig, ax = plt.subplots()
+ax.plot(Weekly["Today"])
+ax.set_xlabel("Week")
+ax.set_ylabel("Today")
+ax.set_title("Weekly Market Returns")
+
+# Distribution of Direction
+print(Weekly["Direction"].value_counts())
+
+# Mean of Volume
+print("Mean Volume:", Weekly["Volume"].mean())
+
+# Mean Volume by Direction
+print(Weekly.groupby("Direction")["Volume"].mean())
+
+# T-test of difference in volume for up and down
+from scipy import stats
+x = Weekly.Volume[Weekly.Direction=='Up']
+y = Weekly.Volume[Weekly.Direction=='Down']
+nx = len(x)
+ny = len(y)
+tval = (x.mean()-y.mean())/np.sqrt(x.var()/nx + y.var()/ny)
+pval = 2*stats.norm.cdf(-np.abs(tval))
+print("tval =",f"{tval:.3f}")
+print("pval =",f"{pval:.3f}")
+
+# We can not reject the hypotesis
+# $H_0: \mu_x = \mu_y$ against the alternative
+# $H_1: \mu_x \neq \mu_y$
+# at any conventional significance levels.
+
+
+# (b)
+import statsmodels.formula.api as smf
+from ISLP.models import summarize
+Weekly['y'] = (Weekly['Direction'] == 'Up').astype(int)
+model1 = smf.logit('y ~ Volume + Lag1 + Lag2 + Lag3 + Lag4 + Lag5',data=Weekly)
+m1 = model1.fit()
+summarize(m1)
+
+# (c)
+prob = m1.predict()
+pred = prob > 0.5
+confusion_table = pd.crosstab(Weekly['y'],
+ pred, rownames=['Actual'], colnames=['Predicted'])
+print(confusion_table)
+accuracy = np.mean(Weekly['y']==pred.astype(int))
+print(accuracy.round(2))
+
+## (d)
+# Test / training data
+np.random.seed(431)
+n = len(Weekly)
+ind = Weekly['Year'] < 2009
+train = Weekly[ind]
+test = Weekly[~ind]
+m1_train = smf.logit('y ~ Volume + Lag1 + Lag2 + Lag3 + Lag4 + Lag5',data=train).fit()
+prob_test = m1_train.predict(test)
+pred_test = prob_test > 0.5
+confusion_table = pd.crosstab(test['y'],
+ pred_test, rownames=['Actual'], colnames=['Predicted'])
+print(confusion_table)
+accuracy = np.mean(test['y']==pred_test.astype(int))
+print("accuracy =",accuracy.round(2))
+
+
+--- SOURCE: lecture3.pdf ---
+Classification: Logistic regression
+
+Classification
+
+▶ In contrast to the regression problem where we would like to
+predict the value of a quantitative variable, we will now
+consider prediction of qualitative variables, i.e. which class an
+observation belongs to.
+
+▶
+
+𝑌 =
+
+⎧
+{
+⎨
+{
+⎩
+
+1 with probability 𝑝1
+2 with probability 𝑝2
+⋮
+𝐾 with probability 𝑝𝐾
+
+▶ where 𝑝1 + 𝑝2 + ... + 𝑝𝐾 = 1
+▶ We want to predict 𝑌𝑖 based on X𝑖
+▶ Models for this are usually based on estimating 𝑝𝑘 as a
+
+function of X𝑖
+
+𝑝𝑘 = 𝑃 (𝑌𝑖 = 𝑘|X𝑖 = x𝑖) = 𝑓(x𝑖)
+
+A natural quality measure of predictions
+▶ Data: x1, x2, ..., x𝑛, x𝑛+1, ...x𝑛+𝑚
+𝑦1, 𝑦2, ..., 𝑦𝑛, 𝑦𝑛+1, ...𝑦𝑛+𝑚
+
+▶
+
+̂𝑦𝑖 = Prediction of 𝑦𝑖
+
+▶ Training error rate:
+
+▶ Test error rate:
+
+trainER =
+
+1
+n
+
+n
+∑
+i=1
+
+I( ̂yi ≠ yi)
+
+testER =
+
+1
+m
+
+n+m
+∑
+i=n+1
+
+I( ̂yi ≠ yi)
+
+▶ 𝐼(𝑥) is the indicator function (one if x true, zero otherwise)
+
+A first example
+
+import numpy as np
+import pandas as pd
+from ISLP import load_data
+Default = load_data("Default")
+Default.describe(include = "all").round(2)
+
+default
+
+student
+
+balance
+
+income
+
+count
+unique
+top
+freq
+mean
+std
+min
+25%
+50%
+75%
+max
+
+10000
+2
+No
+9667
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+10000
+2
+No
+7056
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+10000.00
+NaN
+NaN
+NaN
+835.37
+483.71
+0.00
+481.73
+823.64
+1166.31
+2654.32
+
+10000.00
+NaN
+NaN
+NaN
+33516.98
+13336.64
+771.97
+21340.46
+34552.64
+43807.73
+73554.23
+
+A first example
+
+pd.crosstab(Default.student, Default.default,
+
+normalize='index').round(3)
+
+default No
+student
+
+Yes
+
+No
+Yes
+
+0.971
+0.957
+
+0.029
+0.043
+
+▶
+
+𝑃 (𝑌𝑖 = Yes|𝑋𝑖 = Yes) > 𝑃 (𝑌𝑖 = Yes|𝑋𝑖 = No)
+
+Account balance against default variable
+
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(5, 2.2))
+ax.scatter(Default.balance,Default.default)
+plt.xlabel("balance")
+plt.ylabel("default")
+plt.show()
+
+Our first classification method - a linear probability model
+
+▶ We need to make default a numerical value
+
+▶ 𝑌𝑖 = 1 if default and 0 otherwise
+
+Our first classification method - a linear probability model
+
+import statsmodels.formula.api as smf
+from ISLP.models import summarize
+Default["Y"] = Default["default"].map({"Yes": 1, "No": 0}).astype(int)
+linprob = smf.ols('Y ~ balance', data=Default).fit()
+summarize(linprob)
+
+coef
+
+std err
+
+t
+
+P>|t|
+
+Intercept
+balance
+
+-0.0752
+0.0001
+
+0.003000
+0.000003
+
+-22.416
+37.374
+
+0.0
+0.0
+
+Our first classification method - a linear probability model
+
+▶ Any obvious problems?
+
+Our first proper classification method - logistic regression
+
+▶ Idea for prediction: Predict default when the estimated
+probability is larger than 0.5 (or some other threshold),
+
+i.e. when balance > 2000.
+
+Logistic regression
+
+The prediction of 𝑌 is done in two steps
+
+1. Estimate the probability of 𝑌 = 1 given an observed value of
+
+𝑋, 𝑋 = 𝑥
+
+2. Use the estimated probability to decide whether 𝑌 should be
+
+predicted as one or zero
+
+▶
+
+𝑃 (𝑌 = 1|𝑋 = 𝑥) = 𝑝(𝑥) =
+
+𝑒𝛽0+𝛽1𝑥
+1 + 𝑒𝛽0+𝛽1𝑥 =
+
+1
+1 + 𝑒−𝛽0−𝛽1𝑥
+
+▶ Note that
+
+𝑝(𝑥)
+
+1−𝑝(𝑥) = 𝑒𝛽0+𝛽1𝑥 is the odds, i.e. the probability of
+
+an event occuring in relation to the probability of the event
+not occuring.
+
+This means that 𝑒𝛽1 represents the change in relative probability
+when 𝑥 increases with one unit.
+logprob=smf.logit("Y~student",data=Default).fit(disp=False)
+summarize(logprob)
+
+coef
+
+std err
+
+z
+
+P>|z|
+
+Intercept
+student[T.Yes]
+
+-3.5041
+0.4049
+
+0.071
+0.115
+
+-49.554
+3.520
+
+0.0
+0.0
+
+▶ ̂𝑝(not student) =
+
+1
+
+1+𝑒3.5041 ≈ 0.029
+
+▶ 𝑒0.4049 = 1.50
+
+▶ Interpretation: The odds-ratio for default is 50% higher for students
+
+(0.029) than for non-students (0.044).
+
+Maximum likelihood (ML) estimation
+
+Example
+
+𝑌 = {
+
+1 if a customer buys a product
+0 if not
+
+The probability function for 𝑌 is
+
+𝑝(𝑦) = 𝑃 (𝑌 = 𝑦) = {
+
+𝑝 if 𝑦 = 1
+1 − 𝑝 if 𝑦 = 0
+
+ML estimation of 𝑝
+
+▶ Random sample: 𝑌1, 𝑌2, ..., 𝑌𝑛, a sequence of independent
+
+random variables
+
+▶ Observations (data): 𝑦1, 𝑦2, ..., 𝑦𝑛, a sequence of numbers
+▶ In this example 𝑚 of the observations are one and 𝑛 − 𝑚 are
+
+zero
+
+▶ The probability of observing the specific numbers 𝑦1, 𝑦2, ..., 𝑦𝑛
+
+is
+
+𝑃 (𝑌1 = 𝑦1, 𝑌2 = 𝑦2, ..., 𝑌𝑛 = 𝑦𝑛) = [indep]
+= 𝑃 (𝑌1 = 𝑦1)𝑃 (𝑌2 = 𝑦2) ⋯ 𝑃 (𝑌𝑛 = 𝑦𝑛)
+= 𝑝𝑚(1 − 𝑝)𝑛−𝑚
+
+▶ The likelihood function 𝐿(𝑝) = 𝑝𝑚(1 − 𝑝)𝑛−𝑚
+
+▶ The maximum likelihood principle: Find the value of 𝑝 that
+
+maximizes the likelihood of observerving the particular values
+of 𝑌 that we have actually observed.
+
+Often easier to maximize the log-likelihood function, which in our
+example is
+
+ln 𝐿(𝑝) = 𝑚 ln 𝑝 + (𝑛 − 𝑚) ln(1 − 𝑝)
+
+▶
+
+= 0
+
+=
+
+−
+
+𝑚
+𝑝
+
+𝑛 − 𝑚
+1 − 𝑝
+
+𝜕 ln 𝐿
+𝜕𝑝
+⟺
+𝑚(1 − 𝑝) = 𝑝(𝑛 − 𝑚)
+⟺
+
+̂𝑝𝑀𝐿 =
+
+𝑚
+𝑛
+
+▶ Check that second-order derivative < 0.
+
+ML estimation of parameters in logistic regression
+
+Data: 𝑥1, 𝑥2, ..., 𝑥𝑛
+𝑦1, 𝑦2, ..., 𝑦𝑛
+
+▶ Probability of 𝑌 = 𝑦 now a function of 𝑥.
+
+▶
+
+𝑝(𝑦|𝑥) = {
+
+𝑒𝛽0+𝛽1𝑥
+1+𝑒𝛽0+𝛽1𝑥 if 𝑦 = 1
+1+𝑒𝛽0+𝛽1𝑥 if 𝑦 = 0
+
+1
+
+▶ Likelihood function:
+
+𝐿(𝛽0, 𝛽1) = 𝑝(𝑦1|𝑥1)𝑝(𝑦2|𝑥2) ⋯ 𝑝(𝑦𝑛|𝑥𝑛)
+
+ML estimation of parameters in logistic regression
+
+▶ Can be shown that the log-likelihood function is
+
+ln 𝐿(𝛽0, 𝛽1) =
+
+𝑛
+∑
+𝑖=1
+
+[𝑦𝑖 ln (
+
+𝑒𝛽0+𝛽1𝑥
+1 + 𝑒𝛽0+𝛽1𝑥 )
+1
+1 + 𝑒𝛽0+𝛽1𝑥 )]
+
++(1 − 𝑦𝑖) ln (
+
+▶ Must be maximized numerically
+
+Evaluate accuracy
+
+▶ Confusion matrix
+
+Prediction
+
+Negative
+
+Positive
+
+Actual
+
+Negative True negative
+
+False positive
+
+Positive
+
+False negative True positive
+
+Default example
+
+# Fit logistic regression
+logprob = smf.logit('Y ~ student + balance + income',
+data=Default).fit(disp=False)
+# Estimate probabilities
+pred_probs = logprob.predict(Default)
+# Convert probabilities to boolean predictions with
+# threshold 0.5
+pred = pred_probs > 0.5
+# Create a confusion table (cross-tabulation)
+confusion_table = pd.crosstab(Default['default'],
+
+pred, rownames=['Actual'], colnames=['Predicted'])
+
+print(confusion_table)
+
+Predicted False True
+Actual
+No
+Yes
+
+9627
+228
+
+40
+105
+
+Default example
+
+Prediction
+Not default Default
+
+▶
+
+Actual
+
+Not default
+
+9627
+
+Default
+
+228
+
+40
+
+105
+
+Row percentages
+
+confusion_table = pd.crosstab(Default['default'],
+
+pred, rownames=['Actual'], colnames=['Predicted'],
+normalize='index')
+
+print(confusion_table)
+
+Predicted
+Actual
+No
+Yes
+
+False
+
+True
+
+0.995862 0.004138
+0.684685 0.315315
+
+Evaluating the predictions on test data
+
+# Test / training data
+np.random.seed(123)
+n = len(Default)
+ntrain = n // 2
+ind = np.random.choice(n, size=ntrain, replace=False)
+train = Default.iloc[ind]
+test = Default.drop(ind)
+
+# Fit logistic regression with logit
+logit_model = smf.logit('Y ~ student + balance + income', data=train).fit(disp=False)
+
+# Predict probabilities on test set
+pred_probs = logit_model.predict(test)
+
+# Convert probabilities to binary predictions (threshold 0.5)
+pred = pred_probs > 0.5
+
+# Confusion matrix
+conf_matrix = pd.crosstab(test['default'], pred, rownames=['Actual'], colnames=['Predicted'])
+print(conf_matrix)
+
+# Accuracy
+accuracy = (pred == test['Y']).mean()
+print(f'Accuracy: {accuracy:.4f}')
+
+False True
+
+Predicted
+Actual
+4803
+No
+Yes
+119
+Accuracy: 0.9724
+
+19
+59
+
+Alternative prediction
+
+▶ By classifying all 5000 testobservations as “Not default” we
+
+would get an overall prediction accuracy of
+4822/5000 ≈ 0.9644.
+
+▶ Overall prediction accuracy not a good measure when we have
+
+one class which is much larger than the other.

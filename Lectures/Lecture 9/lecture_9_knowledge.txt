@@ -1,0 +1,350 @@
+================================================================================
+LECTURE 9 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: gam_example.ipynb ---
+[MARKDOWN CELL 1]
+# Simulate data with non-linear relationship
+
+[CODE CELL 2]
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def knn(x0, x, y, K=3):
+    d = np.abs(x - x0)        
+    idx = np.argsort(d)[:K]
+    return np.mean(y[idx])
+
+# Simulate data
+n = 100
+np.random.seed(123)
+x1 = np.random.normal(3,2,size=n)
+x2 = np.random.normal(3,1,size=n)
+e = np.random.normal(0,0.1,size=n)
+y = 1 + x1 - 0.6*x1**2 + 2*x2 + 0.6*x2**2 + e
+
+# Prediction for (x1=2.5, x2=4)
+# GAM, A few iterations
+yd = y - y.mean()
+fig, ax = plt.subplots(1,2)
+ax[0].scatter(x1,yd)
+ax[1].scatter(x2,yd)
+
+--- SOURCE: gam_example.py ---
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def knn(x0, x, y, K=3):
+    d = np.abs(x - x0)        
+    idx = np.argsort(d)[:K]
+    return np.mean(y[idx])
+
+# Simulate data
+n = 100
+np.random.seed(123)
+x1 = np.random.normal(3,2,size=n)
+x2 = np.random.normal(3,1,size=n)
+e = np.random.normal(0,0.1,size=n)
+y = 1 + x1 - 0.6*x1**2 + 2*x2 + 0.6*x2**2 + e
+
+# GAM
+b0 = y.mean()
+yd = y-b0 # Demean y
+fig, ax = plt.subplots(1,2)
+ax[0].scatter(x1,y)
+ax[1].scatter(x2,y)
+K=20
+
+
+# First iteration
+f1 = b0 + np.array([knn(x0,x1,yd,K) for x0 in x1])
+# Estimate f1 and add b0
+o = np.argsort(x1)
+ax[0].plot(x1[o],f1[o],color="red")
+
+res = y-f1 # Compute residuals
+res = res - res.mean() # Demean residuals
+f2 = b0 + np.array([knn(x0,x2,res,K) for x0 in x2])
+# Estimate f2 and add b0
+o = np.argsort(x2)
+ax[1].plot(x2[o],f2[o],color="red")
+
+# Try with more interations to confirm that it converges
+for i in range(10):
+    res = y-f2
+    res = res - res.mean()
+    f1 = b0 + np.array([knn(x0,x1,res,K) for x0 in x1])
+    o = np.argsort(x1)
+    ax[0].plot(x1[o],f1[o],color="magenta")    
+    res = y-f1
+    res = res - res.mean()
+    f2 = b0 + np.array([knn(x0,x2,res,K) for x0 in x2])
+    print(f1[10:12].round(3))
+    # Print f1 and f2 for a few values in each iteration
+    o = np.argsort(x2)
+    ax[1].plot(x2[o],f2[o],color="magenta")
+
+
+--- SOURCE: lecture9.pdf ---
+Smoothing splines and Generalized Additive
+Models (GAM)
+
+Smoothing splines
+
+𝑦𝑖 = 𝑓(𝑥𝑖) + 𝜀𝑖, 𝑓 any function
+
+Find the
+
+̂𝑓 that minimizes
+
+RSS =
+
+𝑛
+∑
+𝑖=1
+
+(𝑦𝑖 − ̂𝑓(𝑥𝑖))2
+
+1.01.52.02.53.03.54.04.55.0x02468y5 observations and f(x) with zero RSSSmoothing splines
+
+▶ The function above is continuous but non-differentiable. We
+
+want the function to be smooth.
+
+▶ Smoothness can be measured by the size of |𝑔″(𝑥)|. Large
+values means the the function is rough (non-smooth).
+
+▶ In order to obtain a smooth function we minimize
+
+𝑛
+∑
+𝑖=1
+
+(𝑦𝑖 − 𝑔(𝑥𝑖))2 + 𝜆 ∫ 𝑔″(𝑡)2𝑑𝑡
+⏟⏟⏟⏟⏟
+Roughness
+penalty
+
+▶ It can be shown that the solution to this problem is a cubic
+
+spline with knots at 𝑥1, 𝑥2, ..., 𝑥𝑛.
+
+▶ 𝜆 determined by cross-validation
+
+Smoothing splines
+
+1.01.52.02.53.03.54.04.55.0x3.03.54.04.55.05.56.0yZero RSS fit and smoothing splinesZero RSSCubic spline with lambda=0Cubic spline with lambda>0Example with Wage data
+
+Optimal lambda: 251.2
+
+20304050607080Age50100150200250300WageSmoothing Splines with pygamlambda=0.1CV smoothingFit smoothing spline with and without LOOCV
+
+# Fit spline setting lambda manually
+gam1 = LinearGAM(s(0, lam=0.1)).fit(age, wage)
+age_grid = np.linspace(age.min(), age.max(), 500)
+plt.plot(age_grid, gam1.predict(age_grid), color="red",
+linewidth=2, label="lambda=0.1")
+
+# Fit spline using automatic smoothing (CV)
+gam2 = LinearGAM(s(0)).gridsearch(age[:, None], wage)
+
+Recap of kernel estimators
+
+▶
+
+𝑦 = 𝑓(𝑥) + 𝜀
+
+▶ Nadaraya-Watson estimator
+
+̂𝑓(𝑥0) =
+
+𝑛
+∑
+𝑖=1
+
+𝑤𝑖𝑦𝑖
+
+where ∑𝑛
+
+𝑖=1 𝑤𝑖 = 1 and 𝑤𝑖 = 𝐾(𝑥𝑖 − 𝑥0)
+
+▶ 𝐾 is a so called kernel.
+
+▶ Example of a kernel
+
+𝐾(𝑥𝑖 − 𝑥0) =
+
+𝜙 ( 𝑥𝑖−𝑥0
+)
+𝑖=1 𝜙 ( 𝑥−𝑥0
+ℎ )
+
+ℎ
+
+∑𝑛
+
+where 𝜙 is the standard normal density.
+
+Example of a kernel
+
+If we want to predict 𝑦 based for an observation with 𝑥 = −2 we should
+give high weights fo observations with 𝑥 close to −2.
+
+32101230.0000.0050.0100.0150.020K(x-0,1) and K(x+2)K(x0=1)K(x0=-2)Generalized additive models (GAM)
+
+▶ How do we extent the previously discussed methods to many
+
+predictors? Multiple non-linear regression?
+
+▶
+
+▶ or
+
+𝑦 = 𝑓(𝑥1, 𝑥2, ..., 𝑥𝑝, 𝜀)
+
+𝑦 = 𝑓(𝑥1, 𝑥2, ..., 𝑥𝑝) + 𝜀
+
+▶ Usually not feasible to just extend the methods just described
+
+with these very general formulations.
+
+▶ A simplification, the Generalized Additive Model (GAM)
+
+𝑦 = 𝛽0 + 𝑓1(𝑥1) + 𝑓2(𝑥2) + ... + 𝑓𝑝(𝑥𝑝) + 𝜀
+
+Backfitting
+
+▶ A method to use any of the models with one predictor and fit
+
+the GAMS model with many predictors.
+
+▶
+
+Example with two predictors and the Nadaraya-Watson estimator
+
+𝑦 = 𝑓1(𝑥1) + 𝑓2(𝑥2) + 𝜀
+
+▶ Sketch of procedure:
+
+1. Use one of the methods previously discussed to estimate 𝑓1
+
+assuming 𝑓2 known, i.e. equal to zero.
+
+2. Estimate 𝑓2 based on the previous estimate of 𝑓1
+3. Estimate 𝑓1 based on the previous estimate of 𝑓2
+4. Iterate 2. and 3. until convergence.
+
+Backfitting
+
+1. Start by assuming 𝑓2(𝑥2) = 0 and use the Nadaraya-Watson
+
+on
+
+⟹ ̂𝑓1(𝑥1)
+
+𝑦 = 𝑓1(𝑥1) + 𝜀
+
+2. Use Nadaraya-Watson on
+
+𝑦 − ̂𝑓1(𝑥1)
+⏟⏟⏟⏟⏟
+𝑍
+
+= 𝑓2(𝑥2) + 𝜀
+
+⟹ ̂𝑓2(𝑥2)
+
+3. Use Nadaraya-Watson on
+
+𝑦 − ̂𝑓2(𝑥2) = 𝑓1(𝑥1) + 𝜀
+
+⟹ ̂𝑓1(𝑥1)
+
+4. Repeat 2-3 until convergence (until
+
+̂𝑓1(𝑥1) and
+
+̂𝑓2(𝑥2) does
+
+not change)
+
+Example with Wage data, GAM with smoothing splines
+
+20304050607080Age4020020Partial effect on WageGAM: Partial Effect of Ages(age,3)In Python
+
+# Fit GAM with cubic splines on age and year
+xval = np.column_stack((year, age))
+gam = LinearGAM(s(0) + s(1)).fit(xvals,wage)
+
+# Compute partial dependence
+age_grid = np.linspace(age.min(), age.max(), 500)
+year_grid = np.full_like(age_grid,year.mean())
+X_plot = np.column_stack((year_grid,age_grid))
+pred = gam.partial_dependence(term=1, X=X_plot)
+conf = gam.partial_dependence(term=1, X=X_plot,width=0.95)[1]
+
+Possible to include linear terms
+
+# Fit GAM
+gam = LinearGAM(s(0) + s(1) + f(2)).fit(X.values, y)
+
+2003200420052006200720082009year2024681012Partial effects(year)20304050607080age3020100102030Partial effects(age)Level 0Level 1Level 2Level 3Level 4education3020100102030Partial effectf(education) boxplotGAM for classification (two-class case)
+
+▶ We have previously discussed logistic regression where 𝑌 ,
+conditionally on (𝑋1, ..., 𝑋𝑝) = (𝑥1, ..., 𝑥𝑝) is one with
+probability
+
+𝑝(𝑥) = 𝑃 (𝑌 = 1|𝑋 = 𝑥) =
+
+1
+1 + 𝑒−(𝛽0+𝛽1𝑥1+...+𝛽𝑝𝑥𝑝)
+
+and zero otherwise.
+
+▶ This implies that
+
+log (
+
+𝑝(𝑥)
+1 − 𝑝(𝑥)
+
+) = 𝛽0 + 𝛽1𝑥1 + ... + 𝛽𝑝𝑥𝑝
+
+▶ Just as GAM gave us an extension to linear regression, it can
+
+do the same to logistic regression.
+
+▶ This implies that
+
+log (
+
+𝑝(𝑥)
+1 − 𝑝(𝑥)
+
+) = 𝛽0 + 𝑓1(𝑥1) + ... + 𝑓𝑝(𝑥𝑝)
+
+GAM for classification (two-class case)
+
+# Load data
+Wage = load_data("Wage")
+
+# Response: I(wage>250)
+y = (Wage["wage"] > 250).astype(int)
+
+# Predictors: year, age, education (categorical)
+X = pd.DataFrame({
+
+"year": Wage["year"],
+"age": Wage["age"],
+"education": Wage["education"].astype("category").cat.codes # convert to numeric
+
+})
+
+# Fit logistic GAM
+gam_log = LogisticGAM(s(0) + s(1) + f(2)).fit(X.values, y)
+
+GAM for classification (two-class case)
+
+2003200420052006200720082009year1.251.000.750.500.250.000.250.50Partial effects(year,3)20304050607080age864202Partial effects(age,3)Level 0Level 1Level 2Level 3Level 4education1.51.00.50.00.51.01.52.0Partial effectf(education) boxplot

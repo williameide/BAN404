@@ -1,0 +1,717 @@
+================================================================================
+LECTURE 11 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: ex88.ipynb ---
+[CODE CELL 1]
+# Start for Exercise 8.8 a-c
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from ISLP import load_data
+from sklearn.tree import DecisionTreeRegressor, plot_tree
+from sklearn.model_selection import train_test_split, cross_val_score, KFold, GridSearchCV
+from sklearn.metrics import mean_squared_error
+
+# Load Carseats data
+Carseats = load_data("Carseats")
+
+# (a) Train/test split
+np.random.seed(123)
+train, test = train_test_split(Carseats, test_size=0.5, random_state=123)
+
+# Below, and commented out:Train/test split used in the 
+# lecture slides. Gives different results on the
+# variable importance output. This is due to random selection.
+# Carseats = load_data("Carseats")
+# np.random.seed(123)
+# n = len(Carseats)
+# ind = np.random.choice(n, size=n//2, replace=False)
+# train = Carseats.iloc[ind]
+# test = Carseats.drop(ind)
+
+X_train = train.drop(columns="Sales")
+y_train = train["Sales"]
+X_test = test.drop(columns="Sales")
+y_test = test["Sales"]
+
+# Encode categorical predictors
+X_train = pd.get_dummies(X_train, drop_first=True)
+X_test = pd.get_dummies(X_test, drop_first=True)
+
+
+[CODE CELL 2]
+# (b) Fit regression tree
+tree1 = DecisionTreeRegressor(random_state=123,min_samples_leaf=30)
+tree1.fit(X_train, y_train)
+# Plot tree
+fig, ax = plt.subplots(figsize=(10, 6))
+plot_tree(tree1, feature_names=X_train.columns, precision=2, fontsize=10, ax=ax)
+plt.show()
+
+[CODE CELL 3]
+# Predict and compute test MSE
+pred1 = tree1.predict(X_test)
+testMSE1 = mean_squared_error(y_test, pred1)
+print("Test MSE (full tree):", testMSE1)
+
+[CODE CELL 4]
+# (c) First a large tree
+tree2 = DecisionTreeRegressor(min_samples_leaf=2, random_state=0)
+tree2.fit(X_train, y_train)
+pred2 = tree2.predict(X_test)
+fig, ax = plt.subplots(figsize=(12,7))
+plot_tree(tree2,feature_names=X_train.columns, precision=3, fontsize=8, 
+    ax=ax)
+plt.tight_layout()
+plt.show()
+
+[CODE CELL 5]
+# Pruning
+cv_tree = tree2.cost_complexity_pruning_path(X_train,y_train)
+kfold = KFold(5,shuffle=True,random_state=10)
+grid = GridSearchCV(tree2,{'ccp_alpha': cv_tree.ccp_alphas},
+                refit=True,
+                cv=kfold,
+                scoring="neg_mean_squared_error")
+G = grid.fit(X_train,y_train)                
+pruned_tree = G.best_estimator_
+pred_pruned = pruned_tree.predict(X_test)
+fig, ax = plt.subplots(figsize=(12,7))
+plot_tree(pruned_tree,feature_names=X_train.columns, precision=3, fontsize=8, 
+    ax=ax)
+plt.tight_layout()
+plt.show()
+
+[CODE CELL 6]
+# Optimal alpha
+best_alpha = grid.best_params_['ccp_alpha']
+print("Best alpha from CV:", best_alpha)
+
+[CODE CELL 7]
+
+# Pruned tree with best alpha
+pruned_tree.fit(X_train, y_train)
+pred3 = pruned_tree.predict(X_test)
+testMSE2 = mean_squared_error(y_test, pred2)
+testMSE3 = mean_squared_error(y_test, pred3)
+print("Test MSE (original):", testMSE2)
+print("Test MSE (pruned tree):", testMSE3)
+
+[CODE CELL 8]
+# (d) Bagging
+
+from sklearn.ensemble import RandomForestRegressor
+bag = RandomForestRegressor(n_estimators=500, max_features=X_train.shape[1], random_state=123)
+bag.fit(X_train, y_train)
+
+importances = pd.Series(bag.feature_importances_,
+index=X_train.columns)
+plt.figure(figsize=(5,2.5))
+importances.sort_values().plot.barh()
+plt.title("Variable Importance")
+plt.show()
+
+pred_bag = bag.predict(X_test)
+MSE_bag = np.mean((y_test - pred_bag)**2)
+print("Test MSE (bagging):", MSE_bag)
+
+[CODE CELL 9]
+# (e) Random forest with max_features=3
+rf = RandomForestRegressor(n_estimators=500, 
+         max_features=3, random_state=123)
+rf.fit(X_train, y_train)
+
+importances = pd.Series(rf.feature_importances_,
+index=X_train.columns)
+plt.figure(figsize=(5,2.5))
+importances.sort_values().plot.barh()
+plt.title("Variable Importance")
+plt.show()
+
+pred_rf = rf.predict(X_test)
+MSE_rf = np.mean((y_test - pred_rf)**2)
+print("Test MSE (Random Forset):", MSE_rf)
+
+--- SOURCE: lecture11.pdf ---
+Tree-based methods: Bagging and boosting
+
+Advantages and disadvantages with tree-based methods
+
+▶ (+) Easy to understand and interpret
+
+▶ (+) The result can be interpreted as a graph
+
+▶ (-) Predictions are often not very good
+
+▶ (-) The estimated model can change a lot by small changes in
+
+the dataset
+
+Bagging (Bootstrap aggregation)
+
+▶ Variance of averages: 𝑋1, 𝑋2, ..., 𝑋𝑛 iid with Var(𝑋) = 𝜎2
+
+Var(𝑋) = Var (
+
+1
+𝑛
+
+𝑛
+∑
+𝑖=1
+
+𝑋𝑖) =
+
+1
+𝑛2
+
+𝑛
+Var(𝑋𝑖)
+∑
+⏟⏟⏟⏟⏟
+𝑖=1
+𝑛𝜎2
+
+=
+
+𝜎2
+𝑛
+
+▶
+
+∴Var(𝑋) < Var(𝑋) if 𝑛 > 1
+
+▶ Averaging reduces variance
+
+Bagging
+
+Example: We shall predict 𝑌 with KNN. To exemplify we generate
+data from the following data generating process
+
+𝑌 = 10 + 0.1𝑋 + (𝑋 − 0.2)2 + (𝑋 − 0.4)3 + 𝜀,
+
+where 𝜀 ∼ 𝑁 (0, 0.32)
+
+Can the KNN predictions be improved?
+
+Idea: Reduce prediction error variance by predicting from many
+training data sets and average the predictions.
+
+But we have only one training data set?
+
+Bagging for KNN
+
+▶ Training data: (𝑥1, 𝑦1), ..., (𝑥𝑛, 𝑦𝑛)
+▶ Predict 𝑦0 based on 𝑥0
+▶ Resample training data with replacement
+
+1. Resample fra the training data ⟹
+
+(𝑥(1)
+
+1 , 𝑦(1)
+
+1 ), ..., (𝑥(1)
+
+𝑛 , 𝑦(1)
+𝑛 )
+
+2. Predict 𝑦0 with the resampled data by KNN ⟹ ̂𝑓 ∗1(𝑥0)
+̂𝑓 ∗𝐵(𝑥0)
+
+3. Repeat 2, 𝐵 times to obtain
+
+̂𝑓 ∗2(𝑥0), ...,
+
+̂𝑓 ∗1(𝑥0),
+
+4. Predict 𝑦0 by
+
+̂𝑓𝑎𝑣𝑔(𝑥0) =
+
+1
+𝐵
+
+𝐵
+∑
+𝑏=1
+
+̂𝑓 ∗𝑏(𝑥0)
+
+An example
+
+This is how the data is generated (of course unknown in a practical
+application)
+# Data generation
+import numpy as np
+n = 100
+np.random.seed(123)
+xpop = np.linspace(0,1,n)
+ypop = (10 + 0.1*xpop + (xpop-0.2)**2 +
+
+(xpop-0.4)**3 + 0.3*np.random.randn(n))
+itrain = np.random.choice(n, size=n//2, replace=False)
+xtrain = xpop[itrain]
+ytrain = ypop[itrain]
+xtest = np.delete(xpop, itrain)
+ytest = np.delete(ypop, itrain)
+
+An example
+
+0.00.20.40.60.81.0x9.510.010.511.0yAn example
+
+To examplify, we use KNN with 𝐾 = 3
+
+# KNN function
+def knn(x0, x, y, K=3):
+
+dist = np.abs(x - x0)
+idx = np.argsort(dist)
+return np.mean(y[idx[:K]])
+
+An example
+
+In this example, we use the validation set approach to estimate the
+testMSE
+# Test MSE
+pred1 = np.array([knn(x0, xtrain, ytrain, K=3)
+
+for x0 in xtest])
+
+mse1 = np.mean((ytest - pred1)**2)
+print(mse1.round(3))
+
+0.116
+
+An example
+
+# Bagging KNN
+ntrain = len(xtrain)
+B = 100
+pred = np.zeros((B, len(xtest)))
+
+for b in range(B):
+
+ind = np.random.choice(ntrain, size=ntrain,
+
+replace=True)
+
+xb = xtrain[ind]
+yb = ytrain[ind]
+pred[b] = np.array([knn(x0, xb, yb, K=3)
+
+for x0 in xtest])
+
+predbag = pred.mean(axis=0)
+msebag = np.mean((ytest - predbag)**2)
+print(mse1.round(3), msebag.round(3))
+
+0.116 0.109
+
+KNN and bagging
+
+▶ KNN is a good example to illustrate bagging since it is a
+
+simple method and demands little code to run
+
+▶ However, it is not the method were the benefit is greatest
+
+▶ The reason for this is that KNN is a relatively stable method,
+i.e., a small change in the dataset will likely not change the
+prediction much.
+
+▶ Regression and classification trees, on the other hand, is
+
+unstable and benefit more from bagging
+
+Bagging for tree-based methods
+
+▶ Training data: (𝑥1, 𝑦1), ..., (𝑥𝑛, 𝑦𝑛)
+Predict 𝑦0 based on 𝑥0
+
+Resample training data with replacement
+
+1. Resample from the training data ⟹
+
+(𝑥(1)
+
+1 , 𝑦(1)
+
+1 ), ..., (𝑥(1)
+
+𝑛 , 𝑦(1)
+𝑛 )
+
+2. Fit the tree to the resampled data
+3. Predict 𝑦0 with the tree ⟹ ̂𝑓 ∗1(𝑥0)
+
+Bagging for tree-based methods
+
+4. Repeat 1-3, 𝐵 times to obtain
+
+̂𝑓 ∗1(𝑥0),
+
+̂𝑓 ∗2(𝑥0), ...,
+
+̂𝑓 ∗𝐵(𝑥0)
+
+5. Predict 𝑦0 by
+
+̂𝑓𝑎𝑣𝑔(𝑥0) =
+
+1
+𝐵
+
+𝐵
+∑
+𝑏=1
+
+̂𝑓 ∗𝑏(𝑥0)
+
+▶ If classification problems: The category with the plurality of
+
+the 𝐵 predictions.
+
+The Carseat data
+
+First a simple regression tree to predict Sales. Evaluated by the
+validation set approach
+
+MSE= 6.206
+
+squared_error = 3.886samples = 101value = 6.374squared_error = 0.611samples = 4value = 0.738squared_error = 5.154samples = 54value = 8.45Price <= 156.5squared_error = 4.926samples = 105value = 6.16squared_error = 3.814samples = 18value = 11.798squared_error = 3.42samples = 23value = 8.447Price <= 106.5squared_error = 6.18samples = 159value = 6.937True  Price <= 122.5squared_error = 6.358samples = 41value = 9.918  FalseShelveLoc_Good <= 0.5squared_error = 7.664samples = 200value = 7.549The Carseat data - bagged regression tree
+
+# Bagged regression tree
+from sklearn.ensemble import RandomForestRegressor
+bagging = RandomForestRegressor(n_estimators=500,
+max_features=X_train.shape[1], random_state=123)
+
+bagging.fit(X_train, y_train)
+predbag = bagging.predict(X_test)
+msebag = mean_squared_error(y_test, predbag)
+print("MSE=",round(msebag,3))
+
+MSE= 2.432
+
+Random forests
+
+▶ Random forrests is an extension of bagging trees in that we,
+
+for each bootstrap sample, we choose a subset of the
+predictors. That is, we do not allow for all predictors to be
+included in the trees.
+
+▶ A consequence of this is that the predictions from the different
+trees will be less correlated compared to the case in bagging.
+
+▶ This in turn will reduce the variance of the average prediction
+
+from the trees.
+
+Random forests
+
+Training data: (𝑥1, 𝑦1), ..., (𝑥𝑛, 𝑦𝑛)
+
+Predict 𝑦0 based on 𝑥0
+
+Resample training data with replacement
+
+1. Resample fra the training data ⟹
+
+(𝑥(1)
+
+1 , 𝑦(1)
+
+1 ), ..., (𝑥(1)
+
+𝑛 , 𝑦(1)
+𝑛 )
+
+2. For each resample, out of the 𝑝 predictors, choose 𝑚 < 𝑝 randomly
+
+3. Fit the tree to the resampled data using the 𝑚 predictors
+
+4. Predict 𝑦0 with the tree ⟹ ̂𝑓 ∗1(𝑥0)
+
+5. Repeat 1-4, 𝐵 times to obtain
+
+̂𝑓 ∗1(𝑥0),
+
+̂𝑓 ∗2(𝑥0), ...,
+
+̂𝑓 ∗𝐵(𝑥0)
+
+6. Predict 𝑦0 by
+
+̂𝑓𝑎𝑣𝑔(𝑥0) =
+
+1
+𝐵
+
+𝐵
+∑
+𝑏=1
+
+̂𝑓 ∗𝑏(𝑥0)
+
+The Carseat data - Random Forest
+
+# Random forest
+rf = RandomForestRegressor(n_estimators=500,
+
+max_features=3, random_state=123)
+
+rf.fit(X_train, y_train)
+predrf = rf.predict(X_test)
+mserf = mean_squared_error(y_test, predrf)
+print("MSE tree =", round(mse1,3), ";", "MSE bag =",
+round(msebag,3),";", "MSE RF =", round(mserf,3))
+
+MSE tree = 6.206 ; MSE bag = 2.432 ; MSE RF = 2.963
+
+A few more words about bagged trees
+
+▶ Bagging (bootstrap aggregation) is the idea of resampling the
+training data, re-predict on the test data and finally average,
+or, for classification, compute majority vote, of the predictions.
+
+▶ The effect of averaging is to reduce the variance of the
+
+predictions.
+
+▶ Since averaging uncorrelated variables reduces the variance
+
+more than averaging correlated variables, a trick to
+decorrelate the predictions can be used.
+
+▶ This method is called Random Forests and is the same as
+
+bagged trees but with the addition that a randomly selected
+subset of the predictors (X-variables) is used for each
+bootstrap sample.
+
+▶ The effect of this is a trade-off between sometimes obtaining
+regression- or classification trees which exclude potentially
+good predictors but, on the other hand, get less correlated
+predictions.
+
+Out-of-bag error estimation
+
+▶ A very useful side effect with bagging is that we get a
+computationally eﬀicient way of doing cross-validation.
+
+▶ This is called out-of-bag (OUB) error estimation.
+
+▶ We have 𝑛 observations and would like to predict 𝑌 using
+bagged regression trees and the predictors 𝑋1, ..., 𝑋𝑝.
+▶ In boostrap sample number 𝑏 have not sampled observation
+number 𝑚. This means that we can see 𝑌𝑚 as test data for
+this regression tree.
+
+▶ As it turns out, in around one third, 𝐵/3 of the bootstrap
+samples, this observation will not be present. For each of
+these, we can average the predictions of 𝑌𝑚.
+
+▶ Such test predictions can be done for each of the 𝑛
+
+observations and consequently, e.g., a testMSE, can be
+computed.
+
+Variable importance
+
+▶ One argument for using regression- and classification trees is
+that we are able to visualize which variables that help us in
+predicting the dependent variable.
+
+▶ The argument for using bagging and Random Forests is that
+we improve the predictions, which is often not very impressive
+for regression- and classification trees. However, the
+predictions are computed by many regression trees and it is
+therefore not immediately clear which variables are
+contributing to predictive accuracy.
+
+▶ We would like to measure variable importance for the
+
+predictors.
+
+Variable importance
+
+▶ In a regression tree, a measure of how important a predictor
+variable is, is how much it reduces the RSS over all splits (a
+variable can contribute to splits in several branches of the
+tree).
+
+▶ In bagging and Random Forests, the reduced RSS is summed
+
+over all splits and all trees for each variable.
+
+▶ For classification trees reduction of the Gini index is
+
+considered rather than RSS.
+
+Example with the Carseat data
+
+# Variable importance
+importances = pd.Series(rf.feature_importances_,
+
+index=X_train.columns)
+
+plt.figure(figsize=(5,2.5))
+importances.sort_values().plot.barh()
+plt.title("Variable Importance")
+plt.show()
+
+0.000.050.100.150.200.25Urban_YesUS_YesShelveLoc_MediumEducationPopulationIncomeCompPriceAdvertisingAgeShelveLoc_GoodPriceVariable ImportanceBoosted trees
+
+▶ Boosting is similar to bagging in the sense that it is averaging
+
+predictions over many trees.
+
+▶ It is different in the sense that it fit the trees sequentially; in
+
+bagging each tree is fitted to a bootstraped sample,
+independently of the other trees.
+
+▶ In boosting, the trees are sequentially fitted to a modified
+
+version of the dataset which is updated based on the previous
+trees ability to predict the different observations.
+
+Boosted trees
+
+The algorithm in ISLP, Ch 8:
+
+1. Initialize the prediction by
+
+̂𝑓(𝑥) = 0. Also, initialize 𝑟𝑖 = 𝑦𝑖
+
+for all training observations 𝑖 = 1, ..., 𝑛.
+
+2. For 𝑏 = 1, ..., 𝐵:
+
+a) Fit a tree,
+b) Update the prediction by
+
+̂𝑓𝑏 with 𝑑 splits to the training data (𝑋, 𝑟).
+
+̂𝑓(𝑥) ⟵ ̂𝑓(𝑥) + 𝜆 ̂𝑓𝑏(𝑥)
+
+c) Update the residuals by
+
+3. The prediction is
+
+𝑟𝑖 ⟵ 𝑟𝑖 − 𝜆 ̂𝑓𝑏(𝑥𝑖)
+
+̂𝑓(𝑥) = 𝜆
+
+𝐵
+∑
+𝑏=1
+
+̂𝑓𝑏(𝑥)
+
+Example one
+
+0.00.20.40.60.81.0x9.810.010.210.410.610.811.0yExample one
+
+# Train/test split for boosting
+itrain = np.random.choice(n, size=n//2, replace=False)
+xtrain = xpop[itrain]
+ytrain = ypop[itrain]
+xtest = np.delete(xpop, itrain)
+ytest = np.delete(ypop, itrain)
+
+First, a standard regression tree
+
+# Simple regression tree for boosting
+tree_simple = DecisionTreeRegressor(random_state=123)
+tree_simple.fit(xtrain.reshape(-1,1), ytrain)
+pred1 = tree_simple.predict(xtest.reshape(-1,1))
+mse1 = mean_squared_error(ytest, pred1)
+print("MSE =",round(mse1,3))
+
+MSE = 0.031
+
+First, a standard regression tree
+
+0.00.20.40.60.81.09.810.010.210.410.610.811.0Test data and prediction by simple treeBoosted trees
+
+# Boosted trees
+from sklearn.ensemble import GradientBoostingRegressor
+boost = GradientBoostingRegressor(n_estimators=1000,
+
+learning_rate=0.01, max_depth=2, random_state=123)
+
+boost.fit(xtrain.reshape(-1,1), ytrain)
+predboost = boost.predict(xtest.reshape(-1,1))
+mseboost = mean_squared_error(ytest, predboost)
+print("MSE tree =", round(mse1,3), ";",
+"MSE bag =", round(mseboost,3))
+
+MSE tree = 0.031 ; MSE bag = 0.019
+
+Boosted trees
+
+0.00.20.40.60.81.09.810.010.210.410.610.811.0Simple treeBoostingBoosting
+
+MSEsimple = 0.031
+
+MSEboost = 0.019
+
+An example with one single variable. Let us investigate how the
+method works on the Hitters data.
+
+The Hitters data
+
+0510152025Years4.55.05.56.06.57.07.5logSalaryA simple tree
+
+from sklearn.tree import DecisionTreeRegressor
+
+# Define features and target
+features = ["CRuns", "CHits", "HmRun", "CWalks",
+"CRBI", "Hits", "RBI"]
+
+X_train = traindata[features]
+y_train = traindata["logSalary"]
+X_test = testdata[features]
+
+# Fit regression tree
+treesimple = DecisionTreeRegressor()
+treesimple.fit(X_train, y_train)
+
+# Predict on test set
+pred1 = treesimple.predict(X_test)
+
+# Compute MSE
+mse1 = ((ytest - pred1) ** 2).mean()
+print("MSE=",round(mse1,3))
+
+MSE= 0.432
+
+Boosting
+
+# Boosting Hitters
+from sklearn.ensemble import GradientBoostingRegressor
+
+boost = GradientBoostingRegressor(n_estimators=1000,
+
+learning_rate=0.01, max_depth=4, random_state=123)
+
+boost.fit(traindata[features], traindata["logSalary"])
+
+predgbm = boost.predict(testdata[features])
+
+msegbm = mean_squared_error(ytest, predgbm)
+print("MSE boost =", round(msegbm,3))
+
+MSE boost = 0.371
+
+Boosting
+
+MSEsimple = 0.432
+
+MSEboost = 0.371
+
+Works here too

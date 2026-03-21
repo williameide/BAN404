@@ -1,0 +1,397 @@
+================================================================================
+LECTURE 13 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: AmesHousing.csv (DATA FILE) ---
+Columns: Order, PID, MS SubClass, MS Zoning, Lot Frontage, Lot Area, Street, Alley, Lot Shape, Land Contour, Utilities, Lot Config, Land Slope, Neighborhood, Condition 1, Condition 2, Bldg Type, House Style, Overall Qual, Overall Cond, Year Built, Year Remod/Add, Roof Style, Roof Matl, Exterior 1st, Exterior 2nd, Mas Vnr Type, Mas Vnr Area, Exter Qual, Exter Cond, Foundation, Bsmt Qual, Bsmt Cond, Bsmt Exposure, BsmtFin Type 1, BsmtFin SF 1, BsmtFin Type 2, BsmtFin SF 2, Bsmt Unf SF, Total Bsmt SF, Heating, Heating QC, Central Air, Electrical, 1st Flr SF, 2nd Flr SF, Low Qual Fin SF, Gr Liv Area, Bsmt Full Bath, Bsmt Half Bath, Full Bath, Half Bath, Bedroom AbvGr, Kitchen AbvGr, Kitchen Qual, TotRms AbvGrd, Functional, Fireplaces, Fireplace Qu, Garage Type, Garage Yr Blt, Garage Finish, Garage Cars, Garage Area, Garage Qual, Garage Cond, Paved Drive, Wood Deck SF, Open Porch SF, Enclosed Porch, 3Ssn Porch, Screen Porch, Pool Area, Pool QC, Fence, Misc Feature, Misc Val, Mo Sold, Yr Sold, Sale Type, Sale Condition, SalePrice
+Rows: 2930
+
+--- SOURCE: ames.ipynb ---
+[MARKDOWN CELL 1]
+## Load libraries
+
+[CODE CELL 2]
+import numpy as np
+import pandas as pd
+import sklearn.model_selection as skm
+import sklearn.linear_model as skl
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import KFold
+from ISLP import load_data
+from ISLP.models import ModelSpec as MS
+from sklearn.model_selection import (train_test_split,GridSearchCV)
+import statsmodels.api as sm
+from ISLP.models import summarize
+
+[MARKDOWN CELL 3]
+## Load data
+
+[CODE CELL 4]
+# Read data
+ames = pd.read_csv("AmesHousing.csv")
+
+# The subset we will work with
+ames_small = ames[["Gr Liv Area","Total Bsmt SF",
+        "Lot Area","Year Built",
+        "Overall Qual","Overall Cond",
+        "Full Bath","Garage Cars",
+        "Central Air","Neighborhood",
+        "House Style","Bldg Type","SalePrice"]]
+
+# Create dummies for categorical variables
+ames_small = pd.get_dummies(ames_small,drop_first=True)
+
+ames_small = ames_small.astype(float)
+X = ames_small.drop(columns='SalePrice')
+Y = ames_small['SalePrice']
+
+--- SOURCE: ames.py ---
+
+# Load libraries
+import numpy as np
+import pandas as pd
+import sklearn.model_selection as skm
+import sklearn.linear_model as skl
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import KFold
+from ISLP import load_data
+from ISLP.models import ModelSpec as MS
+from sklearn.model_selection import (train_test_split,GridSearchCV)
+import statsmodels.api as sm
+from ISLP.models import summarize
+
+# Function to compute MAE
+def MAE(ypred,y):
+    score = np.mean(np.abs(y-ypred))
+    return score
+
+
+# Read data
+import pandas as pd
+ames = pd.read_csv("AmesHousing.csv")
+# The subset we will work with
+ames_small = ames[["Gr Liv Area","Total Bsmt SF",
+        "Lot Area","Year Built",
+        "Overall Qual","Overall Cond",
+        "Full Bath","Garage Cars",
+        "Central Air","Neighborhood",
+        "House Style","Bldg Type","SalePrice"]]
+
+# Create dummies for categorical variables
+ames_small = pd.get_dummies(ames_small,drop_first=True)
+# Make sure that they are numerical
+ames_small = ames_small.astype(float)
+# Extract predictors and respons variable
+X = ames_small.drop(columns='SalePrice')
+Y = ames_small['SalePrice']
+# Check for missing values
+X.isna().sum().sort_values(ascending=False).head(10)
+# fill NaNs with 0 for structural absence
+X = X.fillna(0)
+
+(X_train,X_test,Y_train,Y_test) = train_test_split(X,Y,
+            test_size =1/2,random_state =1)
+
+# Linear regression
+X_train_const = sm.add_constant(X_train)
+reg = sm.OLS(Y_train,X_train_const).fit()
+reg.summary().tables[1]
+X_test_const = sm.add_constant(X_test)
+y_pred = reg.predict(X_test_const)
+print(MAE(y_pred,Y_test).round(1))
+
+# Ridge regression
+scaler = StandardScaler(with_mean=True , with_std=True)
+alphas = np.logspace(-4, 4, 100)
+ridge_cv = skl.RidgeCV(alphas=alphas)
+X_train_stand = scaler.fit_transform(X_train)
+ridge_cv.fit(X_train_stand, Y_train)
+alphamin = ridge_cv.alpha_
+print("alpha.min =", round(alphamin,2))
+ridgemin = skl.Ridge(alpha=alphamin)
+ridgemin.fit(X_train_stand, Y_train)
+X_test_stand = scaler.fit_transform(X_test)
+y_pred = ridgemin.predict(X_test_stand)
+print(MAE(y_pred,Y_test).round(1))
+
+# LASSO regression
+alphas = np.logspace(-4, 4, 100)
+lasso_cv = skl.LassoCV(alphas=alphas)
+lasso_cv.fit(X_train_stand, Y_train)
+alphamin = lasso_cv.alpha_
+print("alpha.min =", round(alphamin,2))
+lassomin = skl.Lasso(alpha=alphamin)
+lassomin.fit(X_train_stand, Y_train)
+y_pred = lassomin.predict(X_test_stand)
+print(MAE(y_pred,Y_test).round(1))
+
+# Bagged tree
+from sklearn.ensemble import RandomForestRegressor
+bagging = RandomForestRegressor(n_estimators=500,
+max_features=X_train.shape[1], random_state=123)
+bagging.fit(X_train, Y_train)
+y_pred = bagging.predict(X_test)
+print(MAE(y_pred,Y_test).round(1))
+
+# Random forest
+rf = RandomForestRegressor(n_estimators=500,
+max_features=3, random_state=123)
+rf.fit(X_train, Y_train)
+y_pred = rf.predict(X_test)
+print(MAE(y_pred,Y_test).round(1))
+
+# Boosted tree
+from sklearn.ensemble import GradientBoostingRegressor
+boost = GradientBoostingRegressor(n_estimators=1000,
+learning_rate=0.01, max_depth=2, random_state=123)
+boost.fit(X_train, Y_train)
+y_pred = boost.predict(X_test)
+print(MAE(y_pred,Y_test).round(1))
+
+# Single layered network
+nn = MLPRegressor(
+    hidden_layer_sizes=(15,),
+    activation="relu",
+    max_iter=100000,
+    random_state=0
+)
+nn.fit(X_train, Y_train)
+y_pred = nn.predict(X_test)
+print(MAE(y_pred,Y_test).round(1))
+
+# Same with standardized X-variables
+nn.fit(X_train_stand, Y_train)
+y_pred = nn.predict(X_test_stand)
+print(MAE(y_pred,Y_test).round(1))
+
+# Multi layered network
+dnn = MLPRegressor(
+    hidden_layer_sizes=(15,8),
+    activation="relu",
+    max_iter=100000,
+    random_state=0
+)
+
+dnn.fit(X_train_stand, Y_train)
+y_pred = dnn.predict(X_test_stand)
+print(MAE(y_pred,Y_test).round(1))
+
+
+--- SOURCE: lecture13.pdf ---
+Neural networks
+
+BAN404
+
+Neural Networks Are Not New
+
+Neural networks are an old idea that only became practical recently.
+
+▶ Origins go back to the 1940s
+▶ Multiple periods of enthusiasm and disappointment (“AI
+
+winters”)
+
+▶ Core algorithms existed long before modern success
+▶ The recent boom is a convergence of ideas, data, and
+
+hardware
+
+A Very Short History (1940s–2010s) and key contributors
+
+▶ Warren McCulloch & Walter Pitts (1943): abstract neuron
+
+model
+
+▶ Frank Rosenblatt (1957): Perceptron (first learning network)
+
+▶ Paul Werbos (1974): backpropagation idea (PhD thesis)
+
+▶ Rumelhart, Hinton & Williams (1986): practical
+
+backpropagation
+
+▶ Yann LeCun (1990s): convolutional networks
+
+▶ Geoffrey Hinton (2000s–2010s): deep learning revival
+
+▶ Alex Krizhevsky, Ilya Sutskever og Geoffrey Hinton (2012):
+
+AlexNet
+
+Why Didn’t Neural Networks Work Earlier?
+
+▶ Too little computational power
+
+▶ CPUs made training deep models impractically slow
+
+▶ Training took days or weeks
+
+▶ Too little data
+
+▶ Large models overfit on small datasets
+
+▶ Modern datasets (ImageNet, web text) simply did not exist
+
+The Hardware Revolution
+
+Deep learning is mostly large‑scale matrix algebra.
+
+▶ Training involves repeated matrix multiplications
+
+▶ These operations are massively parallel
+
+▶ GPUs are designed exactly for this workload
+
+▶ CPUs are not, the are optimized for sequential logic
+
+A Single Hidden Layer Network
+
+𝑓(𝑋) = 𝛽0 +
+
+𝐾
+∑
+𝑘=1
+
+𝛽𝑘ℎ𝑘(𝑋)
+
+Input LayerHidden LayerOutput LayerX1X2X3A1A2A3A4f(X)Yh1(X1)1A12A23A34A4Feed-Forward Neural NetworkActivation functions
+
+▶
+
+𝐴𝑘 = ℎ𝑘(𝑋) = 𝑔(𝜔𝑘0 +
+
+𝑝
+∑
+𝑗=1
+
+𝜔𝑘𝑗𝑋𝑗)
+
+▶ A commonly used activation function is the Rectified Linear
+
+Unit ReLU function,
+
+𝑔(𝑧) = max(0, 𝑧).
+
+▶ An alternative is the sigmoid function,
+
+𝑔(𝑧) =
+
+𝑒𝑧
+1 + 𝑒𝑧
+
+▶ One reason for using the ReLU function is is that it can be
+
+computed and stored more eﬀiciently.
+
+Activation functions
+
+42024z0.00.20.40.60.81.0g(z)Activation Functions: Sigmoid vs Normalized ReLUSigmoidReLUAn intermediate summary
+
+𝑌 = 𝑓(𝑋) + 𝜀 = 𝛽0 +
+
+𝐾
+∑
+𝑘=1
+
+𝛽𝑘𝑔(𝜔𝑘0 +
+
+𝑝
+∑
+𝑗=1
+
+𝜔𝑘𝑗𝑋𝑗) + 𝜀
+
+The model works in the following way:
+
+1. 𝐾 linear combination are formed of the 𝑝 variables and a
+
+constant.
+
+2. The 𝐾 linear combinations are run through a non linear
+
+function 𝑔 forming 𝐾 derived variables.
+
+3. The output variable 𝑌 is a linear function of these 𝐾 derived
+
+variables
+
+Determination of the 𝛽’s and 𝜔’s
+
+▶ Minimize
+
+𝑅𝑆𝑆(𝛽, 𝜔) =
+
+𝑛
+∑
+𝑖=1
+
+(𝑦𝑖 − 𝑓(𝑥𝑖))2
+
+▶ While conceptually, a simple idea, this is a diﬀicult
+
+optimization problem since the function i non-convex
+
+▶ We hope to end up in a good local minimum
+
+What about Deep Learning?
+
+Input LayerHidden Layer 1Hidden Layer 2Output LayerX1X2X3A1A2A3A4B1B2B3f(X)Yh(1)1(X1)h(2)1(A1)h(2)2(A1)h(2)3(A1)1B12B23B3Two-Hidden-Layer Neural NetworkHow to fit a neural net to a data set in Python
+
+# Multi layered network
+dnn = MLPRegressor(
+
+hidden_layer_sizes=(20,10),
+activation="relu",
+max_iter=10000,
+random_state=0
+
+)
+
+dnn.fit(X_train_stand, Y_train)
+y_pred = dnn.predict(X_test_stand)
+print(MAE(y_pred,Y_test).round(1))
+
+Ames housing data
+
+We will predict sales prices for houses in the Boston area.
+
+Response variable: SalePrice
+
+Predictors:
+
+Above‑ground living area (sq ft)
+GrLivArea
+Total basement area (sq ft)
+TotalBsmtSF
+Lot size (sq ft; strongly skewed)
+LotArea
+Year of construction (age effects)
+YearBuilt
+Overall material and finish quality (1–10)
+OverallQual
+Overall condition (1–10)
+OverallCond
+FullBath
+Number of full bathrooms
+Neighborhood Neighborhood within Ames
+HouseStyle
+BldgType
+GarageCars
+CentralAir
+
+Style of dwelling
+Single‑family vs multi‑unit
+Garage capacity (cars)
+Central air conditioning (Y/N)
+
+Comparison
+
+▶ Linear regression
+▶ Ridge regression
+▶ Lasso
+▶ Bagged trees
+▶ Random forest
+▶ Boosted trees
+▶ Neural network

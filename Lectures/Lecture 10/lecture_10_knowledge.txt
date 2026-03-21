@@ -1,0 +1,515 @@
+================================================================================
+LECTURE 10 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: ex88ac.ipynb ---
+[CODE CELL 1]
+# Start for Exercise 8.8 a-c
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from ISLP import load_data
+from sklearn.tree import DecisionTreeRegressor, plot_tree
+from sklearn.model_selection import train_test_split, cross_val_score, KFold, GridSearchCV
+from sklearn.metrics import mean_squared_error
+
+# Load Carseats data
+Carseats = load_data("Carseats")
+
+# (a) Train/test split
+np.random.seed(1234)
+train, test = train_test_split(Carseats, test_size=0.5, random_state=123)
+
+X_train = train.drop(columns="Sales")
+y_train = train["Sales"]
+X_test = test.drop(columns="Sales")
+y_test = test["Sales"]
+
+# Encode categorical predictors
+X_train = pd.get_dummies(X_train, drop_first=True)
+X_test = pd.get_dummies(X_test, drop_first=True)
+
+
+[CODE CELL 2]
+# (b) Fit regression tree
+tree1 = DecisionTreeRegressor(random_state=123,min_samples_leaf=30)
+tree1.fit(X_train, y_train)
+# Plot tree
+fig, ax = plt.subplots(figsize=(10, 6))
+plot_tree(tree1, feature_names=X_train.columns, precision=2, fontsize=10, ax=ax)
+plt.show()
+
+[CODE CELL 3]
+# Predict and compute test MSE
+pred1 = tree1.predict(X_test)
+testMSE1 = mean_squared_error(y_test, pred1)
+print("Test MSE (full tree):", testMSE1)
+
+[CODE CELL 4]
+# (c) First a large tree
+tree2 = DecisionTreeRegressor(min_samples_leaf=2, random_state=0)
+tree2.fit(X_train, y_train)
+pred2 = tree2.predict(X_test)
+fig, ax = plt.subplots(figsize=(12,7))
+plot_tree(tree2,feature_names=X_train.columns, precision=3, fontsize=8, 
+    ax=ax)
+plt.tight_layout()
+plt.show()
+
+[CODE CELL 5]
+# Pruning
+cv_tree = tree2.cost_complexity_pruning_path(X_train,y_train)
+kfold = KFold(5,shuffle=True,random_state=10)
+grid = GridSearchCV(tree2,{'ccp_alpha': cv_tree.ccp_alphas},
+                refit=True,
+                cv=kfold,
+                scoring="neg_mean_squared_error")
+G = grid.fit(X_train,y_train)                
+pruned_tree = G.best_estimator_
+pred_pruned = pruned_tree.predict(X_test)
+fig, ax = plt.subplots(figsize=(12,7))
+plot_tree(pruned_tree,feature_names=X_train.columns, precision=3, fontsize=8, 
+    ax=ax)
+plt.tight_layout()
+plt.show()
+
+[CODE CELL 6]
+# Optimal alpha
+best_alpha = grid.best_params_['ccp_alpha']
+print("Best alpha from CV:", best_alpha)
+
+[CODE CELL 7]
+
+# Pruned tree with best alpha
+pruned_tree.fit(X_train, y_train)
+pred3 = pruned_tree.predict(X_test)
+testMSE2 = mean_squared_error(y_test, pred2)
+testMSE3 = mean_squared_error(y_test, pred3)
+print("Test MSE (original):", testMSE2)
+print("Test MSE (pruned tree):", testMSE3)
+
+--- SOURCE: lecture10.pdf ---
+Tree-based methods
+
+Regression and classification trees
+
+▶ These methods are based on the idea of splitting the predictor
+space in segments and compute averages (regression) or rates
+(classification) of the response variable in each segment.
+
+0510152025Years050100150200HitsR1R2R3Example with Hitters data
+
+▶ These methods are based on the idea of splitting the predictor
+space in segments and compute averages (regression) or rates
+(classification) of the response variable in each segment.
+
+0510152025Years050100150200Hitsmean=5.14mean=6.76mean=6.00Regression trees
+
+squared_error = 0.337samples = 68value = 5.997squared_error = 0.246samples = 61value = 6.758squared_error = 0.456samples = 68value = 5.139True  Hits <= 117.5squared_error = 0.438samples = 129value = 6.357  FalseYears <= 4.5squared_error = 0.779samples = 197value = 5.936How do we stratify the predictor space?
+
+▶ How are the numbers 4.5 and 117.5 determined?
+
+1. Divide the predictor space, i.e. the space spanned by
+
+𝑋1, ..., 𝑋𝑝, into 𝐽 non-overlapping regions, 𝑅1, 𝑅2, ..., 𝑅𝐽 .
+
+2. All observations in a region will be predicted with the same
+
+value, the average of the 𝑌 ’s in the region.
+
+Dividing the predictor space
+
+▶ We will insist to make the regions (high-dimensional)
+
+rectangles. We could allow other shapes at the cost of
+computational complexity.
+
+▶ Find rectangles, 𝑅1, ..., 𝑅𝐽 , so that
+
+𝑅𝑆𝑆 =
+
+𝐽
+∑
+𝑗=1
+
+∑
+𝑖∈𝑅𝑗
+
+(𝑦𝑖 − ̂𝑦𝑅𝑗
+
+)2,
+
+̂𝑦𝑅𝑗
+where
+minimized.
+
+is the average of the response in region 𝑅𝑗, is
+
+Dividing the predictor space
+
+▶ Not feasible to consider all possible rectangles (compare with
+best subset vs forward/backward stepwise selection in linear
+regression)
+
+▶ We use recursive, binary splitting.
+
+▶ A top-down approach since we start with all observations in
+one single region and split the predictor space with one
+variable at a time (compare with backward stepwise selection)
+
+▶ The approach is greedy since it splits with the best variable at
+
+the present stage only.
+
+More concretely
+
+1. Start by considering the entire predictor space 𝑋
+
+2. Choose the predictor 𝑋𝑗 and the cutpoint 𝑠 that splits 𝑋 in
+
+two pieces
+
+𝑅1(𝑗, 𝑠) = {𝑋|𝑋𝑗 < 𝑠} and 𝑅2(𝑗, 𝑠) = {𝑋|𝑋𝑗 ≥ 𝑠}
+
+by minimizing
+
+𝑅𝑆𝑆 = ∑
+
+(𝑦𝑖 − ̂𝑦𝑅1
+
+)2 + ∑
+
+(𝑦𝑖 − ̂𝑦𝑅2
+
+)2
+
+𝑖∶ 𝑥𝑖∈𝑅1(𝑗,𝑠)
+
+𝑖∶ 𝑥𝑖∈𝑅2(𝑗,𝑠)
+
+For the Hitters example
+
+For illustration we only consider the two predictors 𝑋1 =Years and
+𝑋2 =Hits and the response 𝑌 =logSalary.
+
+0510152025Years050100150200HitsTry 𝑋1 =Years first
+
+𝑅1(1, 𝑠) = {(𝑋1, 𝑋2)|𝑋1 < 𝑠} and 𝑅2(1, 𝑠) = {(𝑋1, 𝑋2)|𝑋1 ≥ 𝑠}
+
+Find 𝑠 that minimizes
+
+𝑅𝑆𝑆 = ∑
+
+(𝑦𝑖 − ̂𝑦𝑅1
+
+)2 + ∑
+
+(𝑦𝑖 − ̂𝑦𝑅2
+
+)2
+
+𝑖∶ 𝑥𝑖∈𝑅1(1,𝑠)
+
+𝑖∶ 𝑥𝑖∈𝑅2(1,𝑠)
+
+Try 𝑋1 =Years first
+
+from scipy.optimize import minimize_scalar
+
+x1 = train["Years"].values
+y = train["logSalary"].values
+
+# Function to compute the RSS for given variable and split
+def RSS(s, x, y):
+
+yR1 = y[x < s].mean()
+yR2 = y[x >= s].mean()
+rss = ((y[x < s] - yR1)**2).sum() + \
+
+((y[x >= s] - yR2)**2).sum()
+
+return rss
+
+# Minimize RSS
+result = minimize_scalar(
+
+RSS,
+bounds=(0, 25),
+args=(x1, y),
+method="bounded"
+
+)
+
+print(result)
+
+message: Solution found.
+success: True
+
+status: 0
+
+fun: 87.54084554519633
+x: 4.266568912915256
+
+nit: 29
+nfev: 29
+
+And then 𝑋2 =Years
+
+x2 = train["Hits"].values
+
+def RSS(s, x, y):
+
+yR1 = y[x < s].mean()
+yR2 = y[x >= s].mean()
+rss = ((y[x < s] - yR1)**2).sum() + \
+
+((y[x >= s] - yR2)**2).sum()
+
+return rss
+
+# Minimize RSS
+s_grid = np.linspace(0, 200, 10000)
+rss_values = [RSS(s, x2, y) for s in s_grid]
+s_opt = s_grid[np.argmin(rss_values)]
+
+print("Optimal s for X1: ", s_opt.round(1))
+
+Optimal s for X1: 117.0
+
+Conclusion: The minimum 𝑅𝑆𝑆 is found when 𝑗 = 1 and 𝑠 = 4.3.
+(Since the values of 𝑋1 are in years any number larger than 4 and
+smaller than 5 will also yield the minimum).
+
+RSS(s,x2,y)
+
+0255075100125150175200125130135140145150Choosing the first split
+
+The minimum 𝑅𝑆𝑆 is found when 𝑗 = 1 and 𝑠 = 4.3.
+
+The first split is made by
+
+⟹
+
+𝑅1 = {(𝑋1, 𝑋2)|𝑋2 < 4.3} and 𝑅2 = {(𝑋1, 𝑋2)|𝑋2 ≥ 4.3}
+
+After the first split
+
+0510152025Years050100150200HitsR1R2mean=5.14mean=6.36The algorithm
+
+▶ Start by considering the entire predictor space 𝑋
+
+▶ Choose the predictor 𝑋𝑗 and the cutpoint 𝑠 that splits 𝑋 in
+
+two pieces
+
+𝑅1(𝑗, 𝑠) = {𝑋|𝑋𝑗 < 𝑠} and 𝑅2(𝑗, 𝑠) = {𝑋|𝑋𝑗 ≥ 𝑠}
+
+by minimizing
+
+𝑅𝑆𝑆 = ∑
+
+(𝑦𝑖 − ̂𝑦𝑅1
+
+)2 + ∑
+
+(𝑦𝑖 − ̂𝑦𝑅2
+
+)2
+
+𝑖∶ 𝑥𝑖∈𝑅1(𝑗,𝑠)
+
+𝑖∶ 𝑥𝑖∈𝑅2(𝑗,𝑠)
+
+▶ The two regions 𝑅1 and 𝑅2 are now each splitted according
+
+to the same principle.
+
+▶ This is repeated for each new region until a convergence
+
+criteria is met. One such criteria could be that a region is
+stopped being splitted when there are less than, say, 30
+observations in it.
+
+The Hitters data
+
+squared_error = 0.332samples = 32value = 5.842squared_error = 0.301samples = 36value = 6.134squared_error = 0.3samples = 31value = 6.639squared_error = 0.16samples = 30value = 6.881squared_error = 0.533samples = 38value = 4.947squared_error = 0.253samples = 30value = 5.382Years <= 8.5squared_error = 0.337samples = 68value = 5.997Years <= 8.5squared_error = 0.246samples = 61value = 6.758Hits <= 105.5squared_error = 0.456samples = 68value = 5.139True  Hits <= 117.5squared_error = 0.438samples = 129value = 6.357  FalseYears <= 4.5squared_error = 0.779samples = 197value = 5.936The Hitters data with all variables
+
+squared_error = 0.231samples = 30value = 6.427squared_error = 0.146samples = 35value = 6.97squared_error = 0.442samples = 38value = 4.802squared_error = 0.116samples = 41value = 5.461squared_error = 0.274samples = 53value = 6.158CRBI <= 353.0squared_error = 0.258samples = 65value = 6.719CHits <= 178.5squared_error = 0.381samples = 79value = 5.144True  Hits <= 117.5squared_error = 0.343samples = 118value = 6.467  FalseCAtBat <= 1452.0squared_error = 0.779samples = 197value = 5.936Tree pruning
+
+▶ A large tree might fit well to the training data but fail to
+
+predict the test data - overfitting!
+
+1. Grow a large tree 𝑇0
+
+2. Use so called complexity pruning to the large tree,
+
+i.e. minimize
+
+𝑔(𝑇 ) =
+
+|𝑇 |
+∑
+𝑚=1
+
+∑
+𝑖∶ 𝑥𝑖∈𝑅𝑚
+
+(𝑦𝑖 − ̂𝑦𝑅𝑚
+
+)2 + 𝛼|𝑇 |,
+
+where 𝑇 is a tree that is a “cut” version of 𝑇0.
+
+▶ The term 𝛼|𝑇 | is penalizing large trees. If two trees have
+
+identical RSS, the smallest one is considered better (compare
+to adjusted 𝑅2)
+
+▶ 𝛼 can be determined by cross-validation
+
+The Hitters data
+
+# Fit a relatively large tree first
+tree_model = DecisionTreeRegressor(min_samples_leaf=2, random_state=0)
+tree_model.fit(X, y)
+cv_tree = tree_model.cost_complexity_pruning_path(X,y)
+kfold = skm.KFold(5,shuffle=True,random_state=10)
+grid = skm.GridSearchCV(tree_model,{'ccp_alpha': cv_tree.ccp_alphas},
+
+refit=True,
+cv=kfold,
+scoring="neg_mean_squared_error")
+
+G = grid.fit(X,y)
+best_tree = G.best_estimator_
+
+fig, ax = plt.subplots(figsize=(12,7))
+plot_tree(best_tree,feature_names=X.columns, precision=3, fontsize=8,
+
+ax=ax)
+
+plt.tight_layout()
+plt.show()
+
+The Hitters data
+
+squared_error = 0.078samples = 40value = 5.28squared_error = 0.081samples = 10value = 5.821squared_error = 0.055samples = 14value = 6.322squared_error = 0.49samples = 2value = 5.2squared_error = 0.063samples = 27value = 4.535CWalks <= 117.5squared_error = 0.125samples = 50value = 5.388Hits <= 197.0squared_error = 0.247samples = 16value = 6.181squared_error = 0.136samples = 49value = 6.895squared_error = 0.176samples = 2value = 7.243CRBI <= 55.5squared_error = 0.269samples = 77value = 5.089squared_error = 0.274samples = 53value = 6.158CRBI <= 273.0squared_error = 0.258samples = 65value = 6.719Hits <= 20.5squared_error = 0.381samples = 79value = 5.144True  Hits <= 117.5squared_error = 0.343samples = 118value = 6.467  FalseCAtBat <= 1452.0squared_error = 0.779samples = 197value = 5.936Are predictions improved?
+
+Xtest = test.drop(columns=["Salary", "logSalary"])
+Xtest = pd.get_dummies(Xtest, drop_first=True)
+ytest = test["logSalary"]
+pred_tree = tree_model.predict(Xtest)
+pred_pruned = best_tree.predict(Xtest)
+MSE_tree = np.mean((ytest-pred_tree)**2)
+MSE_pruned = np.mean((ytest-pred_pruned)**2)
+print("MSE for original tree: ",MSE_tree.round(5))
+print("MSE for pruned tree: ",MSE_pruned.round(5))
+
+MSE for original tree: 0.29842
+MSE for pruned tree: 0.21953
+
+Classification trees
+
+▶ In this 𝑌 can obtain the values 1, 2, ..., 𝐾
+
+▶ Let us repeat the procedure for regression trees:
+
+1. Divide the predictor space, i.e. the space spanned by
+
+𝑋1, ..., 𝑋𝑝, into 𝐽 non-overlapping regions, 𝑅1, 𝑅2, ..., 𝑅𝐽 .
+
+2. All observations in each region will be predicted with the same
+
+value, the average of the 𝑌 ’s in the region.
+
+▶ If we amend 2. a little bit
+
+2. All observations in a region will be predicted by the value (out
+
+of 1, 2, ..., 𝐾) having the highest proportion of the
+observations in the region.
+
+▶ we have a sensible criteria for classification.
+
+Dividing the predictor space
+
+▶ Furthermore, we need to substitute the fitting function (RSS)
+
+with something appropriate for classification.
+
+▶ Let
+
+̂𝑝𝑚𝑘 be the proportion of observations in 𝑅𝑚 from class 𝑘
+
+▶ Find rectangles, 𝑅1, ..., 𝑅𝐽 , so that one of
+▶ Classification error
+
+𝐸 = 1 − max
+
+𝑘
+
+( ̂𝑝𝑚𝑘)
+
+𝐺 =
+
+𝐾
+∑
+𝑘=1
+
+̂𝑝𝑚𝑘(1 − ̂𝑝𝑚𝑘)
+
+𝐷 = −
+
+𝐾
+∑
+𝑘=1
+
+̂𝑝𝑚𝑘 log( ̂𝑝𝑚𝑘)
+
+▶ Gini index
+
+▶ Cross-entropy
+
+is minimized
+
+Car seats example
+
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+
+# Load Carseats dataset
+Carseats = load_data("Carseats")
+
+# Create High (Yes/No) based on Sales
+Carseats["High"] = np.where(Carseats["Sales"] <= 8, "No", "Yes")
+
+# Select predictors (all except Sales and target)
+X = Carseats.drop(columns=["Sales", "High"])
+y = Carseats["High"]
+
+# Encode categorical predictors as dummies
+X = pd.get_dummies(X, drop_first=True)
+
+# Fit classification tree
+tree_model = DecisionTreeClassifier(random_state=0)
+tree_model.fit(X, y)
+
+# Plot the tree
+fig, ax = plt.subplots(figsize=(12, 7))
+plot_tree(
+
+tree_model,
+feature_names=X.columns,
+class_names=["No", "Yes"],
+filled=True,
+rounded=True,
+fontsize=10,
+ax=ax
+
+)
+plt.show()
+
+Car seats example
+
+gini = 0.048samples = 41value = [40, 1]class = Nogini = 0.346samples = 36value = [28, 8]class = Nogini = 0.266samples = 38value = [32, 6]class = Nogini = 0.0samples = 58value = [58, 0]class = Nogini = 0.5samples = 51value = [25, 26]class = YesCompPrice <= 138.5gini = 0.206samples = 77value = [68, 9]class = NoPrice <= 106.5gini = 0.117samples = 96value = [90, 6]class = NoPrice <= 122.5gini = 0.397samples = 128value = [93, 35]class = NoCompPrice <= 124.5gini = 0.299samples = 224value = [183, 41]class = Nogini = 0.494samples = 45value = [20, 25]class = Yesgini = 0.423samples = 46value = [14, 32]class = YesAdvertising <= 13.5gini = 0.37samples = 269value = [203, 66]class = Nogini = 0.145samples = 51value = [4, 47]class = Yesgini = 0.493samples = 34value = [15, 19]class = YesPrice <= 92.5gini = 0.429samples = 315value = [217, 98]class = NoTrue  Price <= 127.5gini = 0.347samples = 85value = [19, 66]class = Yes  FalseShelveLoc_Good <= 0.5gini = 0.484samples = 400value = [236, 164]class = No

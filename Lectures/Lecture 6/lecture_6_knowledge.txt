@@ -1,0 +1,315 @@
+================================================================================
+LECTURE 6 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: lecture6.pdf ---
+Resampling methods: The bootstrap
+
+The bootstrap
+
+▶ Example: Invest fraction 𝛼 of a sum in an asset with return 𝑋
+and 1 − 𝛼 of it in an asset with return 𝑌 . Two risky assets.
+
+▶ The return will be
+
+𝑅 = 𝛼𝑋 + (1 − 𝛼)𝑌
+
+▶ Choose 𝛼 so that the variance of the return of the portfolio
+
+𝑉 𝑎𝑟(𝑅) = 𝛼2𝜎2
+
+𝑋 + 2𝛼(1 − 𝛼)𝜎𝑋𝑌 + (1 − 𝛼)2𝜎2
+𝑌
+
+is minimized.
+
+▶ ⟹
+
+𝛼min =
+
+𝜎2
+𝑌 − 𝜎𝑋𝑌
+𝑋 + 𝜎2
+𝜎2
+
+𝑌 − 𝜎𝑋𝑌
+
+Sampling distribution for
+
+̂𝛼min
+
+𝛼min estimated by
+𝑋, 𝜎2
+̂𝜎2
+variance
+sample covariance
+
+̂𝜎𝑋𝑌
+
+̂𝛼min where 𝜎2
+𝑌 by the sample variance
+
+𝑋 is estimated by the sample
+̂𝜎2
+𝑌 and 𝜎𝑋𝑌 by the
+
+̂𝛼min =
+
+̂𝜎2
+𝑌 − ̂𝜎𝑋𝑌
+𝑋 + ̂𝜎2
+̂𝜎2
+
+𝑌 − ̂𝜎𝑋𝑌
+
+DNB and Equinor prices
+
+2016201720182019100120140160180200220240DNBEquinorDNB and Equinor returns
+
+0.080.060.040.020.000.020.040.06DNB01002003004005006007000.040.020.000.020.040.06EquinorDNB and Equinor
+
+vx = np.var(x, ddof=1)
+print(vx)
+
+vy = np.var(y, ddof=1)
+print(vy)
+
+cxy = np.cov(x, y, ddof=1)[0, 1]
+print(cxy)
+
+0.0002186398256204437
+0.0002272926777300437
+0.00010599441796176385
+
+DNB and Equinor
+
+alpha=(vy-cxy)/(vx+vy-2*cxy)
+print(alpha.round(3))
+
+0.518
+
+▶ ∴ The portfolio that minimizes the variance consists of 52% of
+
+DNB and the rest Equinor.
+
+Variance as a function of
+
+̂𝛼
+
+0.4000.4250.4500.4750.5000.5250.5500.5750.6000.00016450.00016500.00016550.00016600.00016650.00016700.0001675portfolio varianceA function to compute
+
+̂𝛼𝑚𝑖𝑛
+
+̂𝛼min =
+
+̂𝜎2
+𝑌 − ̂𝜎𝑋𝑌
+𝑋 + ̂𝜎2
+̂𝜎2
+
+𝑌 − ̂𝜎𝑋𝑌
+
+def alpha_min(x, y):
+
+vx = np.var(x, ddof=1)
+vy = np.var(y, ddof=1)
+cxy = np.cov(x, y, ddof=1)[0, 1]
+amin = (vy - cxy) / (vx + vy - 2 * cxy)
+return amin
+
+# TEST FUNCTION
+print(alpha_min(x, y).round(3))
+
+0.518
+
+Bootstraping
+
+̂𝛼𝑚𝑖𝑛 to estimate the sampling distribution
+
+▶ Data set: (𝑥1, 𝑦1), ..., (𝑥𝑛, 𝑦𝑛) (For our data, 𝑛 = 753)
+1. Draw 𝑛 pairs from the sample with replacement. (𝑥(1)
+
+, (𝑦(1)
+
+𝑖 ),
+
+𝑖
+
+𝑖 = 1, ..., 𝑛, is the first bootstrap sample.
+
+2. Compute
+
+̂𝛼(1)
+
+3. Repeat 1-2 𝐵 times to obtain ( ̂𝛼(1),
+
+̂𝛼(2), ...,
+
+̂𝛼(𝐵)) = ̂𝛼
+
+▶ It can be shown that
+
+̂𝛼 is a draw from the sampling
+
+distribution of
+
+̂𝛼𝑚𝑖𝑛. We can e.g. estimate 𝑉 𝑎𝑟( ̂𝛼) by
+
+̂𝑉 𝑎𝑟( ̂𝛼) =
+
+1
+𝐵 − 1
+
+𝐵
+∑
+𝑏=1
+
+( ̂𝛼(𝑏) − ̂𝛼)2
+
+Step 1 in python
+
+Data set: (𝑥1, 𝑦1), ..., (𝑥𝑛, 𝑦𝑛) (For our data, 𝑛 = 753)
+
+1. Draw 𝑛 pairs from the sample with replacement. (𝑥(1)
+
+, (𝑦(1)
+
+𝑖 ),
+
+𝑖
+
+𝑖 = 1, ..., 𝑛, is the first bootstrap sample.
+
+print(x[:5].round(3))
+n=len(x)
+indboot = np.random.choice(n, size=n, replace=True)
+xboot = x[indboot]
+yboot = y[indboot]
+
+[ 0.015 -0.054 -0.023
+
+0.036 -0.072]
+
+Step 2 in python
+
+2. Compute
+
+̂𝛼(1)
+
+print(x[:5].round(3))
+print(xboot[:5].round(3))
+a1=alpha_min(xboot,yboot)
+print(a1.round(3))
+
+[ 0.015 -0.054 -0.023
+[-0.008
+0.011
+0.493
+
+0.013
+
+0.036 -0.072]
+0.024]
+0.01
+
+Step 3 in R
+
+3. Repeat 1-2 𝐵 times to obtain ̂𝛼(1),
+
+̂𝛼(2), ...,
+
+̂𝛼(𝐵) = ̂𝛼
+
+B = 1000
+n = len(x)
+
+aboot = np.zeros(B)
+
+for b in range(B):
+
+indboot = np.random.choice(n, size=n, replace=True)
+xboot = x[indboot]
+yboot = y[indboot]
+aboot[b] = alpha_min(xboot, yboot)
+
+#plt.hist(aboot, bins=30)
+#plt.xlabel(r'$\alpha$')
+#plt.ylabel('Frequency')
+#plt.show()
+
+The bootstraped (estimated) sampling distribution
+
+0.350.400.450.500.550.600.650.70020406080FrequencyA 95% confidence interval for the optimal 𝛼
+
+ci = np.quantile(aboot, [0.025, 0.975])
+print(ci.round(3))
+
+[0.433 0.612]
+
+So how do we know that this is really a good estimator of
+the sampling distribution?
+
+▶ Let us go back to a familiar example from last lecture
+
+▶ 𝑋 =height of a randomly choosen Norwegian adult
+
+▶ Want to estimate the expected height, 𝜇 = 𝐸(𝑋)
+
+▶ Draw a sample of 𝑛 = 100, 𝑥1, 𝑥2, ..., 𝑥𝑛
+▶ Estimate
+
+̂𝜇 = 𝑥 (one single value)
+
+▶ The sampling distribution of
+
+̂𝜇 is the distribution (histogram)
+
+of the 𝑥 if we repeatedly sampled 100 observations.
+
+▶ We know that it is well approximated by 𝑁 (𝜇, 𝜎2
+
+𝑛 ) for large
+
+samples.
+
+▶ Thus, the bootstrap estimation of the sample distribution
+
+should look approximately like 𝑁 (𝜇, 𝜎2
+
+𝑛 )
+
+1000 different samples of 100 observations each
+
+174176178180182184186Mean050010001500200025003000Histogram of mean(x)1000 different samples of 100 observations each
+
+▶ 𝑥1, 𝑥2, ..., 𝑥1000
+
+174176178180182184186Mean050010001500200025003000Histogram of mean(x)With the large sample approximation
+
+𝑋 ∼ 𝑁 (180, 2.25)
+
+174176178180182184186Mean0.000.050.100.150.200.25Histogram of mean(x)Bootstraping 𝑋
+
+176178180182184Bootstrap sample means020406080100FrequencyHistogram of bootstrap meansBootstraping 𝑋
+
+176178180182184Bootstrap sample means0.000.050.100.150.200.250.30DensityBootstrap distribution of the mean with Normal overlayConfidence intervals
+
+m = np.mean(x)
+s = np.std(x, ddof=1)
+n = len(x)
+
+# Large sample normal approximation 95% CI
+normal_ci = (m - 1.96 * s / np.sqrt(n), m + 1.96 * s / np.sqrt(n))
+print("Normal approx. 95% CI:", float(normal_ci[0].round(1)),float(normal_ci[1].round(1))
+)
+
+# Bootstrap percentile 95% CI
+bootstrap_ci = np.quantile(meanboot, [0.025, 0.975])
+print("Bootstrap 95% CI:", bootstrap_ci[0].round(1),bootstrap_ci[1].round(1))
+
+Normal approx. 95% CI: 179.7 180.3
+Bootstrap 95% CI: 176.7 182.3
+
+--- SOURCE: stocks.csv (DATA FILE) ---
+Columns: ;"dnb";"equinor"
+Rows: 754

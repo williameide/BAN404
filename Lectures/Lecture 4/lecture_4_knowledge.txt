@@ -1,0 +1,551 @@
+================================================================================
+LECTURE 4 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: ex413_e_g.py ---
+
+# (e)
+# Read libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from ISLP import load_data
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.metrics import confusion_matrix
+
+# Features and target from train and test DataFrames
+X_train = train[['Lag2']].values  # 2D array expected by sklearn
+y_train = train['Direction'].values
+X_test = test[['Lag2']].values
+y_test = test['Direction'].values
+
+# Fit LDA model
+lda1 = LinearDiscriminantAnalysis()
+lda1.fit(X_train, y_train)
+
+# Predict classes and posterior probabilities on test set
+pred5_class = lda1.predict(X_test)
+pred5_posterior = lda1.predict_proba(X_test)
+pred5_class = pred5_posterior[:,1] > 0.54
+pred5_class = np.where(pred5_class,'Up','Down')
+
+# Confusion matrix
+conf_matrix = pd.crosstab(y_test,pred5_class)
+print(conf_matrix)
+
+# Accuracy
+accuracy = (pred5_class == y_test).mean()
+print(f"Accuracy: {accuracy:.4f}")
+
+# Class-wise proportions 
+prop_table = pd.crosstab(y_test,pred5_class,
+normalize='index')
+prop_table
+
+# (f)
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+
+# Fit QDA model
+qda1 = QuadraticDiscriminantAnalysis()
+qda1.fit(X_train, y_train)
+
+# Predict classes and posterior probabilities on test set
+pred6_class = qda1.predict(X_test)
+pred6_posterior = qda1.predict_proba(X_test)
+pred6_class = pred6_posterior[:,1] > 0.55
+pred6_class = np.where(pred6_class,'Up','Down')
+
+# Confusion matrix
+conf_matrix = pd.crosstab(y_test,pred6_class)
+print(conf_matrix)
+
+# Accuracy
+accuracy = (pred6_class == y_test).mean()
+print(f"Accuracy: {accuracy:.4f}")
+
+# Class-wise proportions 
+prop_table = pd.crosstab(y_test,pred6_class,
+normalize='index')
+prop_table
+
+# (g)
+from sklearn.neighbors import KNeighborsClassifier
+
+# Instantiate KNN with k=1
+knn = KNeighborsClassifier(n_neighbors=3)
+knn.fit(X_train, y_train)
+
+# Predict on test set
+pred7 = knn.predict(X_test)
+prob7 = knn.predict_proba(X_test)
+pred7 = prob7[:,1] > 0.5
+pred7 = np.where(pred7,'Up','Down')
+
+# Confusion matrix
+conf_matrix = pd.crosstab(y_test,pred7)
+conf_matrix
+
+# Accuracy
+accuracy = (pred7 == y_test).mean()
+print(f"Accuracy: {accuracy:.4f}")
+
+# Proportion table by true class (margin=1)
+prop_table = pd.crosstab(y_test,pred7,
+normalize='index')
+prop_table
+
+
+
+
+--- SOURCE: lecture4.pdf ---
+Classification: Discriminant analysis
+
+Linear Discriminant Analysis (LDA)
+
+▶ Classify an observation into one of 𝐾 classes
+▶ Data: X = continuous inputs
+𝑌 = categorical output
+
+▶
+
+𝜋𝑘= 𝑃 (𝑌 = 𝑘) prior probability that a
+
+randomly chosen observation comes from class 𝑘
+
+▶ 𝑓𝑘(𝑥)= probability density function for (𝑋|𝑌 = 𝑘)
+
+Bayes theorem
+
+▶ Starting with the definition of conditional probability
+
+▶
+
+𝑃 (𝑌 = 𝑘|𝑋 = 𝑥) ≡
+
+𝑃 (𝑋 = 𝑘, 𝑋 = 𝑥)
+𝑃 (𝑋 = 𝑥)
+
+▶ For discrete 𝑋−variables:
+
+𝑃 (𝑌 = 𝑘|𝑋 = 𝑥) =
+
+𝑃 (𝑋 = 𝑥|𝑌 = 𝑘)𝑃 (𝑌 = 𝑘)
+𝑃 (𝑋 = 𝑥)
+
+▶
+
+𝑃 (𝑋 = 𝑥) =
+
+=
+
+𝐾
+∑
+𝑘=1
+
+𝐾
+∑
+𝑘=1
+
+𝑃 (𝑋 = 𝑥, 𝑌 = 𝑘)
+
+𝑃 (𝑋 = 𝑥|𝑌 = 𝑘)𝑃 (𝑌 = 𝑘)
+
+▶ For discrete 𝑋−variables:
+
+𝑃 (𝑌 = 𝑘|𝑋 = 𝑥) =
+
+𝑃 (𝑋 = 𝑥|𝑌 = 𝑘)𝑃 (𝑌 = 𝑘)
+𝑘=1 𝑃 (𝑋 = 𝑥|𝑌 = 𝑘)𝑃 (𝑌 = 𝑘)
+
+∑𝐾
+
+▶ Possible to show that for continuous 𝑋:
+
+𝑝𝑘(𝑥) ≡ 𝑃 (𝑌 = 𝑘|𝑋 = 𝑥) =
+
+𝜋𝑘𝑓𝑘(𝑥)
+𝑘=1 𝜋𝑘𝑓𝑘(𝑥)
+
+∑𝐾
+
+▶ 𝑝𝑘(𝑥𝑖) is the posterior probability that observation 𝑖 belongs
+
+to class 𝑘, given that 𝑋𝑖 = 𝑥𝑖.
+
+▶ Bayes classifier: Predict, “allocate”, observation nr 𝑖 to the
+
+class 𝑘 with highest 𝑝𝑘(𝑥𝑖).
+
+Default data
+
+The case with one 𝑋-variable
+
+▶ 𝑝 = 1 (one 𝑋-variable) and 𝐾 = 2 (two classes)
+
+▶ We assume (𝑋|𝑌 = 𝑘) ∼ 𝑁 (𝜇𝑘, 𝜎2), 𝑘 = 1, 2
+▶ Prior probabilities 𝑃 (𝑌 = 𝑘) = 𝜋𝑘, 𝑘 = 1, 2
+
+▶ Densities: 𝑓𝑘(𝑥) = 1√
+
+2𝜋𝜎
+
+𝑒− (𝑥−𝜇𝑘)2
+
+2𝜎2
+
+, 𝑘 = 1, 2
+
+▶ Reminder:
+
+𝑝𝑘(𝑥) ≡ 𝑃 (𝑌 = 𝑘|𝑋 = 𝑥) =
+
+𝜋𝑘𝑓𝑘(𝑥)
+𝑘=1 𝜋𝑘𝑓𝑘(𝑥)
+
+∑𝐾
+
+▶
+
+𝑝𝑘(𝑥)
+
+2𝜎2
+
+𝑒− (𝑥−𝜇𝑘)2
+2𝜎2 + 𝑒− (𝑥−𝜇2)2
+
+2𝜎2
+
+𝑒− (𝑥−𝜇1)2
+
+▶ Allocate 𝑖 to class 1 if 𝑝1(𝑥𝑖) > 𝑝2(𝑥𝑖)
+
+Solving the one-variable case
+
+▶
+
+𝑒− (𝑥−𝜇1)2
+
+𝑝1(𝑥) > 𝑝2(𝑥)
+⟺
+2𝜎2 > 𝑒− (𝑥−𝜇2)2
+⟺
+(𝑥 − 𝜇1)2 < (𝑥 − 𝜇2)2
+
+2𝜎2
+
+▶ Allocate 𝑖 to class 1 if distance to 𝜇1 shorter than distance to
+
+𝜇2. Make sense?
+
+Find Bayes classifier
+
+▶
+
+𝑝𝑘(𝑥) =
+
+𝜋𝑘𝑓𝑘(𝑥)
+∑𝐾
+𝑘=1 𝜋𝑘𝑓𝑘(𝑥)
+⏟⏟⏟⏟⏟⏟⏟
+same for all 𝑘
+
+▶ Largest 𝑝𝑘(𝑥) ⟺ Largest 𝜋𝑘𝑓𝑘(𝑥) ⟺ Largest (ln 𝜋𝑘 + ln 𝑓𝑘(𝑥))
+
+▶
+
+ln 𝜋𝑘 + ln 𝑓𝑘(𝑥) = ln 𝜋𝑘 + ln [
+
+√
+
+1
+2𝜋𝜎
+
+𝑒− (𝑥−𝜇𝑘)2
+2𝜎2 ]
+
+= ln 𝜋𝑘 +
+
+= ln 𝜋𝑘 +
+
+ln(2𝜋𝜎2) −
+
+1
+1
+2𝜎2 (𝑥2 − 2𝜇𝑘𝑥 + 𝜇2
+𝑘)
+2
+𝑥2
+𝜇𝑘𝑥
+1
+𝜎2 −
+2𝜎2
+2
+⏟⏟⏟⏟⏟⏟⏟
+constant over 𝑘 for given 𝑥
+
+ln(2𝜋𝜎2) −
+
+𝜇2
+𝑘
+2𝜎2
+
++
+
+▶ We use the linear discriminant function
+
+𝛿𝑘(𝑥) = ln 𝜋𝑘 +
+
+𝜇𝑘𝑥
+
+𝜎2 −
+
+𝜇2
+
+𝑘
+
+2𝜎2
+
+▶ i.e. allocate 𝑖 to the class with largest 𝛿𝑘(𝑥𝑖)
+
+▶ Becomes quadratic function if the variance is not equal for the two
+
+classes. Quadratic Discriminant Analysis (QDA)
+
+Empirical implementation - unknown parameters
+
+▶
+
+▶
+
+▶
+
+̂𝜇𝑘 =
+
+1
+𝑛𝑘
+
+𝑥𝑖
+
+∑
+𝑖∶𝑦𝑖=𝑘
+
+̂𝜎2
+𝑘 =
+
+1
+𝑛 − 𝐾
+
+𝐾
+∑
+𝑘=1
+
+(𝑥𝑖 − ̂𝜇𝑘)2
+
+∑
+𝑖∶𝑦𝑖=𝑘
+
+̂𝜋𝑘 =
+
+𝑛𝑘
+𝑛
+
+=
+
+number of obs in class k
+number of obs
+
+Implementing on Default data
+
+x = Default["balance"]
+cl = Default["default"]
+nk = cl.value_counts()
+n = len(cl)
+pi = nk / n
+mu = Default.groupby("default")["balance"].mean()
+s2 = (1 / (n - 2)) * (
+
+np.sum((x[cl == "No"] - mu[0])**2) +
+np.sum((x[cl == "Yes"] - mu[1])**2)
+
+)
+
+Implementing on Default data
+def delta(x, k, mu, s2, pi):
+
+lin = (mu.iloc[k] * x / s2 - (mu.iloc[k]**2) /
+
+(2 * s2) + np.log(pi.iloc[k]))
+
+return lin
+
+delta1=delta(x,0,mu,s2,pi)
+delta2=delta(x,1,mu,s2,pi)
+pred = pd.Categorical(
+
+["No"] * n,
+categories=["No", "Yes"],
+ordered=False)
+
+pred[delta2>delta1]="Yes"
+pd.crosstab(cl,pred)
+
+col_0
+default
+
+No
+Yes
+
+No
+
+Yes
+
+9643
+257
+
+24
+76
+
+p>1, more than one 𝑋-variable
+
+▶ Multvariate normally distributed 𝑋 ∈ 𝑁𝑝(𝜇𝑘, Σ)
+▶
+
+𝑓𝑘(𝑥) =
+
+1
+𝑝
+2 |Σ|
+(2𝜋)
+
+2 (𝑥−𝜇)′Σ−1(𝑥−𝜇)
+𝑒 1
+
+▶ Similar to the univariate case it is possible to show that
+
+▶
+
+𝛿𝑘(𝑥) = ln 𝜋𝑘 + 𝑥′Σ−1𝜇𝑘 −
+
+1
+2
+
+𝑘Σ−1𝜇𝑘
+𝜇′
+
+▶ is the discriminant function in the 𝑝-variate case if 𝑋 have the
+
+same variance-covariance matrix for all groups.
+
+Comparison with logistic regression
+
+▶ When classes are well separated, parameter estimates in
+logistic regression are unstable. Not a problem in LDA.
+
+▶ Small 𝑛 and approximately multinormally distributed X, LDA
+
+more stable than logistic regression.
+
+▶ A natural approach when 𝑌 has many classes (albeit an
+
+extension to logistic regression is available)
+
+Confusion matrix
+
+Predicted class
+
+True class
+
+True Neg (TN)
+False Pos (FP)
+False Neg (FN) True Pos (TP)
+
+Confusion matrix
+
+col_0
+default
+
+No
+Yes
+
+No
+
+Yes
+
+9643
+257
+
+24
+76
+
+True positive rate = TP
+
+False positive rate = FP
+
+257+76 = 0.23
+
+FN+TP = 76
+TN+FP = 24
+
+9643+24 = 0.0025
+
+Threshold - value
+
+▶ We choose the class maximizing the posterior probability of
+belonging to a class. If there are only two classes, a natural
+threshold is 0.5; but we could use others.
+
+▶ Default example: Classify an observation 𝑖 as default if
+
+𝑝2(𝑥𝑖) > 0.5; or if it is > 0.2. Try several alternatives to
+evaluate a model, e.g. LDA or logistic regression.
+
+ROC-curve
+
+Plot True Positive Rate against False Positive Rate for many different
+thresholds.
+
+from sklearn.discriminant_analysis import (
+
+LinearDiscriminantAnalysis)
+X = Default[["balance"]].values
+y = Default["default"].values
+lda1 = LinearDiscriminantAnalysis()
+lda1.fit(X, y)
+pr = lda1.predict_proba(X)
+pr_df = pd.DataFrame(pr, columns=lda1.classes_)
+print(pr_df.head())
+
+No
+
+Yes
+0.997213 0.002787
+0.995836 0.004164
+0.986593 0.013407
+0.998888 0.001112
+0.996396 0.003604
+
+0
+1
+2
+3
+4
+
+ROC-curve
+
+K-nearest neighbors classifier
+
+▶ 𝑥0 is a prediction point (a test observation)
+1. Find the 𝐾 training-points that are closest to 𝑥0, call this set
+
+ℕ0.
+
+2. 𝑃 (𝑌 = 𝑘|𝑋 = 𝑥0) = 1
+indicator function.
+
+𝐾 ∑𝑥𝑖∈ℕ0
+
+𝐼(𝑦𝑖 = 𝑘) where 𝐼 is the
+
+▶ In words: Allocate the new observation to the class for which
+
+a plurality of the 𝐾 closest neighbors belong.
