@@ -1,0 +1,704 @@
+================================================================================
+LECTURE 12 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: ex97.ipynb ---
+[MARKDOWN CELL 1]
+# Exercise 9.7
+
+[CODE CELL 2]
+# Read packages
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import KFold
+
+from ISLP.svm import plot as plot_svm
+from ISLP import confusion_table
+from ISLP import load_data
+
+[MARKDOWN CELL 3]
+# Useful functions for the exercise
+SVC, SVC.fit, SVC.predict, plot_svm, GridSearchCV, plt.subplots
+
+--- SOURCE: ex97.py ---
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import KFold
+from sklearn.metrics import confusion_matrix
+
+from ISLP.svm import plot as plot_svm
+from ISLP import confusion_table
+
+from ISLP import load_data
+
+# =========================
+# Read data  (ISLR Auto)
+# =========================
+
+Auto = load_data("Auto")
+print(Auto.describe())
+
+# (a) Create 0-1 variable for mpg above median
+Auto["high"] = (Auto["mpg"] > Auto["mpg"].median()).astype(int)
+
+# Remove mpg (like Auto = Auto[,-1] in R)
+Auto = Auto.drop(columns=["mpg"])
+
+# =========================
+# (b) Linear SVC
+# =========================
+
+X = Auto[["horsepower", "weight", "year"]]
+y = Auto["high"]
+
+svm_linear = SVC(kernel="linear", C=10)
+svm_linear.fit(X, y)
+
+# Plots
+fig, ax = plt.subplots(2, 2)
+
+plot_svm(X, y, svm_linear, ax=ax[0, 0], features=(0, 1))
+ax[0, 0].set_xlabel(X.columns[0])
+ax[0, 0].set_ylabel(X.columns[1])
+
+plot_svm(X, y, svm_linear, ax=ax[0, 1], features=(0, 2))
+ax[0, 1].set_xlabel(X.columns[0])
+ax[0, 1].set_ylabel(X.columns[2])
+
+plot_svm(X, y, svm_linear, ax=ax[1, 0], features=(1, 2))
+ax[1, 0].set_xlabel(X.columns[1])
+ax[1, 0].set_ylabel(X.columns[2])
+
+plt.tight_layout()
+plt.show()
+
+# Find optimal C (inversely related to K)
+param_grid = {"C": [0.01, 0.1, 1, 10, 100, 1000, 5000]}
+tuneC = GridSearchCV(SVC(kernel="linear"),param_grid, cv=2, scoring="accuracy")
+tuneC.fit(X, y)
+
+print("Best C (linear):", tuneC.best_params_)
+bestmod = tuneC.best_estimator_
+
+# =========================
+# (c) Polynomial and radial kernels
+# =========================
+
+# polynomial tuning
+param_poly = {
+    "C": [0.01, 0.1, 1, 10, 100, 1000, 5000,10000],
+    "degree": [1, 2, 3, 4],
+}
+tuneCd = GridSearchCV(SVC(kernel="poly"), param_poly, cv=5)
+tuneCd.fit(X, y)
+
+print("Best poly:", tuneCd.best_params_)
+bestpoly = tuneCd.best_estimator_
+
+# radial tuning
+param_rbf = {
+    "C": [0.01, 0.1, 1, 10, 100, 1000],
+    "gamma": [0.5, 1, 2, 3, 4],
+}
+tuneCg = GridSearchCV(SVC(kernel="rbf"), param_rbf, cv=5)
+tuneCg.fit(X, y)
+
+print("Best radial:", tuneCg.best_params_)
+bestradial = tuneCg.best_estimator_
+
+# =========================
+# (d) Compare models visually
+# =========================
+X.columns
+fig, ax = plt.subplots(2, 2)
+plot_svm(X, y, bestmod, features=(0, 1), ax = ax[0,0])
+plot_svm(X, y, bestpoly, features=(0, 1), ax = ax[0,1])
+plot_svm(X, y, bestradial, features=(0, 1), ax = ax[1,0])
+plt.tight_layout()
+plt.show
+
+
+fig, ax = plt.subplots(2, 2)
+
+plot_svm(X, y, bestpoly, ax=ax[0, 0], features=(0, 1))
+ax[0, 0].set_xlabel(X.columns[0])
+ax[0, 0].set_ylabel(X.columns[1])
+
+plot_svm(X, y, bestpoly, ax=ax[0, 1], features=(0, 2))
+ax[0, 1].set_xlabel(X.columns[0])
+ax[0, 1].set_ylabel(X.columns[2])
+
+plot_svm(X, y, bestpoly, ax=ax[1, 0], features=(1, 2))
+ax[1, 0].set_xlabel(X.columns[1])
+ax[1, 0].set_ylabel(X.columns[2])
+
+plt.tight_layout()
+plt.show()
+
+# Radial
+fig, ax = plt.subplots(2, 2)
+
+plot_svm(X, y, bestpoly, ax=ax[0, 0], features=(0, 1))
+ax[0, 0].set_xlabel(X.columns[0])
+ax[0, 0].set_ylabel(X.columns[1])
+
+plot_svm(X, y, bestpoly, ax=ax[0, 1], features=(0, 2))
+ax[0, 1].set_xlabel(X.columns[0])
+ax[0, 1].set_ylabel(X.columns[2])
+
+plot_svm(X, y, bestpoly, ax=ax[1, 0], features=(1, 2))
+ax[1, 0].set_xlabel(X.columns[1])
+ax[1, 0].set_ylabel(X.columns[2])
+
+plt.tight_layout()
+plt.show()
+
+badmodel = SVC(kernel="linear", C=0.01)
+badmodel.fit(X, y)
+
+plt.scatter(Auto["year"], Auto["weight"], c=badmodel.predict(X))
+plt.title("Bad linear model classification")
+plt.show()
+
+plt.scatter(Auto["year"], Auto["weight"], c=bestmod.predict(X))
+plt.title("Best linear model classification")
+plt.show()
+
+plt.scatter(Auto["year"], Auto["weight"], c=bestpoly.predict(X))
+plt.title("Best polynomial model classification")
+plt.show()
+
+plt.scatter(Auto["year"], Auto["weight"], c=bestradial.predict(X))
+plt.title("Best radial model classification")
+plt.show()
+
+plt.scatter(Auto["horsepower"], Auto["weight"], c=bestradial.predict(X))
+plt.title("Radial model: horsepower vs weight")
+plt.show()
+
+# =========================
+# Training confusion matrices
+# =========================
+
+predbest = bestmod.predict(X)
+print("Linear best\n", confusion_matrix(y, predbest))
+
+predbad = badmodel.predict(X)
+print("Linear bad\n", confusion_matrix(y, predbad))
+
+predpoly = bestpoly.predict(X)
+print("Polynomial\n", confusion_matrix(y, predpoly))
+
+predradial = bestradial.predict(X)
+print("Radial\n", confusion_matrix(y, predradial))
+
+--- SOURCE: lecture12.pdf ---
+Support Vector Machines (SVM)
+
+Support vector machine
+
+▶ A classification method. We focus on the case with two
+
+classes.
+
+▶ Maximal margin classifier: Separate classes completely with
+
+linear boundaries
+
+▶ Support vector classifier: Complete separation is not necessary
+
+▶ Support vector machines: Also allow for non-linear boundaries
+
+A separating line (hyperplane)
+
+0246810x110.012.515.017.520.022.525.027.5x2Hyperplanes
+
+▶ Example: 𝑝 = 2 (2 predictors). A hyperplane is defined by
+
+𝛽0 + 𝛽1𝑋1 + 𝛽2𝑋2 = 0
+
+⟺
+
+𝑋2 = −
+
+𝛽0
+𝛽2
+
+−
+
+𝛽1
+𝛽2
+
+𝑋1
+
+□
+
+▶ If 𝑝 = 3 an hyperplane is given by
+
+𝛽0 + 𝛽1𝑋1 + 𝛽2𝑋2 + 𝛽3𝑋3 = 0
+
+and is a plane (2-dimensional object)
+
+▶ In general, a hyperplane in a 𝑝-dimensional space is a
+
+𝑝 − 1-dimensional object which separates the 𝑝-dimensional
+space into two pieces.
+
+Classification by separating hyperplanes
+
+▶ We have a data matrix with 𝑛 training observations and 𝑝
+
+variables (predictors)
+
+𝑋 =
+
+⎡
+⎢
+⎢
+⎣
+
+𝑥11 𝑥12 ⋯ 𝑥1𝑝
+𝑥21 𝑥22 ⋯ 𝑥2𝑝
+⋮
+
+⋱
+
+⋮
+
+⋮
+
+𝑥𝑛1 𝑥𝑛2 ⋯ 𝑥𝑛𝑝
+
+⎤
+⎥
+⎥
+⎦
+
+▶ Each observation/individual 𝑖, is represented by a row
+
+𝑥𝑖 =
+
+𝑥𝑖1
+𝑥𝑖2
+⋮
+𝑥𝑖𝑝
+
+⎡
+⎢
+⎢
+⎣
+
+⎤
+⎥
+⎥
+⎦
+
+,
+
+𝑖 = 1, 2, … , 𝑛
+
+▶ Each observation falls into one of two classes , represented by
+
+𝑦𝑖 ∈ {−1, 1}
+
+Classification by separating hyperplanes
+
+We would like to classify a test observation 𝑥∗ (𝑝-vector)
+
+The observation with 𝑥∗ is predicted to belong to class 1 since
+
+which is equivalent with
+
+𝑥∗
+
+2 > −
+
+𝛽0
+
+𝛽2
+
+−
+
+𝛽1
+
+𝛽2
+
+𝑥∗
+
+1
+
+𝛽0 + 𝛽1𝑥∗
+
+1 + 𝛽2𝑥∗
+
+2 > 0
+
+0246810x11820222426x2x*Classification by separating hyperplanes
+
+In general predict
+
+▶ 𝑦𝑖 = 1 if
+
+𝑓(𝑥∗) = 𝛽0 + 𝛽1𝑥∗
+
+𝑖1 + 𝛽2𝑥∗
+
+𝑖2 + ... + 𝛽𝑝𝑥∗
+
+𝑖𝑝 > 0
+
+▶ and 𝑦𝑖 = −1 if
+
+𝑓(𝑥∗) < 0
+
+▶ This implies that a separating hyperplane has the property
+
+that
+
+for all 𝑖 = 1, 2, ..., 𝑛.
+
+𝑦𝑖𝑓(𝑥∗) > 0
+
+▶ If the magnitude (absolute value) of 𝑓(𝑥∗) is large we can be
+
+confident about our class assignment.
+
+The maximal margin classifier
+
+▶ The maximal margin classifier is the separating hyperplane
+
+with the largest minimum distance 𝑀 from the observations.
+
+202468x11820222426x2x*Maximum Margin Classifier (Hard-margin SVM)Class 1Class 2Decision boundaryMarginSupport vectorsThe maximal margin classifier
+
+▶
+
+⎧
+{
+{
+⎨
+{
+{
+⎩
+
+𝑀
+
+maximize
+𝛽0,𝛽1,...,𝛽𝑝
+subject to
+∑𝑝
+𝑗=1 𝛽2
+𝑗 = 1
+𝑦𝑖(𝛽0 + 𝛽1𝑥∗
+
+𝑖1 + 𝛽2𝑥∗
+
+𝑖2 + ... + 𝛽𝑝𝑥∗
+
+𝑖𝑝) ≥ 𝑀
+
+▶ The restriction ∑𝑝
+
+𝑗=1 𝛽2
+
+𝑗 = 1 is necessary to make 𝑦𝑖𝑓(𝑥∗) the
+
+distance between the points and the hyperplane.
+
+No separating hyperplane
+
+2024681618202224262830No complete separationSupport vector classifier (soft margin classifier)
+
+▶ We like to allow for some misclassified observations; allow
+them to be on the wrong side of the margin (red and blue
+line) or even on the wrong side of the separating hyperplane.
+
+▶
+
+⎧
+{
+{
+{
+⎨
+{
+{
+{
+⎩
+
+𝑀
+
+maximize
+𝛽0,𝛽1,...,𝛽𝑝,𝜖1,...,𝜖𝑛
+subject to
+∑𝑝
+𝑗=1 𝛽2
+𝑗 = 1
+𝑦𝑖(𝛽0 + 𝛽1𝑥∗
+𝜖𝑖 ≥ 0, ∑𝑛
+
+𝑖1 + 𝛽2𝑥∗
+𝑖=1 𝜖𝑖 ≤ 𝐾
+
+𝑖2 + ... + 𝛽𝑝𝑥∗
+
+𝑖𝑝) ≥ 𝑀 (1 − 𝜖𝑖)
+
+▶ 𝐾 is a tuning parameter that can be found by…
+
+▶ Classification is done as it was for the maximal margin
+
+classifier.
+
+Support vector classifier
+
+▶ Only observations violating the margin, or on the margin,
+
+affect the solution
+
+▶ The slack variables 𝜖1, ..., 𝜖𝑛 allows the observations to be on
+
+the wrong side of the margins or hyperplane.
+
+▶ They tell us where the observations are located.
+▶ 𝜖𝑖 = 0 means that the 𝑖th observation is on the correct side of
+
+the margin.
+
+▶ 𝜖𝑖 > 0 means that the 𝑖th observation is on the wrong side of
+
+the margin.
+
+The constant 𝐾 regulates how much the margin can be
+violated
+
+▶ If 𝐾 = 0 we do not allow for any violations and we have the
+
+maximal margin classifier.
+
+▶ If 𝐾 > 0, at most 𝐾 observations can be on the wrong side
+
+of the hyperplane.
+
+▶ A large 𝐾 means that we allow more violations; we have a
+
+wide margin.
+
+▶ 𝐾 is a tuning parameter that can be found by cross-validation.
+
+A simulated data set (page 387 in ISLP)
+
+210122.01.51.00.50.00.51.01.52.0A simulated data set
+
+A large 𝐾 corresponds to a small C in the function SVC.
+
+from sklearn.svm import SVC
+from ISLP.svm import plot as plot_svm
+from sklearn.metrics import RocCurveDisplay
+from ISLP import confusion_table
+roc_curve = RocCurveDisplay.from_estimator
+svm_linear = SVC(C=10, kernel='linear')
+svm_linear.fit(X, y)
+fig , ax = plt.subplots(figsize =(8 ,8))
+plot_svm(X,y,svm_linear,ax=ax)
+
+A simulated data set
+
+A large 𝐾 corresponds to a small C in the function SVC.
+
+32101221012A larger K (smaller C)
+
+32101221012Finding the optimal 𝐾 (and C)
+
+import sklearn.model_selection as skm
+kfold = skm.KFold(5,random_state=0,shuffle=True)
+grid = skm.GridSearchCV(svm_linear,
+
+{'C':[0.001 ,0.01 ,0.1 ,1 ,5 ,10 ,100]},
+
+refit=True ,cv=kfold, scoring="accuracy")
+grid.fit(X, y)
+print(grid.best_params_)
+print(grid.cv_results_[('mean_test_score')])
+
+{'C': 1}
+[0.46 0.46 0.72 0.74 0.74 0.74 0.74]
+
+Predictions on 20 test observations
+
+best_ = grid.best_estimator_
+y_test_hat = best_.predict(X_test)
+confusion_table(y_test_hat , y_test)
+
+Truth
+Predicted
+
+-1
+1
+
+-1
+
+8
+2
+
+1
+
+4
+6
+
+Support vector machines
+
+Consider the support vector classifier problem again
+
+⎧
+{
+{
+{
+{
+⎨
+{
+{
+{
+{
+⎩
+
+𝑀
+
+maximize
+𝛽0,𝛽1,...,𝛽𝑝,𝜖1,...,𝜖𝑛
+subject to
+∑𝑝
+𝑗=1 𝛽2
+𝑗 = 1
+𝑦𝑖 (𝛽0 + 𝛽1𝑥∗
+𝑖1 + 𝛽2𝑥∗
+𝑖𝑝)
+⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟
+𝑓(𝑥∗)
+𝑖=1 𝜖𝑖 ≤ 𝐶
+
+𝑖2 + ... + 𝛽𝑝𝑥∗
+
+𝜖𝑖 ≥ 0, ∑𝑛
+
+≥ 𝑀 (1 − 𝜖𝑖), 𝑖 = 1, ..., 𝑛
+
+The decision boundary, 𝑓(𝑥∗), must not necessarily be linear in 𝑥∗.
+
+Support vector machines
+
+▶ We let
+
+𝑓(𝑥∗) = 𝛽0 +
+
+𝑛
+∑
+𝑖=1
+
+𝛼𝑖𝐾(𝑥∗, 𝑥𝑖),
+
+where 𝐾 is a kernel.
+
+▶ Two commonly used kernels are the polynomial kernel of
+
+degree 𝑑
+
+𝐾(𝑥𝑖, 𝑥𝑖′) = (1 +
+
+𝑑
+
+𝑥𝑖𝑗𝑥𝑖′𝑗)
+
+𝑝
+∑
+𝑗=1
+
+▶ and the radial kernel
+
+𝐾(𝑥𝑖, 𝑥𝑖′) = exp (−𝛾
+
+𝑝
+∑
+𝑗=1
+
+(𝑥𝑖𝑗 − 𝑥𝑖′𝑗)2)
+
+An example
+
+4202442024An example
+
+# Radial kernel
+(X_train,X_test,y_train,y_test) = skm.train_test_split(
+
+X,y,test_size=0.5, random_state =0)
+
+svm_rbf = SVC(kernel="rbf", gamma=1, C=1)
+svm_rbf.fit(X_train , y_train);
+
+An example
+
+4202442024Confusion matrix for test data
+
+Truth
+Predicted
+
+1
+
+2
+
+1
+2
+
+67
+8
+
+6
+19
+
+Optimal C and gamma
+
+kfold = skm.KFold(5,
+random_state=0,
+shuffle=True)
+grid = skm.GridSearchCV(svm_rbf ,
+{'C':[0.1 ,1 ,10 ,100 ,1000] ,
+'gamma':[0.5,1,2 ,3,4]},
+refit=True ,
+cv=kfold ,
+scoring='accuracy');
+grid.fit(X_train , y_train)
+print(grid.best_params_)
+
+{'C': 1, 'gamma': 0.5}
+
+Training fit for the best model
+
+4202442024Confusion matrix for test data
+
+best_svm = grid.best_estimator_
+y_hat_test = best_svm.predict(X_test)
+confusion_table(y_hat_test , y_test)
+
+Truth
+Predicted
+
+1
+
+2
+
+1
+2
+
+69
+6
+
+6
+19

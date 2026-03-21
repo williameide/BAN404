@@ -1,0 +1,873 @@
+================================================================================
+LECTURE 7 - KNOWLEDGE BASE
+================================================================================
+
+--- SOURCE: ex611.py ---
+# Read libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from ISLP import load_data
+import sklearn.linear_model as skl
+import statsmodels.api as sm
+
+# Load data
+boston = load_data("Boston")
+y = boston['crim']
+X = boston.drop(columns='crim')
+
+# Train/test
+np.random.seed(1234)
+n = len(y)
+ntrain = n // 2
+ind = np.random.choice(np.arange(n), size=ntrain, replace=False)
+mask = np.ones(n,dtype = bool)
+mask[ind] = False
+Xtrain = X.iloc[ind]
+ytrain = y.iloc[ind]
+Xtest = X.iloc[mask]
+ytest = y.iloc[mask]
+
+# OLS
+Xtrain_with_const = sm.add_constant(Xtrain)
+ols = sm.OLS(ytrain, Xtrain_with_const).fit()
+print(ols.summary())
+Xtest_with_const = sm.add_constant(Xtest)
+pred_ols = ols.predict(Xtest_with_const)
+olserr = ytest - pred_ols
+MSEols = (olserr**2).mean()
+
+# Ridge
+alphas = np.logspace(-4, 4, 200)
+ridge_cv = skl.RidgeCV(alphas=alphas)
+ridge_cv.fit(Xtrain, ytrain)
+alphamin = ridge_cv.alpha_
+print("alpha.min =", round(alphamin,2))
+ridgemin = skl.Ridge(alpha=alphamin)
+ridgemin.fit(Xtrain, ytrain)
+
+# Compare coefficients
+ols_coef = ols.params
+ridge_coef = np.concatenate(([ridgemin.intercept_], ridgemin.coef_))
+coef_comparison = np.column_stack((ols_coef, ridge_coef))
+coef_comparison = pd.DataFrame(coef_comparison,columns=['OLS','Ridge'])
+print(coef_comparison)
+
+# Lasso
+alphas = np.logspace(-4, 4, 200)
+lasso_cv = skl.LassoCV(alphas = alphas)
+lasso_cv.fit(Xtrain, ytrain)
+
+lassoalpha = lasso_cv.alpha_
+print("alpha.min (lasso) =", lassoalpha.round(2))
+
+lasso = skl.Lasso(alpha=lassoalpha)
+lasso.fit(Xtrain, ytrain)
+lasso_coef = np.concatenate(([lasso.intercept_], lasso.coef_))
+coef_comparison = np.column_stack((ols_coef, ridge_coef, lasso_coef))
+coef_comparison = pd.DataFrame(coef_comparison,columns=['OLS','Ridge','Lasso'])
+print(coef_comparison)
+
+# Comparison on test data
+pred_ridge = ridge_cv.predict(Xtest)
+ridgeerr = ytest - pred_ridge
+MSEridge = (ridgeerr**2).mean()
+pred_lasso = lasso.predict(Xtest)
+lassoerr = ytest - pred_lasso
+MSElasso = (lassoerr**2).mean()
+
+print(round(MSEols,3),round(MSEridge,3),round(MSElasso,3))
+
+
+--- SOURCE: lecture7.pdf ---
+Linear model selection methods
+
+Linear model selection methods
+
+▶ 𝑌 = 𝛽0 + 𝛽1𝑋1 + ... + 𝛽𝑝𝑋𝑝 + 𝜀
+▶ Conflicting goals: prediction accuracy vs model interpretability
+
+▶ What if 𝑝 is quite large in relation to 𝑛?
+
+▶ We have, potentially, a lot of information about the response
+
+⟹ Good predictions
+
+▶ We have to estimate many parameters ⟹ Estimation
+
+uncertainty ⟹ Bad predictions
+
+▶ A trade-off between prediction bias (due to an incorrectly
+specified model) and prediction variance (due to too many
+parameters to estimate)
+
+Three different type of techniques
+
+▶ Subset selection: Find the set of predictors that gives the best
+
+predictions.
+
+▶ Shrinkage: Use all predictors but restrict the parameter space.
+
+▶ Dimension reduction: Find combinations of predictors.
+
+Best subset selection
+
+1. ℳ0 is the model with no predictors, 𝑌 = 𝛽0 + 𝜀
+
+𝑘) models with 𝑘 predictors
+
+2. For 𝑘 = 1, 2, ..., 𝑝
+a. Fit all (𝑝
+b. Pick the best model among them, e.g. the one with largest 𝑅2
+or, equivalently, minimize RSS (here we can do this because all
+models have the same number of parameters). Call this model
+ℳ𝑘
+
+3. Select the best model from ℳ0, ℳ1, ..., ℳ𝑝, e.g. with largest
+adjusted 𝑅2 or smallest testMSE (here we cannot use the raw
+𝑅2 since it does not control for overfitting).
+
+▶ 2𝑝 models. If 𝑝 = 50 we would have to estimate more than
+
+1015 models.
+
+Forward stepwise selection
+
+▶ A problem with best subset selection is that we have to
+estimate all possible models. Sometimes not feasible.
+
+1. ℳ0 is the model with no predictors, 𝑌 = 𝛽0 + 𝜀
+
+2. For 𝑘 = 0, 1, ..., 𝑝 − 1
+
+a. Fit all 𝑝 − 𝑘 models that adds one single predictor to ℳ𝑘
+b. Pick the best model among them, e.g. the one with largest 𝑅2.
+
+Call this model ℳ𝑘+1
+
+3. Select the best model from ℳ0, ℳ1, ..., ℳ𝑝, e.g. with largest
+
+adjusted 𝑅2 or smallest testMSE
+
+▶ We have to estimate 𝑝(𝑝+1)
+
+2 + 1 models. 𝑝 = 50 implies 1276
+
+models
+
+An example with 3 x-variables
+
+Predict 𝑌 based on a linear function of 𝑋1, 𝑋2 and 𝑋3.
+
+We shall work through the examples for
+
+▶ Best subset selection
+
+▶ Forward stepwise selection
+
+Best subset selection
+
+1. ℳ0 ∶ 𝑌 = 𝛽0 + 𝜀
+
+2. For 𝑘 = 1, 2, 3
+▶ 𝑘 = 1
+
+𝑌 = 𝛽0 + 𝛽1𝑋1 + 𝜀
+𝑌 = 𝛽0 + 𝛽2𝑋2 + 𝜀
+𝑌 = 𝛽0 + 𝛽3𝑋3 + 𝜀
+
+⎫}
+⎬}⎭
+
+Pick the model
+with highest 𝑅2.
+Call it ℳ1.
+
+▶ 𝑘 = 2
+
+𝑌 = 𝛽0 + 𝛽1𝑋1 + 𝛽2𝑋2 + 𝜀
+𝑌 = 𝛽0 + 𝛽1𝑋1 + 𝛽3𝑋3 + 𝜀
+𝑌 = 𝛽0 + 𝛽2𝑋2 + 𝛽2𝑋3 + 𝜀
+
+⎫}
+⎬}⎭
+
+Pick the model
+with highest 𝑅2.
+Call it ℳ2.
+
+▶ 𝑘 = 3
+
+ℳ3 ∶ 𝑌 = 𝛽0 + 𝛽1𝑋1 + 𝛽1𝑋2 + 𝛽3𝑋3 + 𝜀
+
+3. Choose the model from ℳ0, ℳ1, ℳ2 and ℳ3 with largest adjusted
+
+𝑅2, smallest testMSE or…
+
+Best subset selection
+
+▶ We have estimated 23 = 8 models. (-)
+
+▶ We have estimated all possible models (+), compared their fit
+
+to data and choosen the one with highest adjusted 𝑅2.
+
+▶ Adjusted 𝑅2 can be substituted with other measures of fit.
+
+The important property of such a measure is that it controls
+for overfitting. This means that if we compare two models
+with the same value on the measure, the model with fewer
+parameters should be chosen.
+
+Forward stepwise selection
+1. ℳ0: 𝑌 = 𝛽0 + 𝜀
+
+2. For 𝑘 = 0, 1, 2
+▶ 𝑘 = 0
+
+𝑌 = 𝛽0 + 𝛽1𝑋1 + 𝜀
+𝑌 = 𝛽0 + 𝛽2𝑋2 + 𝜀 ∶ ℳ1
+𝑌 = 𝛽0 + 𝛽3𝑋3 + 𝜀
+
+⎫}
+⎬}⎭
+
+In this example we assume
+that the second model had
+the highest 𝑅2.
+
+▶ 𝑘 = 1
+
+𝑌 = 𝛽0 + 𝛽2𝑋2 + 𝛽1𝑋1 + 𝜀
+𝑌 = 𝛽0 + 𝛽2𝑋2 + 𝛽3𝑋3 + 𝜀 ∶ ℳ2
+
+}
+
+The second model had
+the highest 𝑅2.
+
+▶ 𝑘 = 3
+
+ℳ3 ∶ 𝑌 = 𝛽0 + 𝛽2𝑋2 + 𝛽3𝑋3 + 𝛽1𝑋1
+
+3. Choose the model from ℳ0, ℳ1, ℳ2 and ℳ3 with largest adjusted
+
+𝑅2, smallest testMSE or…
+
+Forward stepwise selection
+
+▶ We have estimated 4⋅3
+
+2 + 1 = 7 models. (+)
+
+▶ We have not estimated all possible models (-), compared their
+fit to data and choosen the one with highest adjusted 𝑅2.
+
+▶ Again Adjusted 𝑅2 can be substiuted with other measures of
+
+fit.
+
+Shrinkage methods
+
+▶ In the subset selection methods we use only a, well…, subset
+
+of the predictors
+
+▶ With shrinkage methods, we use all predictors - but to a
+
+different degree
+
+▶ OLS: Minimize 𝑅𝑆𝑆(𝛽) = ∑𝑛
+𝑖𝛽)2
+▶ Ridge regression: Minimize 𝑅𝑆𝑆(𝛽) + 𝜆 ∑𝑝
+▶ LASSO: Minimize 𝑅𝑆𝑆(𝛽) + 𝜆 ∑𝑝
+
+𝑖=1(𝑦𝑖 − x′
+
+𝑘=1 |𝛽𝑘|
+
+𝑘=1 𝛽2
+
+𝑘
+
+▶ Why would we improve predictions by adding the extra terms
+
+in Ridge regression and LASSO?
+
+Ridge regression
+
+▶ Ridge regression: Minimize
+
+2
+
+(𝑦𝑖 − 𝛽0 −
+
+𝑛
+𝛽𝑗𝑥𝑖𝑗)
+∑
+𝑖=1
+⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟
+Fit to data
+
+𝑝
+∑
+𝑗=1
+
++ 𝜆
+
+𝑝
+𝛽2
+∑
+𝑘
+⏟
+𝑘=1
+Shrinkage
+penalty
+
+▶ The shrinkage term penalizes values of 𝛽1, ..., 𝛽𝑝 that are far
+
+away from zero.
+
+▶ Bias-variance trade-off: A small 𝑅𝑆𝑆(𝛽)-term means a good
+fit but might be due to overfitting. The shrinkage penalty
+controls for that.
+
+▶ 𝜆 ≥ 0 is a tuning parameter regulating the relative
+
+importance of the two terms.
+
+▶ 𝜆 = 0 ⟹ OLS
+▶ 𝜆 → ∞ ⟹ Model with no regressors
+
+Equivialent formulation
+
+min
+𝛽
+
+⎧{
+𝑛
+∑
+⎨{⎩
+𝑖=1
+
+(𝑦𝑖 − 𝛽0 −
+
+𝑝
+∑
+𝑗=1
+
+𝛽𝑗𝑥𝑖𝑗)
+
+2⎫}
+⎬}⎭
+
+subject to
+
+𝑝
+∑
+𝑗=1
+
+𝛽2
+𝑗 ≤ 𝑠
+
+▶ What happen when we have change in scale on one of the
+
+𝑋-variable?
+
+▶ As an example, the restriction 𝛽2
+
+1 + 𝛽2
+
+2 ≤ 1 is not the same for
+
+the situations where 𝑥1 is measured in 1NOK as when it is
+measured in 1000NOK.
+
+Standardization of 𝑋-variables
+
+▶ OLS estimates are scale equivariant. If we multiply, say, 𝑥1
+with 2, the OLS-estimator of 𝛽1 will be reduced by half.
+
+▶ 𝑌 = 𝛽0 + 𝛽1𝑋1 + 𝜀
+▶ 𝑌 = 𝛽0 + 𝛾1(2𝑋1) + 𝜀
+▶ A regression of 𝑌 on 𝑋′
+▶ This is not the case in Ridge regression
+
+1 = 2𝑋1 will yield ̂𝛾𝑂𝐿𝑆
+
+1
+
+= ̂𝛽𝑂𝐿𝑆
+1
+
+/2
+
+▶ Therefore we make sure that all variables are of the same
+
+scale (variance one).
+
+▶ Instead of regressing on 𝑥𝑖𝑗, regress on
+
+̃𝑥𝑖𝑗 =
+
+𝑥𝑖𝑗
+𝑖=1(𝑥𝑖𝑗 − 𝑥)2
+
+√ 1
+
+𝑛 ∑𝑛
+
+Does it work
+
+Example: Simulate 𝑛 = 100 observations from the model
+
+𝑦 = 1 + 2𝑥1 + 3𝑥2 + 4𝑥3 + ... + 11𝑥10 + 𝜀,
+
+where 𝑥𝑗 are generated from 𝑁 (0, 𝑗2)-distributions and 𝜀 from a
+𝑁 (0, 1002)-distribution.
+
+np.random.seed(1234567)
+
+n = 100
+e = np.random.normal(0, 200, n)
+
+beta = np.arange(2, 12)
+
+X = np.zeros((n, 10))
+for j in range(10):
+
+X[:, j] = np.random.normal(0, j+1, n)
+
+y = 1 + X @ beta + e
+
+X = (X - X.mean(0)[None ,:])/X.std(0)[None,:]
+
+ntrain = 3*n // 4
+ind = np.random.choice(range(n),size = ntrain,replace = False)
+Xtrain = X[ind]
+ytrain = y[ind]
+mask = np.ones(n,dtype=bool)
+mask[ind] = False
+Xtest = X[mask]
+ytest = y[mask]
+
+OLS
+
+coef
+
+std err
+
+R-squared:
+Adj. R-squared:
+F-statistic:
+Prob (F-statistic):
+Log-Likelihood:
+AIC:
+BIC:
+
+y
+OLS
+Least Squares
+Sun, 15 Feb 2026
+20:30:12
+75
+64
+10
+nonrobust
+
+OLS Regression Results
+==============================================================================
+0.474
+Dep. Variable:
+0.392
+Model:
+5.770
+Method:
+4.00e-06
+Date:
+-498.31
+Time:
+1019.
+No. Observations:
+Df Residuals:
+1044.
+Df Model:
+Covariance Type:
+==============================================================================
+0.975]
+------------------------------------------------------------------------------
+67.197
+const
+51.634
+x1
+36.254
+x2
+51.467
+x3
+61.735
+x4
+86.512
+x5
+48.872
+x6
+105.721
+x7
+131.573
+x8
+123.662
+x9
+x10
+171.883
+==============================================================================
+1.935
+Omnibus:
+0.421
+Prob(Omnibus):
+0.810
+Skew:
+Kurtosis:
+1.90
+==============================================================================
+
+19.4793
+-0.7736
+-10.8014
+0.8046
+13.4558
+39.2743
+-11.6311
+58.1097
+85.5459
+70.6338
+122.9392
+
+-28.238
+-53.181
+-57.857
+-49.858
+-34.824
+-7.964
+-72.134
+10.498
+39.519
+17.606
+73.996
+
+Durbin-Watson:
+Jarque-Bera (JB):
+Prob(JB):
+Cond. No.
+
+0.816
+-0.029
+-0.459
+0.032
+0.557
+1.661
+-0.384
+2.438
+3.713
+2.661
+5.018
+
+23.886
+26.234
+23.554
+25.360
+24.167
+23.646
+30.286
+23.833
+23.040
+26.544
+24.500
+
+0.418
+0.977
+0.648
+0.975
+0.580
+0.102
+0.702
+0.018
+0.000
+0.010
+0.000
+
+0.722
+0.697
+0.180
+3.077
+
+[0.025
+
+P>|t|
+
+t
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+
+Comparison of coeﬀicients?
+
+Let 𝜆 = 10 (we will come back to how to choose this)
+Remember: We minimize 𝑅𝑆𝑆(𝛽) + 𝜆 ∑𝑝
+
+𝑘=1 𝛽2
+
+𝑘
+
+OLS
+19.479254
+0
+-0.773593
+1
+-10.801377
+2
+0.804572
+3
+13.455813
+4
+39.274341
+5
+-11.631089
+6
+58.109748
+7
+85.545876
+8
+9
+70.633788
+10 122.939229
+
+Ridge
+20.522957
+-0.132267
+-9.324602
+1.400750
+14.515823
+33.228589
+-8.020514
+50.763632
+73.625776
+58.321906
+109.736589
+
+OLS: ∑𝑝
+
+Ridge: ∑𝑝
+
+𝑘=1 𝛽2
+𝑘=1 𝛽2
+
+𝑘 = 32774.76
+
+𝑘 = 24909.37
+
+Choosing 𝜆 by LOO cross-validation
+
+# Grid of alphas
+alphas = np.logspace(-4, 4, 200)
+
+ridge_cv = skl.RidgeCV(alphas=alphas)
+ridge_cv.fit(Xtrain, ytrain)
+
+alphamin = ridge_cv.alpha_
+print("alpha.min =", round(alphamin,2))
+
+alpha.min = 12.75
+
+Fit model with optimal 𝜆
+
+ridgemin = skl.Ridge(alpha=alphamin)
+ridgemin.fit(Xtrain, ytrain)
+
+# Compare coefficients
+ols_coef = ols.params
+ridge_coef = np.concatenate(([ridgemin.intercept_], ridgemin.coef_))
+
+coef_comparison = np.column_stack((ols_coef, ridge_coef))
+coef_comparison = pd.DataFrame(coef_comparison,columns=['OLS','Ridge'])
+print(coef_comparison)
+
+Comparison of coeﬀicients
+
+OLS
+19.479254
+-0.773593
+-10.801377
+0.804572
+13.455813
+39.274341
+-11.631089
+58.109748
+85.545876
+70.633788
+122.939229
+
+Ridge
+20.785088
+-0.005834
+-9.016273
+1.522051
+14.627901
+31.909822
+-7.349179
+49.078437
+70.946525
+55.666840
+106.558881
+
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+
+Does Ridge regression improve predicitions?
+
+# OLS
+Xtrain_const = sm.add_constant(Xtrain)
+olstrain = sm.OLS(ytrain, Xtrain_const).fit()
+
+Xtest_const = sm.add_constant(Xtest)
+predols = olstrain.predict(Xtest_const)
+
+olsERR = ytest - predols
+
+# Ridge
+ridgetrain = skl.Ridge(alpha=alphamin)
+ridgetrain.fit(Xtrain, ytrain)
+
+predridge = ridgetrain.predict(Xtest)
+
+ridgeERR = ytest - predridge
+
+print("OLS MSE:", np.mean(olsERR**2).round(3))
+print("Ridge MSE:", np.mean(ridgeERR**2).round(3))
+
+OLS MSE: 44151.604
+Ridge MSE: 41075.192
+
+Lasso
+
+▶ Minimize
+
+2
+
+(𝑦𝑖 − 𝛽0 −
+
+𝑛
+∑
+𝛽𝑗𝑥𝑖𝑗)
+𝑖=1
+⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟⏟
+Fit to data
+
+𝑝
+∑
+𝑗=1
+
++ 𝜆
+
+𝑝
+∑
+𝑘=1
+
+|𝛽𝑘|
+⏟
+Shrinkage
+penalty
+
+▶ In contrast to Ridge regression, the solution to the
+
+Lasso-problem can result in some coeﬀicient estimates exactly
+equal to zero.
+
+▶ Variable selection approach?
+
+Choosing 𝜆 in Lasso by LOO cross-validation
+
+# Find optimal alpha
+alphas = np.logspace(-4, 4, 200)
+lasso_cv = skl.LassoCV(alphas = alphas)
+lasso_cv.fit(Xtrain, ytrain)
+
+lassoalpha = lasso_cv.alpha_
+print("alpha.min (lasso) =", lassoalpha.round(2))
+
+alpha.min (lasso) = 6.08
+
+Comparison of coeﬀicients
+
+OLS
+19.479254
+-0.773593
+-10.801377
+0.804572
+13.455813
+39.274341
+-11.631089
+58.109748
+85.545876
+70.633788
+122.939229
+
+Ridge
+20.785088
+-0.005834
+-9.016273
+1.522051
+14.627901
+31.909822
+-7.349179
+49.078437
+70.946525
+55.666840
+
+Lasso
+18.596825
+-0.000000
+-4.847267
+-0.000000
+9.849535
+30.663293
+-0.000000
+51.645862
+78.019652
+58.426698
+106.558881 119.217681
+
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+
+Test predictions
+
+# Lasso
+lassoridge = lasso.predict(Xtest)
+lassoERR = ytest - lassoridge
+
+print("OLS MSE:", np.mean(olsERR**2).round(3))
+print("Ridge MSE:", np.mean(ridgeERR**2).round(3))
+print("Lasso MSE:", np.mean(lassoERR**2).round(3))
+
+OLS MSE: 44151.604
+Ridge MSE: 41075.192
+Lasso MSE: 42576.265
