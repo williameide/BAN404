@@ -1,6 +1,28 @@
-# --- Compulsory Assignment ---
+---
+title: "Compulsory Assignment, BAN404"
+author: "William Eide (s194704) and Mathias Haaland-Jensen (s222016)"
+date: today
+format: 
+  html:
+    theme: readable
+    highlight-style: tango
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    df-print: paged
+    number-sections: true
+    embed-resources: true
+execute:
+  echo: true
+  warning: false
+---
 
-## --- Task 1 ---
+
+**AI declaration**:
+During this assignment, GitHub Copilot was used as a learning tool to help understand statistical concepts, to troubleshoot errors when trying to write code, and as a conversational partner to discuss and help us understnad the theoretical implications of the bias-variance trade-off and model performance. It was also used to help the yaml formatting code of the qmd document to get the visual layout we wanted.
+
+**Introduction and Setup**:
+Here we include the code for running the set up for use of packages later.
 
 ```{python}
 # Starter code and loading dataset
@@ -20,7 +42,11 @@ data = pd.read_csv("datasets/day.csv")
 
 X = data.drop(columns=["cnt"])
 y = data["cnt"]
+```
 
+# Task 1
+
+```{python}
 # Describing cnt-variable using descriptive statistics
 data["cnt"].describe()
 ```
@@ -105,7 +131,7 @@ print(X.dtypes)
 
 We remove five variables. First, casual and registered are direct components of the target (casual + registered = cnt), so including them would constitute data leakage — they are only known after observing the outcome. Second, instant is a row index with no predictive content. Third, dteday is a date string whose information is already captured by yr, mnth, and weekday. Finally, we remove atemp (feels-like temperature) because it correlates almost perfectly with temp (r ≈ 0.99). Keeping both would introduce severe multicollinearity without adding meaningful new information, and temp is more straightforward to interpret. This leaves us with 10 predictors: 7 categorical and 3 continuous.
 
-## --- Task 2 ---
+# Task 2
 
 We now turn to prediction. We use linear regression to model cnt and evaluate how well the models perform on unseen data using the validation set approach (ISLP, Section 5.1.1). This involves randomly splitting the data into a training set and a test set, fitting the model on the training data only, and then measuring prediction error on the held-out test data.
 
@@ -180,7 +206,7 @@ print(f"\nMSE reduction: {(mse_lr - mse_poly) / mse_lr * 100:.1f}%")
 The polynomial model reduces the test MSE by approximately 20.8% compared to the linear model (from 616 834 to 488 516), and the RMSE drops from 785 to 699 daily rentals. This confirms that nonlinear patterns exist in the continuous predictors — particularly the curved relationship between temperature and rentals observed in Task 1.
 However, the validation set approach has a key limitation (ISLP, Section 5.1.1): the estimated test error depends on the specific random split. A different random state could yield different results, and we only use 70% of the data for training. In Task 3, we address this using cross-validation, which averages the error over multiple splits for a more stable and reliable estimate.
 
-## --- Task 3 ---
+# Task 3
 
 In Task 2, we noted that the validation set approach produces test error estimates that depend on the random split. To obtain a more stable and reliable estimate, we now use leave-one-out cross-validation (LOOCV). The LOOCV estimate of test MSE is the average of n individual squared errors: CV(n) = (1/n) Σ MSEᵢ, where each MSEᵢ = (yᵢ − ŷᵢ)² comes from a model trained without observation i (ISLP, Section 5.1.2). 
 In LOOCV, each observation takes a turn as the single test point while the remaining n−1 observations form the training set. The process is repeated n times, and the test MSE is averaged across all n iterations. This eliminates the randomness inherent in a single train/test split and uses nearly all data for training, reducing bias in the error estimate.
@@ -286,9 +312,10 @@ ax.legend()
 plt.tight_layout()
 plt.show();
 ```
+
 The figure demonstrates the core limitation of the validation set approach. Each point represents the test MSE from a different random 70/30 split (50 different seeds). The estimates fluctuate substantially — for instance, the polynomial model's MSE ranges from roughly 400 000 to over 600 000, depending purely on which observations happen to land in the test set. The dashed horizontal lines show the LOOCV estimates, which are fixed regardless of any random seed. This illustrates why LOOCV provides a more reliable basis for model comparison: it removes the noise introduced by a single arbitrary split.
 
-## --- Task 4 ---
+# Task 4
 
 K-nearest neighbors (KNN) regression is a non-parametric method that makes predictions without assuming any fixed functional form for the relationship between predictors and response (ISLP, Section 3.5). To predict cnt for a new observation, KNN identifies the K training observations that are closest to it — its "nearest neighbors" — and uses their average response as the prediction.
 
@@ -366,7 +393,7 @@ print(f"{'KNN (best K)':<35} {mse_knn:>10.0f} {rmse_knn:>10.0f}")
 
 The comparison table summarises predictive performance across all models estimated so far. The polynomial regression model performs best, with a test RMSE of 699 daily rentals — a 11% improvement over the linear model (RMSE = 785). KNN with K = 13 performs substantially worse than both parametric models (RMSE = 1193), suggesting that the high-dimensional predictor space (28 features after dummy encoding) limits KNN's ability to identify truly similar neighbors. In Task 5, we explore whether a more structured flexible model can improve on these results.
 
-# --- Task 5 ---
+# Task 5
 
 Several indications of nonlinear relationships were noted in Task 1. The scatterplot of temp versus cnt showed a curved pattern — rentals increase with temperature but appear to level off at very high values. The boxplots also revealed strong threshold effects for season and weathersit, where rentals drop sharply under certain conditions rather than declining gradually. The polynomial model in Task 2 confirmed that adding squared terms improved predictive performance, further supporting the presence of nonlinearity.
 We fit a regression tree, a flexible non-parametric method that partitions the predictor space into rectangular regions and predicts the mean response within each region (ISLP, Section 8.1.1). A fully grown tree will overfit, so we use cost complexity pruning with 10-fold cross-validation to select the optimal tree size.
