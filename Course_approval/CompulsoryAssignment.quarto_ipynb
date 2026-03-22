@@ -1,0 +1,753 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Compulsory Assignment, BAN404\"\n",
+        "author: \"William Eide (s194704) and Mathias Haaland-Jensen (s222016)\"\n",
+        "date: today\n",
+        "format: \n",
+        "  html:\n",
+        "    theme: readable\n",
+        "    highlight-style: tango\n",
+        "    toc: true\n",
+        "    toc-depth: 2\n",
+        "    toc-location: left\n",
+        "    df-print: paged\n",
+        "    number-sections: true\n",
+        "    embed-resources: true\n",
+        "execute:\n",
+        "  echo: true\n",
+        "  warning: false\n",
+        "---\n",
+        "\n",
+        "\n",
+        "**AI declaration**:\n",
+        "During this assignment, GitHub Copilot was used as a learning tool to help understand statistical concepts, to troubleshoot errors when trying to write code, and as a conversational partner to discuss and help us understnad the theoretical implications of the bias-variance trade-off and model performance. It was also used to help the yaml formatting code of the qmd document to get the visual layout we wanted.\n",
+        "\n",
+        "**Introduction and Setup**:\n",
+        "Here we include the code for running the set up for use of packages later."
+      ],
+      "id": "f6ef1c11"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Starter code and loading dataset\n",
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import matplotlib.pyplot as plt\n",
+        "from sklearn.model_selection import train_test_split, KFold, cross_val_score\n",
+        "from sklearn.preprocessing import StandardScaler\n",
+        "from sklearn.linear_model import LinearRegression\n",
+        "from sklearn.neighbors import KNeighborsRegressor\n",
+        "from sklearn.tree import DecisionTreeRegressor\n",
+        "from sklearn.pipeline import Pipeline\n",
+        "\n",
+        "np.random.seed(123)\n",
+        "\n",
+        "data = pd.read_csv(\"datasets/day.csv\")\n",
+        "\n",
+        "X = data.drop(columns=[\"cnt\"])\n",
+        "y = data[\"cnt\"]"
+      ],
+      "id": "8ea99796",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# Task 1"
+      ],
+      "id": "aa3a1551"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Describing cnt-variable using descriptive statistics\n",
+        "data[\"cnt\"].describe()"
+      ],
+      "id": "6783dd8c",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The target variable cnt ranges from 22 to 8714 daily rentals, with a mean of approximately 4504. The standard deviation of about 1937 indicates considerable day-to-day variation, which is what makes this an interesting prediction problem. The interquartile range (Q1 = 3152, Q3 = 5956) tells us that the middle 50% of days see between roughly 3000 and 6000 rentals."
+      ],
+      "id": "44a15922"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Visualization of the cnt distribution\n",
+        "plt.close(\"all\")\n",
+        "fig, ax = plt.subplots(figsize=(8, 5))\n",
+        "ax.hist(data[\"cnt\"], bins=30, edgecolor=\"black\", color=\"steelblue\")\n",
+        "ax.set_xlabel(\"Daily bike rentals (cnt)\")\n",
+        "ax.set_ylabel(\"Frequency\")\n",
+        "ax.set_title(\"Distribution of daily bike rentals\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "7474c6b8",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The distribution is roughly symmetric with a slight right skew. There is no extreme concentration at any single value, and there are no obvious outliers. The spread is wide, confirming the high standard deviation observed above. This suggests that external factors (weather, season, etc.) likely play a significant role — let us investigate which predictors might explain this variation."
+      ],
+      "id": "a19b2a4e"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Categorical variables \n",
+        "cat_vars = [\"season\", \"yr\", \"mnth\", \"holiday\", \"weekday\", \"workingday\", \"weathersit\"]\n",
+        "\n",
+        "fig, axes = plt.subplots(2, 4, figsize=(18, 8))\n",
+        "axes = axes.flatten()\n",
+        "for i, var in enumerate(cat_vars):\n",
+        "    data.boxplot(column=\"cnt\", by=var, ax=axes[i])\n",
+        "    axes[i].set_title(var)\n",
+        "    axes[i].set_xlabel(\"\")\n",
+        "axes[-1].set_visible(False)\n",
+        "plt.suptitle(\"Daily bike rentals by categorical variables\", fontsize=14)\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "be8ca7c0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Several categorical variables show clear group differences. Season has a strong effect: fall (season 3) has the highest median rentals, while spring (season 1) has the lowest. The variable yr shows a notable increase from 2011 (yr=0) to 2012 (yr=1), suggesting a growing trend in bike usage. Weather situation (weathersit) also matters — clear weather (1) is associated with more rentals than misty (2) or rainy (3) conditions. In contrast, holiday and workingday show relatively small differences, and weekday shows nearly identical medians across all days. Let us now examine the continuous predictors."
+      ],
+      "id": "f251d2cc"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Continuous variables\n",
+        "num_vars = [\"temp\", \"atemp\", \"hum\", \"windspeed\"]\n",
+        "\n",
+        "# Scatterplots\n",
+        "fig, axes = plt.subplots(1, 4, figsize=(18, 4))\n",
+        "for i, var in enumerate(num_vars):\n",
+        "    axes[i].scatter(data[var], data[\"cnt\"], alpha=0.3, s=10, color=\"steelblue\")\n",
+        "    axes[i].set_xlabel(var)\n",
+        "    axes[i].set_ylabel(\"cnt\")\n",
+        "plt.suptitle(\"Daily bike rentals vs. continuous predictors\", fontsize=14)\n",
+        "plt.tight_layout()\n",
+        "plt.show()\n",
+        "\n",
+        "# Correlation\n",
+        "print(data[num_vars + [\"cnt\"]].corr()[\"cnt\"].drop(\"cnt\"))"
+      ],
+      "id": "6970e6cc",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Temperature (temp, r ≈ 0.63) and feels-like temperature (atemp, r ≈ 0.63) show a strong positive association with rentals — warmer days attract more cyclists. The scatterplots also hint at a possible nonlinear (curved) relationship, with rentals leveling off or decreasing at the highest temperatures. Humidity (hum, r ≈ −0.10) and windspeed (windspeed, r ≈ −0.23) have weaker negative associations. We also note that *temp* and *atemp* are highly correlated with each other (r > 0.99), which is expected since they measure nearly the same thing. As *temp* is the easiest to understand of the two, we choose to keep this variable and remove *atemp*."
+      ],
+      "id": "476e696c"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Check the relationship: casual + registered = cnt\n",
+        "print(\"casual + registered == cnt for all rows:\",\n",
+        "      (data[\"casual\"] + data[\"registered\"] == data[\"cnt\"]).all())"
+      ],
+      "id": "8a9fe311",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Check correlation between temp and atemp\n",
+        "print(f\"Correlation between temp and atemp: {data['temp'].corr(data['atemp']):.4f}\")\n",
+        "\n",
+        "# Remove variables not available at prediction time, plus atemp\n",
+        "drop_cols = [\"instant\", \"dteday\", \"casual\", \"registered\", \"atemp\"]\n",
+        "X = data.drop(columns=[\"cnt\"] + drop_cols)\n",
+        "y = data[\"cnt\"]\n",
+        "\n",
+        "# Convert categorical variables to correct type\n",
+        "cat_cols = [\"season\", \"yr\", \"mnth\", \"holiday\", \"weekday\", \"workingday\", \"weathersit\"]\n",
+        "for col in cat_cols:\n",
+        "    X[col] = X[col].astype(\"category\")\n",
+        "\n",
+        "print(f\"\\nRemaining predictors ({X.shape[1]}):\")\n",
+        "print(X.dtypes)"
+      ],
+      "id": "4afe557d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "We remove five variables. First, casual and registered are direct components of the target (casual + registered = cnt), so including them would constitute data leakage — they are only known after observing the outcome. Second, instant is a row index with no predictive content. Third, dteday is a date string whose information is already captured by yr, mnth, and weekday. Finally, we remove atemp (feels-like temperature) because it correlates almost perfectly with temp (r ≈ 0.99). Keeping both would introduce severe multicollinearity without adding meaningful new information, and temp is more straightforward to interpret. This leaves us with 10 predictors: 7 categorical and 3 continuous.\n",
+        "\n",
+        "# Task 2\n",
+        "\n",
+        "We now turn to prediction. We use linear regression to model cnt and evaluate how well the models perform on unseen data using the validation set approach (ISLP, Section 5.1.1). This involves randomly splitting the data into a training set and a test set, fitting the model on the training data only, and then measuring prediction error on the held-out test data."
+      ],
+      "id": "72000166"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Create dummy variables for categorical predictors\n",
+        "# drop_first=True avoids the dummy variable trap (perfect multicollinearity)\n",
+        "X_prepared = pd.get_dummies(X, drop_first=True, dtype=float)\n",
+        "\n",
+        "# Validation set approach: 70/30 split\n",
+        "X_train, X_test, y_train, y_test = train_test_split(\n",
+        "    X_prepared, y, test_size=0.3, random_state=123\n",
+        ")\n",
+        "\n",
+        "print(f\"Training set: {X_train.shape[0]} observations\")\n",
+        "print(f\"Test set:     {X_test.shape[0]} observations\")\n",
+        "print(f\"Features:     {X_train.shape[1]} (after dummy encoding)\")"
+      ],
+      "id": "d2b01e14",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The 10 original predictors expand to 28 features after dummy encoding. The 7 categorical variables generate 25 dummy columns (one reference category is dropped per variable to avoid perfect multicollinearity), plus the 3 continuous predictors. We use 70% of the data for training (512 observations) and hold out 30% (219 observations) for testing. The error metric is Mean Squared Error (MSE), which averages the squared prediction errors — a standard choice for regression (ISLP, Section 2.2.1). We also report RMSE (root MSE) for interpretability, since it is in the same unit as cnt (daily rentals).\n",
+        "\n",
+        "We begin with a standard multiple linear regression, which assumes a linear relationship between the predictors and cnt (ISLP, Section 3.2). The model takes the form: cnt = β₀ + β₁·temp + β₂·hum + ... + βₚ·weathersitₖ + ε."
+      ],
+      "id": "e2953055"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Model 1: Multiple linear regression\n",
+        "lr = LinearRegression()\n",
+        "lr.fit(X_train, y_train)\n",
+        "\n",
+        "y_pred_lr = lr.predict(X_test)\n",
+        "mse_lr = np.mean((y_test - y_pred_lr) ** 2)\n",
+        "rmse_lr = np.sqrt(mse_lr)\n",
+        "\n",
+        "print(f\"Multiple Linear Regression:\")\n",
+        "print(f\"  Test MSE:  {mse_lr:.0f}\")\n",
+        "print(f\"  Test RMSE: {rmse_lr:.0f} rentals\")"
+      ],
+      "id": "56fc47d9",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The model achieves a test MSE of approximately 616 834, corresponding to an RMSE of about 785 daily rentals. Given that the average daily count is around 4504, this represents a relative error of roughly 17.4%. This is a reasonable starting point, but the scatterplots in Task 1 suggested a possible nonlinear (curved) relationship between temperature and rentals — at very high temperatures, rentals seemed to level off. A standard linear model cannot capture such patterns.\n",
+        "\n",
+        "To capture potential nonlinear relationships, we extend the linear model by adding squared terms (degree-2 polynomials) for the three continuous predictors. The model remains linear in its parameters — we are simply transforming the input features — but it can now fit curved relationships between each continuous predictor and cnt."
+      ],
+      "id": "a42071de"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Model 2: Polynomial regression — add squared terms for continuous predictors\n",
+        "numeric_features = [\"temp\", \"hum\", \"windspeed\"]\n",
+        "\n",
+        "X_train_poly = X_train.copy()\n",
+        "X_test_poly = X_test.copy()\n",
+        "\n",
+        "for col in numeric_features:\n",
+        "    X_train_poly[f\"{col}_sq\"] = X_train[col] ** 2\n",
+        "    X_test_poly[f\"{col}_sq\"] = X_test[col] ** 2\n",
+        "\n",
+        "lr_poly = LinearRegression()\n",
+        "lr_poly.fit(X_train_poly, y_train)\n",
+        "\n",
+        "y_pred_poly = lr_poly.predict(X_test_poly)\n",
+        "mse_poly = np.mean((y_test - y_pred_poly) ** 2)\n",
+        "rmse_poly = np.sqrt(mse_poly)\n",
+        "\n",
+        "print(f\"Polynomial Regression (degree 2):\")\n",
+        "print(f\"  Test MSE:  {mse_poly:.0f}\")\n",
+        "print(f\"  Test RMSE: {rmse_poly:.0f} rentals\")"
+      ],
+      "id": "9694b6f2",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Model comparison\n",
+        "print(f\"{'Model':<35} {'Test MSE':>10} {'Test RMSE':>10}\")\n",
+        "print(f\"{'-'*55}\")\n",
+        "print(f\"{'Multiple Linear Regression':<35} {mse_lr:>10.0f} {rmse_lr:>10.0f}\")\n",
+        "print(f\"{'Polynomial Regression (degree 2)':<35} {mse_poly:>10.0f} {rmse_poly:>10.0f}\")\n",
+        "print(f\"\\nMSE reduction: {(mse_lr - mse_poly) / mse_lr * 100:.1f}%\")"
+      ],
+      "id": "c1105d83",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The polynomial model reduces the test MSE by approximately 20.8% compared to the linear model (from 616 834 to 488 516), and the RMSE drops from 785 to 699 daily rentals. This confirms that nonlinear patterns exist in the continuous predictors — particularly the curved relationship between temperature and rentals observed in Task 1.\n",
+        "However, the validation set approach has a key limitation (ISLP, Section 5.1.1): the estimated test error depends on the specific random split. A different random state could yield different results, and we only use 70% of the data for training. In Task 3, we address this using cross-validation, which averages the error over multiple splits for a more stable and reliable estimate.\n",
+        "\n",
+        "# Task 3\n",
+        "\n",
+        "In Task 2, we noted that the validation set approach produces test error estimates that depend on the random split. To obtain a more stable and reliable estimate, we now use leave-one-out cross-validation (LOOCV). The LOOCV estimate of test MSE is the average of n individual squared errors: CV(n) = (1/n) Σ MSEᵢ, where each MSEᵢ = (yᵢ − ŷᵢ)² comes from a model trained without observation i (ISLP, Section 5.1.2). \n",
+        "In LOOCV, each observation takes a turn as the single test point while the remaining n−1 observations form the training set. The process is repeated n times, and the test MSE is averaged across all n iterations. This eliminates the randomness inherent in a single train/test split and uses nearly all data for training, reducing bias in the error estimate."
+      ],
+      "id": "92cd0eb3"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from sklearn.model_selection import LeaveOneOut, cross_val_score\n",
+        "\n",
+        "loo = LeaveOneOut()\n",
+        "\n",
+        "# Model 1: Multiple Linear Regression (LOOCV)\n",
+        "lr_loo = LinearRegression()\n",
+        "scores_lr = cross_val_score(\n",
+        "    lr_loo, X_prepared, y,\n",
+        "    cv=loo,\n",
+        "    scoring=\"neg_mean_squared_error\"\n",
+        ")\n",
+        "# sklearn returns negative MSE by convention (higher = better);\n",
+        "# we negate to recover the actual MSE value\n",
+        "loocv_mse_lr = -scores_lr.mean()\n",
+        "loocv_rmse_lr = np.sqrt(loocv_mse_lr)\n",
+        "\n",
+        "print(f\"LOOCV - Multiple Linear Regression:\")\n",
+        "print(f\"  MSE:  {loocv_mse_lr:.0f}\")\n",
+        "print(f\"  RMSE: {loocv_rmse_lr:.0f} rentals\")"
+      ],
+      "id": "7c32e960",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Model 2: Polynomial Regression (LOOCV)\n",
+        "# First, create polynomial features on the full dataset\n",
+        "numeric_features = [\"temp\", \"hum\", \"windspeed\"]\n",
+        "X_poly_full = X_prepared.copy()\n",
+        "for col in numeric_features:\n",
+        "    X_poly_full[f\"{col}_sq\"] = X_prepared[col] ** 2\n",
+        "\n",
+        "lr_poly_loo = LinearRegression()\n",
+        "scores_poly = cross_val_score(\n",
+        "    lr_poly_loo, X_poly_full, y,\n",
+        "    cv=loo,\n",
+        "    scoring=\"neg_mean_squared_error\"\n",
+        ")\n",
+        "loocv_mse_poly = -scores_poly.mean()\n",
+        "loocv_rmse_poly = np.sqrt(loocv_mse_poly)\n",
+        "\n",
+        "print(f\"LOOCV - Polynomial Regression (degree 2):\")\n",
+        "print(f\"  MSE:  {loocv_mse_poly:.0f}\")\n",
+        "print(f\"  RMSE: {loocv_rmse_poly:.0f} rentals\")"
+      ],
+      "id": "e7dca682",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Comparison table: Validation Set vs LOOCV\n",
+        "print(f\"{'Method':<20} {'Model':<35} {'MSE':>10} {'RMSE':>10}\")\n",
+        "print(f\"{'-'*75}\")\n",
+        "print(f\"{'Validation Set':<20} {'Linear Regression':<35} {mse_lr:>10.0f} {rmse_lr:>10.0f}\")\n",
+        "print(f\"{'Validation Set':<20} {'Polynomial Regression (deg 2)':<35} {mse_poly:>10.0f} {rmse_poly:>10.0f}\")\n",
+        "print(f\"{'LOOCV':<20} {'Linear Regression':<35} {loocv_mse_lr:>10.0f} {loocv_rmse_lr:>10.0f}\")\n",
+        "print(f\"{'LOOCV':<20} {'Polynomial Regression (deg 2)':<35} {loocv_mse_poly:>10.0f} {loocv_rmse_poly:>10.0f}\")"
+      ],
+      "id": "de063e3b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The table compares the two evaluation approaches. The model ranking is consistent: the polynomial model outperforms the linear model under both methods, confirming that the squared terms capture genuine nonlinear patterns rather than just fitting noise in a particular split.\n",
+        "\n",
+        "The LOOCV estimates are slightly higher than the validation set estimates for both models (e.g., 524 118 vs. 488 516 for the polynomial model). This does not mean the models are worse — rather, the validation set result from Task 2 happened to be an optimistic draw. This is consistent with the known tendency of the validation set approach to produce high-variance estimates (ISLP, Section 5.1.1): using only 70% of the data for training means the model is fit on fewer observations than in LOOCV, which can also contribute to a slightly lower (optimistic) error estimate.\n",
+        "\n",
+        "A different random_state could just as easily have produced a higher MSE. The LOOCV estimate, by contrast, is deterministic: it averages over all 731 possible held-out points and will produce the same result every time. This makes it a more trustworthy basis for model comparison.\n",
+        "\n",
+        "Importantly, both methods agree on the key conclusion: allowing nonlinear terms (polynomial degree 2) reduces the expected prediction error by roughly 16%, from an RMSE of 789 to 724 daily rentals."
+      ],
+      "id": "7770d8b6"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Demonstrate instability of validation set approach\n",
+        "mse_lr_seeds = []\n",
+        "mse_poly_seeds = []\n",
+        "\n",
+        "for seed in range(50):\n",
+        "    X_tr, X_te, y_tr, y_te = train_test_split(\n",
+        "        X_prepared, y, test_size=0.3, random_state=seed\n",
+        "    )\n",
+        "    # Linear\n",
+        "    lr_temp = LinearRegression()\n",
+        "    lr_temp.fit(X_tr, y_tr)\n",
+        "    mse_lr_seeds.append(np.mean((y_te - lr_temp.predict(X_te)) ** 2))\n",
+        "\n",
+        "    # Polynomial\n",
+        "    X_tr_p = X_tr.copy()\n",
+        "    X_te_p = X_te.copy()\n",
+        "    for col in numeric_features:\n",
+        "        X_tr_p[f\"{col}_sq\"] = X_tr[col] ** 2\n",
+        "        X_te_p[f\"{col}_sq\"] = X_te[col] ** 2\n",
+        "    lr_p = LinearRegression()\n",
+        "    lr_p.fit(X_tr_p, y_tr)\n",
+        "    mse_poly_seeds.append(np.mean((y_te - lr_p.predict(X_te_p)) ** 2))\n",
+        "\n",
+        "plt.close(\"all\")\n",
+        "fig, ax = plt.subplots(figsize=(10, 5))\n",
+        "ax.plot(range(50), mse_lr_seeds, \"o-\", label=\"Linear Regression\", alpha=0.7, markersize=4)\n",
+        "ax.plot(range(50), mse_poly_seeds, \"s-\", label=\"Polynomial Regression\", alpha=0.7, markersize=4)\n",
+        "ax.axhline(y=loocv_mse_lr, color=\"tab:blue\", linestyle=\"--\",\n",
+        "           label=f\"LOOCV Linear ({loocv_mse_lr:.0f})\")\n",
+        "ax.axhline(y=loocv_mse_poly, color=\"tab:orange\", linestyle=\"--\",\n",
+        "           label=f\"LOOCV Polynomial ({loocv_mse_poly:.0f})\")\n",
+        "ax.set_xlabel(\"Random seed\")\n",
+        "ax.set_ylabel(\"Test MSE\")\n",
+        "ax.set_title(\"Validation set instability vs. stable LOOCV estimate\")\n",
+        "ax.legend()\n",
+        "plt.tight_layout()\n",
+        "plt.show();"
+      ],
+      "id": "ab7266b1",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The figure demonstrates the core limitation of the validation set approach. Each point represents the test MSE from a different random 70/30 split (50 different seeds). The estimates fluctuate substantially — for instance, the polynomial model's MSE ranges from roughly 400 000 to over 600 000, depending purely on which observations happen to land in the test set. The dashed horizontal lines show the LOOCV estimates, which are fixed regardless of any random seed. This illustrates why LOOCV provides a more reliable basis for model comparison: it removes the noise introduced by a single arbitrary split.\n",
+        "\n",
+        "# Task 4\n",
+        "\n",
+        "K-nearest neighbors (KNN) regression is a non-parametric method that makes predictions without assuming any fixed functional form for the relationship between predictors and response (ISLP, Section 3.5). To predict cnt for a new observation, KNN identifies the K training observations that are closest to it — its \"nearest neighbors\" — and uses their average response as the prediction."
+      ],
+      "id": "b152ecc2"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "pipe = Pipeline([\n",
+        "    (\"scaler\", StandardScaler()),\n",
+        "    (\"knn\", KNeighborsRegressor())\n",
+        "])\n",
+        "\n",
+        "cv = KFold(n_splits=10, shuffle=True, random_state=1)\n",
+        "\n",
+        "Ks = range(1, 41)\n",
+        "cv_mse = []\n",
+        "\n",
+        "for k in Ks:\n",
+        "    pipe.set_params(knn__n_neighbors=k)\n",
+        "    fold_errors = []\n",
+        "    for train_idx, test_idx in cv.split(X_train):  # use only training data!\n",
+        "        X_train_cv = X_train.iloc[train_idx]\n",
+        "        X_test_cv  = X_train.iloc[test_idx]\n",
+        "        y_train_cv = y_train.iloc[train_idx]\n",
+        "        y_test_cv  = y_train.iloc[test_idx]\n",
+        "        pipe.fit(X_train_cv, y_train_cv)\n",
+        "        y_pred = pipe.predict(X_test_cv)\n",
+        "        fold_errors.append(np.mean((y_test_cv - y_pred) ** 2))\n",
+        "    cv_mse.append(np.mean(fold_errors))"
+      ],
+      "id": "f87d0598",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The code above uses a Pipeline that chains standardization and KNN in a single object, ensuring that the scaler is fitted only on the training fold in each iteration — preventing information from the test fold from leaking into the model. KFold with 10 splits divides the training data into 10 roughly equal folds; in each iteration, 9 folds are used for training and 1 for testing. The outer loop iterates over K = 1, …, 40: for each K, the inner loop runs all 10 folds, computes the MSE on each held-out fold, and appends the average to cv_mse. The result is a list of 40 cross-validated MSE estimates — one per value of K — which we use to select the K that minimizes prediction error."
+      ],
+      "id": "8c0b655f"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Plot CV-MSE as a function of K\n",
+        "best_k = Ks[np.argmin(cv_mse)]\n",
+        "best_cv_mse = min(cv_mse)\n",
+        "\n",
+        "plt.close(\"all\")\n",
+        "fig, ax = plt.subplots(figsize=(9, 5))\n",
+        "ax.plot(Ks, cv_mse, \"o-\", markersize=4, color=\"steelblue\")\n",
+        "ax.axvline(best_k, color=\"red\", linestyle=\"--\", label=f\"Best K = {best_k}\")\n",
+        "ax.set_xlabel(\"K (number of neighbors)\")\n",
+        "ax.set_ylabel(\"10-fold CV MSE\")\n",
+        "ax.set_title(\"KNN: Cross-validated MSE by number of neighbors\")\n",
+        "ax.legend()\n",
+        "plt.tight_layout()\n",
+        "plt.show()\n",
+        "\n",
+        "print(f\"Best K: {best_k}  (CV MSE = {best_cv_mse:.0f})\")"
+      ],
+      "id": "b7239f8b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The plot shows the characteristic U-shape described in ISLP (Section 3.5): CV-MSE is highest at K = 1, where the model relies on a single neighbor and overfits heavily (low bias, high variance). As K increases, the error drops sharply before reaching a minimum at K = 13, then gradually rises again as averaging over too many neighbors begins to smooth out genuine patterns (high bias, low variance). We therefore use K = 13 for the final model."
+      ],
+      "id": "183e7cef"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Evaluate best KNN model on the held-out test set\n",
+        "pipe.set_params(knn__n_neighbors=best_k)\n",
+        "pipe.fit(X_train, y_train)\n",
+        "y_pred_knn = pipe.predict(X_test)\n",
+        "\n",
+        "mse_knn  = np.mean((y_test - y_pred_knn) ** 2)\n",
+        "rmse_knn = np.sqrt(mse_knn)\n",
+        "\n",
+        "print(f\"KNN (K={best_k}) – Test MSE:  {mse_knn:.0f}\")\n",
+        "print(f\"KNN (K={best_k}) – Test RMSE: {rmse_knn:.0f} rentals\")"
+      ],
+      "id": "9876a067",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "With K = 13, the KNN model achieves a test MSE of 1 424 372, corresponding to an RMSE of approximately 1 193 daily rentals. This is considerably worse than both the linear regression model (RMSE ≈ 785) and the polynomial model (RMSE ≈ 699). Despite being a flexible, non-parametric method, KNN underperforms here — a result consistent with ISLP (Section 3.5): with 28 features after dummy encoding, the predictor space is high-dimensional, making it difficult to find truly close neighbors. This phenomenon, known as the curse of dimensionality, reduces KNN's effectiveness relative to parametric methods in settings like this."
+      ],
+      "id": "02a7f1f8"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Final comparison table (all models so far)\n",
+        "print(f\"{'Model':<35} {'Test MSE':>10} {'Test RMSE':>10}\")\n",
+        "print(\"-\" * 57)\n",
+        "print(f\"{'Linear Regression':<35} {mse_lr:>10.0f} {rmse_lr:>10.0f}\")\n",
+        "print(f\"{'Polynomial Regression (deg 2)':<35} {mse_poly:>10.0f} {rmse_poly:>10.0f}\")\n",
+        "print(f\"{'KNN (best K)':<35} {mse_knn:>10.0f} {rmse_knn:>10.0f}\")"
+      ],
+      "id": "76df30d7",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The comparison table summarises predictive performance across all models estimated so far. The polynomial regression model performs best, with a test RMSE of 699 daily rentals — a 11% improvement over the linear model (RMSE = 785). KNN with K = 13 performs substantially worse than both parametric models (RMSE = 1193), suggesting that the high-dimensional predictor space (28 features after dummy encoding) limits KNN's ability to identify truly similar neighbors. In Task 5, we explore whether a more structured flexible model can improve on these results.\n",
+        "\n",
+        "# Task 5\n",
+        "\n",
+        "Several indications of nonlinear relationships were noted in Task 1. The scatterplot of temp versus cnt showed a curved pattern — rentals increase with temperature but appear to level off at very high values. The boxplots also revealed strong threshold effects for season and weathersit, where rentals drop sharply under certain conditions rather than declining gradually. The polynomial model in Task 2 confirmed that adding squared terms improved predictive performance, further supporting the presence of nonlinearity.\n",
+        "We fit a regression tree, a flexible non-parametric method that partitions the predictor space into rectangular regions and predicts the mean response within each region (ISLP, Section 8.1.1). A fully grown tree will overfit, so we use cost complexity pruning with 10-fold cross-validation to select the optimal tree size."
+      ],
+      "id": "74a1ada4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Regression Tree with Cost Complexity Pruning\n",
+        "\n",
+        "# Adding needed imports\n",
+        "from sklearn.tree import plot_tree\n",
+        "from sklearn.model_selection import GridSearchCV\n",
+        "\n",
+        "# Step 1: Fit a large tree and extract pruning path\n",
+        "    # cost_complexity_pruning_path() returns the sequence of alpha values at which branches are pruned. Larger alpha = simpler tree. See ISLP Section 8.3.2.\n",
+        "tree = DecisionTreeRegressor(random_state=0)\n",
+        "tree.fit(X_train, y_train)\n",
+        "\n",
+        "ccp_path = tree.cost_complexity_pruning_path(X_train, y_train)"
+      ],
+      "id": "b4aec633",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Starting from a fully grown tree, cost_complexity_pruning_path() computes the sequence of subtrees obtained by progressively removing branches. Each subtree corresponds to a value of α — the complexity parameter that penalises tree size. We use cross-validation to find the α that minimises test error."
+      ],
+      "id": "3196e0b2"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Step 2: Use 10-fold CV to select the best alpha\n",
+        "    # GridSearchCV tries every alpha from the pruning path and selects the one with the lowest cross-validated MSE. refit=True automatically refits the best model on the full training set. See ISLP Section 8.3.2.\n",
+        "kfold = KFold(n_splits=10, shuffle=True, random_state=1)\n",
+        "\n",
+        "grid = GridSearchCV(\n",
+        "    tree,\n",
+        "    {\"ccp_alpha\": ccp_path.ccp_alphas},\n",
+        "    cv=kfold,\n",
+        "    scoring=\"neg_mean_squared_error\",\n",
+        "    refit=True\n",
+        ")\n",
+        "grid.fit(X_train, y_train)\n",
+        "\n",
+        "best_tree = grid.best_estimator_\n",
+        "print(f\"Best alpha:    {grid.best_params_['ccp_alpha']:.2f}\")\n",
+        "print(f\"Number of leaves in pruned tree: {best_tree.get_n_leaves()}\")"
+      ],
+      "id": "cf693b61",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The grid search selects the α that minimises the 10-fold CV MSE. refit=True ensures the best model is immediately re-fitted on the full training set, ready for evaluation. The CV-optimal tree may contain many leaves and be difficult to interpret visually — we therefore also display a shallower tree for illustration."
+      ],
+      "id": "f5fdd6d8"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Step 3: Visualise the pruned tree\n",
+        "    # The CV-optimal tree is used for prediction, but we display a simpler tree (max_depth=4) to illustrate the key splits.\n",
+        "tree_small = DecisionTreeRegressor(max_depth=4, random_state=0)\n",
+        "tree_small.fit(X_train, y_train)\n",
+        "\n",
+        "fig, ax = plt.subplots(figsize=(14, 7))\n",
+        "plot_tree(tree_small,\n",
+        "          feature_names=X_train.columns,\n",
+        "          filled=True,\n",
+        "          rounded=True,\n",
+        "          fontsize=8,\n",
+        "          ax=ax)\n",
+        "plt.title(\"Regression Tree (max depth = 4, for illustration)\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "e1fdb96b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The root split on temp confirms the nonlinear temperature effect observed in Task 1 — the tree immediately separates low- and high-temperature days. The variable yr appears early in both branches, capturing the upward trend in rentals from 2011 to 2012. Unlike linear regression, the tree discovers these threshold effects and interactions automatically, without any manual feature engineering (ISLP, Section 8.1.3)."
+      ],
+      "id": "0d012426"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Step 4: Evaluate on held-out test set and compare\n",
+        "y_pred_tree = best_tree.predict(X_test)\n",
+        "mse_tree  = np.mean((y_test - y_pred_tree) ** 2)\n",
+        "rmse_tree = np.sqrt(mse_tree)\n",
+        "\n",
+        "print(f\"Regression Tree – Test MSE:  {mse_tree:.0f}\")\n",
+        "print(f\"Regression Tree – Test RMSE: {rmse_tree:.0f} rentals\")\n",
+        "\n",
+        "# Step 5: Final comparison table\n",
+        "print(f\"{'Model':<35} {'Test MSE':>10} {'Test RMSE':>10}\")\n",
+        "print(\"-\" * 57)\n",
+        "print(f\"{'Linear Regression':<35} {mse_lr:>10.0f} {rmse_lr:>10.0f}\")\n",
+        "print(f\"{'Polynomial Regression (deg 2)':<35} {mse_poly:>10.0f} {rmse_poly:>10.0f}\")\n",
+        "print(f\"{'KNN (K=13)':<35} {mse_knn:>10.0f} {rmse_knn:>10.0f}\")\n",
+        "print(f\"{'Regression Tree (pruned)':<35} {mse_tree:>10.0f} {rmse_tree:>10.0f}\")"
+      ],
+      "id": "20cd1d0b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "The pruned regression tree achieves a test RMSE of 904 daily rentals, which is worse than both the linear regression model (RMSE = 785) and the polynomial model (RMSE = 699), but better than KNN (RMSE = 1193). Despite being a flexible non-parametric method, the single regression tree does not outperform the parametric models here. This is consistent with the observation in ISLP (Section 8.1.3) that regression trees do not necessarily outperform linear models — particularly when the underlying relationships, while nonlinear, are relatively smooth and well-approximated by polynomial terms.\n",
+        "\n",
+        "The illustrative tree (max depth = 4) nonetheless provides useful insight into the data structure. The root split on temp ≤ 0.464 immediately separates low- and high-temperature days, confirming the strong nonlinear temperature effect observed in Task 1. yr appears as the second split in both branches, capturing the overall growth in rentals from 2011 to 2012. Deeper in the tree, variables such as hum, weathersit, and season further refine the predictions — reflecting the threshold effects identified in the descriptive analysis."
+      ],
+      "id": "fe45b6a2"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "C:\\Users\\willi\\.conda\\envs\\BAN404\\share\\jupyter\\kernels\\python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
