@@ -18,9 +18,11 @@ execute:
   warning: false
 ---
 
-Introduction and Setup:
+**Introduction and Setup**:
 Here we include the code for running the set up for use of packages later.
 
+**AI declaration**:
+During this assignment, GitHub Copilot was used as a learning tool to help understand statistical concepts, to troubleshoot errors when trying to write code, and as a conversational partner to discuss and help us understnad the theoretical implications of the bias-variance trade-off and model performance. It was also used to help the yaml formatting code of the qmd document to get the visual layout we wanted.
 
 ```{python}
 import pandas as pd
@@ -65,10 +67,10 @@ plt.ylabel('Frequency (Days)')
 plt.show()
 ```
 
-The summary statistics show a mean of 4504 rentals with a high standard deviation of 1937, indicating significant daily variation. The histogram reveals a roughly symmetric, somewhat bimodal distribution without extreme skewness.
+The summary statistics show a mean of 4504 rentals with a high standard deviation of 1937, indicating significant daily variation. The histogram reveals a roughly symmetric, somewhat bimodal distribution without extreme skewness. 
 
 ## Removing Unavailable and Redundant Variables
-Before predicting future responses, it is vital to avoid data leakage. Data leakage occurs when a model is trained using information that would not realistically be available at the time of prediction.
+Before predicting future responses, it is vital to avoid data leakage. Data leakage occurs when a model is trained using information that would not realistically be available at the time of prediction. 
 
 Based on the README file information on the data, `casual` and `registered` sum exactly to `cnt`. Since we cannot know the number of casual or registered users before the day concludes, these variables must be removed. Furthermore, we drop `instant` as it is merely a row identifier, and `dteday` (date string) because temporal information is already captured by the numeric features `yr`, `mnth`, and `weekday`.
 
