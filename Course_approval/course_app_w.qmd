@@ -1,7 +1,8 @@
 ---
 title: "Compulsory Assignment, BAN404"
-author: "Your Name / Group Members"
-date: 2026-03-21
+author: "William Eide and Mathias Haaland-Jensen"
+student numbers: "s194704 and sXXXXXX"
+date: today
 format: 
   html:
     theme: readable
@@ -69,7 +70,7 @@ The summary statistics show a mean of 4504 rentals with a high standard deviatio
 ## Removing Unavailable and Redundant Variables
 Before predicting future responses, it is vital to avoid data leakage. Data leakage occurs when a model is trained using information that would not realistically be available at the time of prediction.
 
-Based on the data dictionary, `casual` and `registered` sum exactly to `cnt`. Since we cannot know the number of casual or registered users before the day concludes, these variables must be removed. Furthermore, we drop `instant` as it is merely a row identifier, and `dteday` (date string) because temporal information is already captured by the numeric features `yr`, `mnth`, and `weekday`.
+Based on the README file information on the data, `casual` and `registered` sum exactly to `cnt`. Since we cannot know the number of casual or registered users before the day concludes, these variables must be removed. Furthermore, we drop `instant` as it is merely a row identifier, and `dteday` (date string) because temporal information is already captured by the numeric features `yr`, `mnth`, and `weekday`.
 
 ```{python}
 # Drop variables that cause data leakage or are redundant
@@ -305,7 +306,7 @@ The provided code performs 10-fold Cross-Validation to tune the hyperparameter $
 3. **Hyperparameter Tuning:** It iterates through possible values of $K$ (from 1 to 40). For each $K$, it splits the feature matrix `X` and response `y` into 10 training and test folds. The pipeline fits the scaled training data, predicts the test data, and calculates the Mean Squared Error (MSE) for each fold.
 4. **Aggregation:** Finally, it calculates the average MSE across all 10 folds for that specific $K$ and appends it to the `cv_mse` list, allowing us to find the optimal $K$ that minimizes test error.
 
-### Finding the Optimal $K$
+## Finding the Optimal $K$
 Now that the code has executed and calculated the CV errors for $K \in [1, 40]$, we can plot the results to visually identify the optimal $K$ value.
 
 ```{python}
@@ -336,7 +337,7 @@ print(f"KNN (K={best_k}) Test RMSE: {best_rmse:,.0f} bikes")
 *Argue whether there are indications of nonlinear relationships between cnt and one or more predictors. Fit a flexible model, such as a generalized additive model (GAM), smoothing spline, or regression tree. Evaluate the predictive performance and compare it with earlier models.*
 
 ## Indications of Non-Linearity and Model Selection
-Throughout this analysis, there are clear indications of non-linear relationships between daily bike rentals and our predictors. Most notably, in Task 2, we saw that introducing a degree-2 polynomial for our continuous variables (like temperature) significantly reduced our Test RMSE from 822 down to 741. This makes intuitive sense: as the temperature rises from freezing, bike rentals predictably increase, but if the weather becomes overwhelmingly hot, rentals will naturally drop off. A standard multiple linear regression model completely fails to capture this curve because it assumes a constant, straight-line slope.
+Throughout this analysis, there are indications of non-linear relationships between daily bike rentals and our predictors. in Task 2, we saw that introducing a degree-2 polynomial for our continuous variables (like temperature) significantly reduced our Test RMSE from 822 down to 741. This makes intuitive sense: as the temperature rises from freezing, bike rentals predictably increase, but if the weather becomes overwhelmingly hot, rentals will naturally drop off. A standard multiple linear regression model completely fails to capture this curve because it assumes a constant, straight-line slope.
 
 To model these non-linearities, the course material suggests flexible models like Generalized Additive Models (GAMs), smoothing splines, or regression trees. While GAMs are excellent, they require installing additional non-standard packages in Python. From a practical standpoint, I argue that a Decision Tree Regressor is the best approach here. It is built natively into `scikit-learn`, making the code creation simple and efficient. More importantly, it provides an excellent trade-off between flexibility and interpretability. Instead of forcing complex mathematical curves, a tree simply asks a series of logical Yes/No questions to split the data (e.g., "Is the temperature > 20°C?" followed by "Is it raining?"). This allows the tree to naturally capture both non-linear effects and interactions between variables. Furthermore, because trees perform built-in feature selection, this model should help us completely bypass the "curse of dimensionality" that negatively impacted our KNN model in Task 4.
 

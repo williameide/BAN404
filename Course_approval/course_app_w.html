@@ -6,8 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Your Name / Group Members">
-<meta name="dcterms.date" content="2026-03-21">
+<meta name="author" content="William Eide and Mathias Haaland-Jensen">
+<meta name="dcterms.date" content="2026-03-22">
 
 <title>Compulsory Assignment, BAN404</title>
 <style>
@@ -2385,6 +2385,7 @@ window.Quarto = {
   <li><a href="#task-4" id="toc-task-4" class="nav-link" data-scroll-target="#task-4"><span class="header-section-number">4</span> Task 4</a>
   <ul class="collapse">
   <li><a href="#explanation-of-the-cross-validation-code" id="toc-explanation-of-the-cross-validation-code" class="nav-link" data-scroll-target="#explanation-of-the-cross-validation-code"><span class="header-section-number">4.1</span> Explanation of the Cross-Validation Code</a></li>
+  <li><a href="#finding-the-optimal-k" id="toc-finding-the-optimal-k" class="nav-link" data-scroll-target="#finding-the-optimal-k"><span class="header-section-number">4.2</span> Finding the Optimal <span class="math inline">\(K\)</span></a></li>
   </ul></li>
   <li><a href="#task-5" id="toc-task-5" class="nav-link" data-scroll-target="#task-5"><span class="header-section-number">5</span> Task 5</a>
   <ul class="collapse">
@@ -2411,14 +2412,14 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>Your Name / Group Members </p>
+             <p>William Eide and Mathias Haaland-Jensen </p>
           </div>
   </div>
     
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">March 21, 2026</p>
+      <p class="date">March 22, 2026</p>
     </div>
   </div>
   
@@ -2431,7 +2432,7 @@ window.Quarto = {
 
 
 <p>Introduction and Setup: Here we include the code for running the set up for use of packages later.</p>
-<div id="91962418" class="cell" data-execution_count="1">
+<div id="be4e8108" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
@@ -2456,7 +2457,7 @@ window.Quarto = {
 <section id="descriptive-features-of-the-output-variable-cnt" class="level2" data-number="1.1">
 <h2 data-number="1.1" class="anchored" data-anchor-id="descriptive-features-of-the-output-variable-cnt"><span class="header-section-number">1.1</span> Descriptive Features of the Output Variable (<code>cnt</code>)</h2>
 <p>First, we investigate the distribution and summary statistics of our response variable, <code>cnt</code> (total daily bike rentals). Understanding the distribution of the target variable is a crucial first step in any regression problem.</p>
-<div id="5a5ab8a0" class="cell" data-execution_count="2">
+<div id="59f805d4" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary statistics for the response variable</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>display(data[<span class="st">&#39;cnt&#39;</span>].describe().to_frame().T)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -2515,8 +2516,8 @@ window.Quarto = {
 <section id="removing-unavailable-and-redundant-variables" class="level2" data-number="1.2">
 <h2 data-number="1.2" class="anchored" data-anchor-id="removing-unavailable-and-redundant-variables"><span class="header-section-number">1.2</span> Removing Unavailable and Redundant Variables</h2>
 <p>Before predicting future responses, it is vital to avoid data leakage. Data leakage occurs when a model is trained using information that would not realistically be available at the time of prediction.</p>
-<p>Based on the data dictionary, <code>casual</code> and <code>registered</code> sum exactly to <code>cnt</code>. Since we cannot know the number of casual or registered users before the day concludes, these variables must be removed. Furthermore, we drop <code>instant</code> as it is merely a row identifier, and <code>dteday</code> (date string) because temporal information is already captured by the numeric features <code>yr</code>, <code>mnth</code>, and <code>weekday</code>.</p>
-<div id="e9376ee2" class="cell" data-execution_count="3">
+<p>Based on the README file information on the data, <code>casual</code> and <code>registered</code> sum exactly to <code>cnt</code>. Since we cannot know the number of casual or registered users before the day concludes, these variables must be removed. Furthermore, we drop <code>instant</code> as it is merely a row identifier, and <code>dteday</code> (date string) because temporal information is already captured by the numeric features <code>yr</code>, <code>mnth</code>, and <code>weekday</code>.</p>
+<div id="d8101110" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Drop variables that cause data leakage or are redundant</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>columns_to_drop <span class="op">=</span> [<span class="st">&#39;casual&#39;</span>, <span class="st">&#39;registered&#39;</span>, <span class="st">&#39;instant&#39;</span>, <span class="st">&#39;dteday&#39;</span>]</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>df_clean <span class="op">=</span> data.drop(columns<span class="op">=</span>columns_to_drop)</span>
@@ -2528,7 +2529,7 @@ window.Quarto = {
 <section id="investigating-promising-predictors-and-collinearity" class="level2" data-number="1.3">
 <h2 data-number="1.3" class="anchored" data-anchor-id="investigating-promising-predictors-and-collinearity"><span class="header-section-number">1.3</span> Investigating Promising Predictors and Collinearity</h2>
 <p>Next, we perform a descriptive analysis to identify which features show strong associations with the response variable. We use a correlation matrix to assess linearity between predictors and <code>cnt</code>, as well as to check for potential collinearity among the predictors themselves.</p>
-<div id="3d7323e4" class="cell" data-execution_count="4">
+<div id="f3057542" class="cell" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate correlation matrix for the cleaned dataset</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>corr_matrix <span class="op">=</span> df_clean.corr()</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -2548,7 +2549,7 @@ window.Quarto = {
 </div>
 <p>Looking at the heatmap, temperature variables (<code>temp</code> and <code>atemp</code>) and the year (<code>yr</code>) show the strongest positive linear relationships with daily rentals. Conversely, weather conditions (<code>weathersit</code>), humidity (<code>hum</code>), and <code>windspeed</code> exhibit negative correlations, which is highly intuitive—worse weather reduces cycling.</p>
 <p>We also previously noted that <code>temp</code> and <code>atemp</code> measure nearly identical phenomena (actual vs. feeling temperature). To prevent issues related to collinearity (which can inflate standard errors in linear regression models), we will drop <code>atemp</code> going forward.</p>
-<div id="c8686090" class="cell" data-execution_count="5">
+<div id="2692b5b8" class="cell" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Checking collinearity between temp and atemp</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f&quot;Correlation between temp and atemp: </span><span class="sc">{</span>df_clean[<span class="st">&#39;temp&#39;</span>]<span class="sc">.</span>corr(df_clean[<span class="st">&#39;atemp&#39;</span>])<span class="sc">:.4f}</span><span class="ss">&quot;</span>)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -2564,7 +2565,7 @@ window.Quarto = {
 <h2 data-number="1.4" class="anchored" data-anchor-id="addressing-redundancy-and-categorical-variables"><span class="header-section-number">1.4</span> Addressing Redundancy and Categorical Variables</h2>
 <p>Upon closer inspection of the remaining predictors, we note significant redundancy within the time and day-type categories. The <code>season</code> variable is redundant because the time of year is already captured more granularly by <code>mnth</code>. Similarly, <code>workingday</code> is simply a derived combination of <code>weekday</code> and <code>holiday</code>. To reduce unnecessary complexity and potential collinearity, we drop <code>season</code> and <code>workingday</code>.</p>
 <p>Furthermore, variables like <code>weathersit</code>, <code>mnth</code>, and <code>weekday</code> are qualitative (categorical) predictors encoded as integers. As noted in statistical learning literature, treating these as continuous numeric variables in a linear regression implies a false numerical ordering (e.g., assuming month 12 is mathematically “greater” than month 6). Therefore, we convert these multi-level categorical variables into dummy variables, dropping the first level of each to avoid perfect multicollinearity (the dummy variable trap).</p>
-<div id="c8d26a0d" class="cell" data-execution_count="6">
+<div id="2d82f9bd" class="cell" data-execution_count="6">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Drop redundant variables</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>df_clean <span class="op">=</span> df_clean.drop(columns<span class="op">=</span>[<span class="st">&#39;season&#39;</span>, <span class="st">&#39;workingday&#39;</span>])</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -2751,7 +2752,7 @@ window.Quarto = {
 <section id="the-validation-set-approach" class="level2" data-number="2.1">
 <h2 data-number="2.1" class="anchored" data-anchor-id="the-validation-set-approach"><span class="header-section-number">2.1</span> The Validation Set Approach</h2>
 <p>To properly evaluate the predictive performance of our models, we must assess them on unseen data. Relying solely on the training error often leads to overfitting, where the model captures noise rather than true signal. Therefore, we use the validation set approach, randomly splitting our dataset into a training set (70% of the observations) and a test set (30% of the observations).</p>
-<div id="5c486143" class="cell" data-execution_count="7">
+<div id="3d131e39" class="cell" data-execution_count="7">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> mean_squared_error</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> PolynomialFeatures</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -2771,7 +2772,7 @@ Test set size: 220 days</code></pre>
 <section id="standard-multiple-linear-regression" class="level2" data-number="2.2">
 <h2 data-number="2.2" class="anchored" data-anchor-id="standard-multiple-linear-regression"><span class="header-section-number">2.2</span> Standard Multiple Linear Regression</h2>
 <p>We begin by estimating a standard multiple linear regression model using all available predictors. This parametric approach assumes that the relationship between the predictors and the response variable (cnt) is strictly additive and linear.</p>
-<div id="9cb4edde" class="cell" data-execution_count="8">
+<div id="b2502eaa" class="cell" data-execution_count="8">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize and fit the standard linear regression model</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>mlr_model <span class="op">=</span> LinearRegression()</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>mlr_model.fit(X_train, y_train)</span>
@@ -2793,7 +2794,7 @@ Standard Linear Regression Test RMSE: 822 bikes</code></pre>
 <h2 data-number="2.3" class="anchored" data-anchor-id="a-more-flexible-model-polynomial-regression"><span class="header-section-number">2.3</span> A More Flexible Model: Polynomial Regression</h2>
 <p>The strict linear assumption of the previous model is often unrealistic in practice. For instance, temperature likely has a non-linear relationship with bike rentals; rentals may increase with temperature up to a comfortable point, but decline if it becomes excessively hot.</p>
 <p>To introduce more flexibility, we estimate a polynomial regression model (degree = 2). This expands our feature space by including squared versions of our predictors as well as interaction terms between them, allowing the model to capture more complex, curved relationships.</p>
-<div id="98b539c4" class="cell" data-execution_count="9">
+<div id="284e872a" class="cell" data-execution_count="9">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Separate continuous variables from categorical dummies</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>continuous_vars <span class="op">=</span> [<span class="st">&#39;temp&#39;</span>, <span class="st">&#39;hum&#39;</span>, <span class="st">&#39;windspeed&#39;</span>]</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>X_train_cont <span class="op">=</span> X_train[continuous_vars]</span>
@@ -2839,7 +2840,7 @@ Polynomial Regression (Degree 2) Test RMSE: 741 bikes</code></pre>
 <h2 data-number="3.1" class="anchored" data-anchor-id="leave-one-out-cross-validation-setup"><span class="header-section-number">3.1</span> Leave-One-Out Cross-Validation Setup</h2>
 <p>The validation set approach used in Task 2 has a significant drawback: the estimated test error can be highly variable depending on precisely which observations are included in the training set versus the test set.</p>
 <p>To obtain a more stable estimate of the test error, we utilize Leave-One-Out Cross-Validation (LOOCV). LOOCV splits the dataset of <span class="math inline">\(n\)</span> observations into <span class="math inline">\(n\)</span> folds. For each fold, <span class="math inline">\(n-1\)</span> observations are used to train the model, and the single remaining observation is used for testing. The final LOOCV error is the average of these <span class="math inline">\(n\)</span> test errors.</p>
-<div id="35baa13e" class="cell" data-execution_count="10">
+<div id="3716f803" class="cell" data-execution_count="10">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> LeaveOneOut, cross_val_score</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize LOOCV</span></span>
@@ -2889,7 +2890,7 @@ Polynomial Regression (Degree 2) LOOCV RMSE: 768 bikes</code></pre>
 <section id="task-4" class="level1" data-number="4">
 <h1 data-number="4"><span class="header-section-number">4</span> Task 4</h1>
 <p><strong>Question</strong>: <em>Predict cnt using a K‑nearest neighbors (KNN) regression model. Standardize the predictors (remove mean and divide by standard deviation) before fitting the model. Use cross‑validation to determine a suitable value of K. Evaluate the predictive performance and compare it to the linear regression results. For the determination of K, the following code is useful (note that, to use it, you will have to define many of the variables first). Explain what it is doing.</em></p>
-<div id="f1e90a4a" class="cell" data-execution_count="11">
+<div id="2b7f0536" class="cell" data-execution_count="11">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># code chunk from the assignment pdf</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> Pipeline([</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    (<span class="st">&quot;scaler&quot;</span>, StandardScaler()),</span>
@@ -2922,10 +2923,11 @@ Polynomial Regression (Degree 2) LOOCV RMSE: 768 bikes</code></pre>
 <li><strong>Hyperparameter Tuning:</strong> It iterates through possible values of <span class="math inline">\(K\)</span> (from 1 to 40). For each <span class="math inline">\(K\)</span>, it splits the feature matrix <code>X</code> and response <code>y</code> into 10 training and test folds. The pipeline fits the scaled training data, predicts the test data, and calculates the Mean Squared Error (MSE) for each fold.</li>
 <li><strong>Aggregation:</strong> Finally, it calculates the average MSE across all 10 folds for that specific <span class="math inline">\(K\)</span> and appends it to the <code>cv_mse</code> list, allowing us to find the optimal <span class="math inline">\(K\)</span> that minimizes test error.</li>
 </ol>
-<section id="finding-the-optimal-k" class="level3" data-number="4.1.1">
-<h3 data-number="4.1.1" class="anchored" data-anchor-id="finding-the-optimal-k"><span class="header-section-number">4.1.1</span> Finding the Optimal <span class="math inline">\(K\)</span></h3>
+</section>
+<section id="finding-the-optimal-k" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="finding-the-optimal-k"><span class="header-section-number">4.2</span> Finding the Optimal <span class="math inline">\(K\)</span></h2>
 <p>Now that the code has executed and calculated the CV errors for <span class="math inline">\(K \in [1, 40]\)</span>, we can plot the results to visually identify the optimal <span class="math inline">\(K\)</span> value.</p>
-<div id="5c9e6120" class="cell" data-execution_count="12">
+<div id="fe7ec5bd" class="cell" data-execution_count="12">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plotting the Cross-Validation MSE for different values of K</span></span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">5</span>))</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>plt.plot(Ks, cv_mse, marker<span class="op">=</span><span class="st">&#39;o&#39;</span>, linestyle<span class="op">=</span><span class="st">&#39;-&#39;</span>, color<span class="op">=</span><span class="st">&#39;teal&#39;</span>)</span>
@@ -2959,18 +2961,17 @@ KNN (K=21) Test RMSE: 1,167 bikes</code></pre>
 </div>
 </section>
 </section>
-</section>
 <section id="task-5" class="level1" data-number="5">
 <h1 data-number="5"><span class="header-section-number">5</span> Task 5</h1>
 <p><strong>Question</strong>: <em>Argue whether there are indications of nonlinear relationships between cnt and one or more predictors. Fit a flexible model, such as a generalized additive model (GAM), smoothing spline, or regression tree. Evaluate the predictive performance and compare it with earlier models.</em></p>
 <section id="indications-of-non-linearity-and-model-selection" class="level2" data-number="5.1">
 <h2 data-number="5.1" class="anchored" data-anchor-id="indications-of-non-linearity-and-model-selection"><span class="header-section-number">5.1</span> Indications of Non-Linearity and Model Selection</h2>
-<p>Throughout this analysis, there are clear indications of non-linear relationships between daily bike rentals and our predictors. Most notably, in Task 2, we saw that introducing a degree-2 polynomial for our continuous variables (like temperature) significantly reduced our Test RMSE from 822 down to 741. This makes intuitive sense: as the temperature rises from freezing, bike rentals predictably increase, but if the weather becomes overwhelmingly hot, rentals will naturally drop off. A standard multiple linear regression model completely fails to capture this curve because it assumes a constant, straight-line slope.</p>
+<p>Throughout this analysis, there are indications of non-linear relationships between daily bike rentals and our predictors. in Task 2, we saw that introducing a degree-2 polynomial for our continuous variables (like temperature) significantly reduced our Test RMSE from 822 down to 741. This makes intuitive sense: as the temperature rises from freezing, bike rentals predictably increase, but if the weather becomes overwhelmingly hot, rentals will naturally drop off. A standard multiple linear regression model completely fails to capture this curve because it assumes a constant, straight-line slope.</p>
 <p>To model these non-linearities, the course material suggests flexible models like Generalized Additive Models (GAMs), smoothing splines, or regression trees. While GAMs are excellent, they require installing additional non-standard packages in Python. From a practical standpoint, I argue that a Decision Tree Regressor is the best approach here. It is built natively into <code>scikit-learn</code>, making the code creation simple and efficient. More importantly, it provides an excellent trade-off between flexibility and interpretability. Instead of forcing complex mathematical curves, a tree simply asks a series of logical Yes/No questions to split the data (e.g., “Is the temperature &gt; 20°C?” followed by “Is it raining?”). This allows the tree to naturally capture both non-linear effects and interactions between variables. Furthermore, because trees perform built-in feature selection, this model should help us completely bypass the “curse of dimensionality” that negatively impacted our KNN model in Task 4.</p>
 </section>
 <section id="fitting-and-evaluating-the-regression-tree" class="level2" data-number="5.2">
 <h2 data-number="5.2" class="anchored" data-anchor-id="fitting-and-evaluating-the-regression-tree"><span class="header-section-number">5.2</span> Fitting and Evaluating the Regression Tree</h2>
-<div id="2e2af95b" class="cell" data-execution_count="13">
+<div id="492d3978" class="cell" data-execution_count="13">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize the Decision Tree Regressor</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co"># We restrict max_depth to 5 to prevent the tree from growing too large and overfitting (high variance)</span></span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>tree_model <span class="op">=</span> DecisionTreeRegressor(max_depth<span class="op">=</span><span class="dv">5</span>, random_state<span class="op">=</span><span class="dv">123</span>)</span>
