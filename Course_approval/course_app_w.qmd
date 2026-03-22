@@ -45,10 +45,10 @@ y = data["cnt"]
 
 # Task 1
 
-## Question:
+**Question**:
 *Describe relevant features of the output variable cnt using descriptive statistics, tables, and graphs. Use descriptive analysis to investigate which predictors appear promising for predicting daily bike rentals. Remove variables that cannot reasonably be assumed to be available at the time a prediction is made, and briefly justify your choices.*
 
-### Descriptive Features of the Output Variable (`cnt`)
+## Descriptive Features of the Output Variable (`cnt`)
 First, we investigate the distribution and summary statistics of our response variable, `cnt` (total daily bike rentals). Understanding the distribution of the target variable is a crucial first step in any regression problem.
 
 ```{python}
@@ -66,7 +66,7 @@ plt.show()
 
 The summary statistics show a mean of 4504 rentals with a high standard deviation of 1937, indicating significant daily variation. The histogram reveals a roughly symmetric, somewhat bimodal distribution without extreme skewness.
 
-### 1.2 Removing Unavailable and Redundant Variables
+## Removing Unavailable and Redundant Variables
 Before predicting future responses, it is vital to avoid data leakage. Data leakage occurs when a model is trained using information that would not realistically be available at the time of prediction.
 
 Based on the data dictionary, `casual` and `registered` sum exactly to `cnt`. Since we cannot know the number of casual or registered users before the day concludes, these variables must be removed. Furthermore, we drop `instant` as it is merely a row identifier, and `dteday` (date string) because temporal information is already captured by the numeric features `yr`, `mnth`, and `weekday`.
@@ -80,7 +80,7 @@ df_clean = data.drop(columns=columns_to_drop)
 X = df_clean.drop(columns=['cnt'])
 ```
 
-### 1.3 Investigating Promising Predictors and Collinearity
+## Investigating Promising Predictors and Collinearity
 Next, we perform a descriptive analysis to identify which features show strong associations with the response variable. We use a correlation matrix to assess linearity between predictors and `cnt`, as well as to check for potential collinearity among the predictors themselves.
 
 ```{python}
@@ -108,7 +108,7 @@ df_clean = df_clean.drop(columns=['atemp'])
 X = df_clean.drop(columns=['cnt'])
 ```
 
-### 1.4 Addressing Redundancy and Categorical Variables
+## Addressing Redundancy and Categorical Variables
 
 Upon closer inspection of the remaining predictors, we note significant redundancy within the time and day-type categories. The `season` variable is redundant because the time of year is already captured more granularly by `mnth`. Similarly, `workingday` is simply a derived combination of `weekday` and `holiday`. To reduce unnecessary complexity and potential collinearity, we drop `season` and `workingday`.
 
@@ -123,8 +123,8 @@ categorical_cols = ['weathersit', 'mnth', 'weekday']
 for col in categorical_cols:
     df_clean[col] = df_clean[col].astype(str)
 
-# Create dummy variables, dropping the first category to avoid perfect multicollinearity
-df_clean = pd.get_dummies(df_clean, columns=categorical_cols, drop_first=True)
+# Create dummy variables, dropping the first category, and force them to be 1s and 0s
+df_clean = pd.get_dummies(df_clean, columns=categorical_cols, drop_first=True, dtype=int)
 
 # Finalize our feature matrix X
 X = df_clean.drop(columns=['cnt'])
@@ -136,10 +136,10 @@ display(X.head())
 
 # Task 2
 
-## Question:
+**Question**:
 *Use linear regression to predict cnt. Estimate at least one multiple linear regression model and one more flexible model (for example, a polynomial regression). Use the validation set approach to evaluate predictive performance on test data using an appropriate error measure, and discuss the results.*
 
-### 2.1 The Validation Set Approach
+## The Validation Set Approach
 To properly evaluate the predictive performance of our models, we must assess them on unseen data. Relying solely on the training error often leads to overfitting, where the model captures noise rather than true signal. Therefore, we use the validation set approach, randomly splitting our dataset into a training set (70% of the observations) and a test set (30% of the observations).
 
 ```{python}
@@ -156,7 +156,7 @@ print(f"Test set size: {X_test.shape[0]} days")
 
 ```
 
-### 2.2 Standard Multiple Linear Regression
+## Standard Multiple Linear Regression
 We begin by estimating a standard multiple linear regression model using all available predictors. This parametric approach assumes that the relationship between the predictors and the response variable (cnt) is strictly additive and linear.
 
 ```{python}
@@ -173,46 +173,105 @@ print(f"Standard Linear Regression Test MSE: {mse_mlr:,.0f}")
 print(f"Standard Linear Regression Test RMSE: {np.sqrt(mse_mlr):,.0f} bikes")
 ```
 
-### 2.3 A More Flexible Model: Polynomial Regression
+## A More Flexible Model: Polynomial Regression
 The strict linear assumption of the previous model is often unrealistic in practice. For instance, temperature likely has a non-linear relationship with bike rentals; rentals may increase with temperature up to a comfortable point, but decline if it becomes excessively hot.
 
 To introduce more flexibility, we estimate a polynomial regression model (degree = 2). This expands our feature space by including squared versions of our predictors as well as interaction terms between them, allowing the model to capture more complex, curved relationships.
 
-```{python}
-# Create polynomial features (degree 2)
-poly = PolynomialFeatures(degree=2, include_bias=False)
-X_train_poly = poly.fit_transform(X_train)
-X_test_poly = poly.transform(X_test)
 
-# Initialize and fit the flexible polynomial model
+
+```{python}
+# Separate continuous variables from categorical dummies
+continuous_vars = ['temp', 'hum', 'windspeed']
+X_train_cont = X_train[continuous_vars]
+X_test_cont = X_test[continuous_vars]
+
+X_train_cat = X_train.drop(columns=continuous_vars).reset_index(drop=True)
+X_test_cat = X_test.drop(columns=continuous_vars).reset_index(drop=True)
+
+# Create polynomial features (degree 2) for continuous variables only
+poly = PolynomialFeatures(degree=2, include_bias=False)
+X_train_poly_cont = pd.DataFrame(poly.fit_transform(X_train_cont))
+X_test_poly_cont = pd.DataFrame(poly.transform(X_test_cont))
+
+# Concatenate the polynomial continuous features with the unchanged categorical dummies
+X_train_poly = pd.concat([X_train_poly_cont, X_train_cat], axis=1)
+X_test_poly = pd.concat([X_test_poly_cont, X_test_cat], axis=1)
+
+# FIX: Ensure all column names are strings before fitting the model
+X_train_poly.columns = X_train_poly.columns.astype(str)
+X_test_poly.columns = X_test_poly.columns.astype(str)
+
+# Fit the flexible model
 poly_model = LinearRegression()
 poly_model.fit(X_train_poly, y_train)
 
-# Predict on the test data using the polynomial features
+# Predict and evaluate
 y_pred_poly = poly_model.predict(X_test_poly)
-
-# Calculate Test MSE
 mse_poly = mean_squared_error(y_test, y_pred_poly)
+
 print(f"Polynomial Regression (Degree 2) Test MSE: {mse_poly:,.0f}")
 print(f"Polynomial Regression (Degree 2) Test RMSE: {np.sqrt(mse_poly):,.0f} bikes")
 ```
 
+
 # Task 3
 
-## Question:
+**Question**:
 *Use leave-one-out cross‑validation to estimate test error for at least two competing models. Compare the results to those obtained using the validation set in Task 2, and comment on the stability of the estimates.*
 
+## Leave-One-Out Cross-Validation Setup
+The validation set approach used in Task 2 has a significant drawback: the estimated test error can be highly variable depending on precisely which observations are included in the training set versus the test set. 
 
+To obtain a more stable estimate of the test error, we utilize Leave-One-Out Cross-Validation (LOOCV). LOOCV splits the dataset of $n$ observations into $n$ folds. For each fold, $n-1$ observations are used to train the model, and the single remaining observation is used for testing. The final LOOCV error is the average of these $n$ test errors.
 
+```{python}
+from sklearn.model_selection import LeaveOneOut, cross_val_score
 
+# Initialize LOOCV
+loo = LeaveOneOut()
+
+# 1. LOOCV for Standard Linear Regression
+# We use negative mean squared error because scikit-learn's cross_val_score 
+# tries to maximize metrics, so it returns negative values for errors.
+scores_mlr = cross_val_score(mlr_model, X, y, scoring='neg_mean_squared_error', cv=loo)
+loocv_mse_mlr = -scores_mlr.mean()
+
+print(f"Standard Linear Regression LOOCV MSE: {loocv_mse_mlr:,.0f}")
+print(f"Standard Linear Regression LOOCV RMSE: {np.sqrt(loocv_mse_mlr):,.0f} bikes")
+
+# Prepare the full dataset for the polynomial model
+X_cont = X[continuous_vars]
+X_cat = X.drop(columns=continuous_vars).reset_index(drop=True)
+
+# Apply polynomial features to all continuous data
+X_poly_cont = pd.DataFrame(poly.fit_transform(X_cont))
+
+# Concatenate back together
+X_poly_full = pd.concat([X_poly_cont, X_cat], axis=1)
+X_poly_full.columns = X_poly_full.columns.astype(str)
+
+# 2. LOOCV for Polynomial Regression
+scores_poly = cross_val_score(poly_model, X_poly_full, y, scoring='neg_mean_squared_error', cv=loo)
+loocv_mse_poly = -scores_poly.mean()
+
+print(f"Polynomial Regression (Degree 2) LOOCV MSE: {loocv_mse_poly:,.0f}")
+print(f"Polynomial Regression (Degree 2) LOOCV RMSE: {np.sqrt(loocv_mse_poly):,.0f} bikes")
+```
+
+## Comparison and Stability of Estimates
+The LOOCV process yields an RMSE of 833 for the Standard Linear Regression and 768 for the Polynomial Regression. Both estimates are slightly higher than those obtained using the single Validation Set approach in Task 2 (822 and 741, respectively).
+
+These results highlight the primary drawback of the Validation Set approach: instability (high variance in the error estimate). Because the Validation Set approach relies on a single random split, the resulting error is highly dependent on which observations happen to land in the test set. In Task 2, our test set happened to be slightly "easier" to predict by random chance.
+
+Conversely, LOOCV is highly stable. Because every single observation in the dataset serves as the test set exactly once, there is no randomness in the data splitting process. Running LOOCV multiple times will yield the exact same error estimate. Therefore, the LOOCV RMSE estimates (833 and 768) are far more reliable, unbiased representations of how our models will perform on unseen data. The results consistently confirm that the flexible Polynomial model outperforms the rigid Standard Linear model.
 
 # Task 4
 
-## Question:
+**Question**:
 *Predict cnt using a K‑nearest neighbors (KNN) regression model. Standardize the predictors (remove mean and divide by standard deviation) before fitting the model. Use cross‑validation to determine a suitable value of K. Evaluate the predictive performance and compare it to the linear regression results. For the determination of K, the following code is useful (note that, to use it, you will have to define many of the variables first). Explain what it is doing.*
 
 ```{python}
-#| eval: false
 
 # code chunk from the assignment pdf
 pipe = Pipeline([
@@ -238,12 +297,75 @@ for k in Ks:
     cv_mse.append(np.mean(fold_errors))
 ```
 
+## Explanation of the Cross-Validation Code
+The provided code performs 10-fold Cross-Validation to tune the hyperparameter $K$ in a K-Nearest Neighbors (KNN) regression model. 
+
+1. **Pipeline & Scaling:** It initializes a `Pipeline` that first applies a `StandardScaler()` and then fits a `KNeighborsRegressor()`. Scaling is a critical mathematical prerequisite for KNN. Because KNN relies on calculating Euclidean distances between data points, variables with larger numerical ranges would disproportionately dominate the distance metric. Scaling ensures all predictors have a mean of 0 and a standard deviation of 1.
+2. **K-Fold Setup:** It initializes a 10-fold cross-validation (`KFold`) with shuffling enabled to ensure randomized splits.
+3. **Hyperparameter Tuning:** It iterates through possible values of $K$ (from 1 to 40). For each $K$, it splits the feature matrix `X` and response `y` into 10 training and test folds. The pipeline fits the scaled training data, predicts the test data, and calculates the Mean Squared Error (MSE) for each fold.
+4. **Aggregation:** Finally, it calculates the average MSE across all 10 folds for that specific $K$ and appends it to the `cv_mse` list, allowing us to find the optimal $K$ that minimizes test error.
+
+### Finding the Optimal $K$
+Now that the code has executed and calculated the CV errors for $K \in [1, 40]$, we can plot the results to visually identify the optimal $K$ value.
+
+```{python}
+# Plotting the Cross-Validation MSE for different values of K
+plt.figure(figsize=(8, 5))
+plt.plot(Ks, cv_mse, marker='o', linestyle='-', color='teal')
+plt.title('10-Fold CV Error vs. K Value in KNN')
+plt.xlabel('Number of Neighbors (K)')
+plt.ylabel('10-Fold CV Mean Squared Error (MSE)')
+plt.xticks(np.arange(0, 45, step=5))
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.show()
+
+# Extract the best K mathematically
+best_k = Ks[np.argmin(cv_mse)]
+best_mse = np.min(cv_mse)
+best_rmse = np.sqrt(best_mse)
+
+print(f"The optimal value for K is: {best_k}")
+print(f"KNN (K={best_k}) Test MSE: {best_mse:,.0f}")
+print(f"KNN (K={best_k}) Test RMSE: {best_rmse:,.0f} bikes")
+
+```
 
 # Task 5
 
-## Question:
+**Question**:
 *Argue whether there are indications of nonlinear relationships between cnt and one or more predictors. Fit a flexible model, such as a generalized additive model (GAM), smoothing spline, or regression tree. Evaluate the predictive performance and compare it with earlier models.*
 
+## Indications of Non-Linearity and Model Selection
+Throughout this analysis, there are clear indications of non-linear relationships between daily bike rentals and our predictors. Most notably, in Task 2, we saw that introducing a degree-2 polynomial for our continuous variables (like temperature) significantly reduced our Test RMSE from 822 down to 741. This makes intuitive sense: as the temperature rises from freezing, bike rentals predictably increase, but if the weather becomes overwhelmingly hot, rentals will naturally drop off. A standard multiple linear regression model completely fails to capture this curve because it assumes a constant, straight-line slope.
+
+To model these non-linearities, the course material suggests flexible models like Generalized Additive Models (GAMs), smoothing splines, or regression trees. While GAMs are excellent, they require installing additional non-standard packages in Python. From a practical standpoint, I argue that a Decision Tree Regressor is the best approach here. It is built natively into `scikit-learn`, making the code creation simple and efficient. More importantly, it provides an excellent trade-off between flexibility and interpretability. Instead of forcing complex mathematical curves, a tree simply asks a series of logical Yes/No questions to split the data (e.g., "Is the temperature > 20°C?" followed by "Is it raining?"). This allows the tree to naturally capture both non-linear effects and interactions between variables. Furthermore, because trees perform built-in feature selection, this model should help us completely bypass the "curse of dimensionality" that negatively impacted our KNN model in Task 4.
+
+## Fitting and Evaluating the Regression Tree
+
 ```{python}
-# 
+# Initialize the Decision Tree Regressor
+# We restrict max_depth to 5 to prevent the tree from growing too large and overfitting (high variance)
+tree_model = DecisionTreeRegressor(max_depth=5, random_state=123)
+
+# Fit the model on the standard training data
+tree_model.fit(X_train, y_train)
+
+# Predict on the unseen test data
+y_pred_tree = tree_model.predict(X_test)
+
+# Calculate Test MSE and RMSE
+mse_tree = mean_squared_error(y_test, y_pred_tree)
+rmse_tree = np.sqrt(mse_tree)
+
+print(f"Regression Tree (max_depth=5) Test MSE: {mse_tree:,.0f}")
+print(f"Regression Tree (max_depth=5) Test RMSE: {rmse_tree:,.0f} bikes")
 ```
+
+## Discussion of Findings and Reflection
+The Decision Tree achieved a Test RMSE of 962 bikes. Interestingly, this performs noticeably worse than both our simple OLS model (822) and our Polynomial model (741). 
+
+Here is a reflection on this finding: from a theoretical standpoint, single trees are known to suffer from high variance and can be quite step-like and rigid. Since the true relationship between weather conditions (like temperature) and biking is likely a smooth, continuous curve, it makes sense that our polynomial model captured it better than the blocky splits of a tree.
+
+Beyond the algorithm itself, this result makes me reflect on whether we should have been much stricter with our feature selection in Task 1. Our dataset only has about 730 rows (two years of daily data). By converting qualitative variables into numerous dummy variables, we significantly increased our dimensionality relative to our sample size. We might have been too lenient in keeping variables without doing more formal testing—such as dropping variables with very low regression coefficients or correlations—to justify their inclusion.
+
+The most low-hanging fruit here is our choice of categorical variables. We kept `mnth` (12 categories) instead of the broader `season` (4 categories). Intuitively, summer as a broad concept is a great indicator for bike rentals. By keeping specific months, we may have inadvertently given the tree room to capture unrelated, isolated events (like a randomly rainy July week in 2011) that damaged its ability to generalize to new data. Similarly, we kept `weekday` instead of `workingday`. It doesn't really make logical sense that a Thursday would have a drastically different underlying effect than a Tuesday, all else being equal. Using a simple `workingday` binary might have been a much cleaner, more robust indicator. Ultimately, taking a more careful, aggressive approach to feature selection early on could have paved the way for better model performance across both our Tree and KNN models.
