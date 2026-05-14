@@ -1,0 +1,132 @@
+---
+#title: "BAN404: Predictive Analytics with R"
+#author: "Jonas Andersson"
+# date: "5 January 2018"
+header-includes:
+  - \usepackage{subfig}
+output: 
+  beamer_presentation:
+    keep_tex: true
+#classoption: "handout"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+options(width = 100)
+# def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+# knitr::knit_hooks$set(chunk = function(x, options) {
+#   x <- def.chunk.hook(x, options)
+#   ifelse(options$size != "normalsize", paste0("\\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+# })
+```
+
+
+## Exercise 2.8
+
+\textbf{Task a}
+
+\small
+```{r,echo=TRUE}
+#setwd("~/Documents")
+college <- read.csv("College.csv")
+names(college)
+```
+
+## Exercise 2.8
+
+\textbf{Task b}
+
+\tiny
+```{r,echo=TRUE,eval=-1}
+fix(college)
+head(college)
+```
+
+## Exercise 2.8
+
+\textbf{Task b}
+
+\tiny
+```{r,echo=TRUE}
+rownames(college)=college[,1]
+head(college,4)
+```
+
+## Exercise 2.8
+
+\textbf{Task b}
+
+\tiny
+```{r,echo=TRUE}
+college=college[,-1]
+head(college)
+```
+
+## Exercise 2.8
+
+\textbf{Task c (i)}
+
+\tiny
+```{r,echo=TRUE,out.width='150%'}
+summary(college)
+```
+
+## Exercise 2.8
+
+\textbf{Task c (ii)}
+
+\tiny
+```{r,echo=TRUE,out.width='150%'}
+pairs(college[,2:11])
+```
+
+## Exercise 2.8
+
+\textbf{Task c (iii)}
+
+\tiny
+```{r,echo=TRUE,out.width='150%'}
+plot(Outstate~as.factor(Private),data=college)
+```
+
+## Exercise 2.8
+
+\textbf{Task c (iv)}
+
+\tiny
+```{r,echo=TRUE,out.width='150%'}
+Elite=rep("No",nrow(college))
+head(Elite)
+Elite[college$Top10perc>50]="Yes"
+head(Elite)
+head(college$Top10perc)
+```
+
+## Exercise 2.8
+
+\textbf{Task c (iv)}
+
+\tiny
+```{r,echo=TRUE,fig.height=4}
+Elite=as.factor(Elite)
+college=data.frame(college,Elite)
+summary(Elite)
+plot(Outstate~Elite,data=college)
+```
+
+## Exercise 2.8
+
+\textbf{Task c (v)}
+
+\tiny
+```{r,echo=TRUE,fig.height=5}
+par(mfrow=c(2,2))
+hist(college$Apps)
+hist(college$Accept)
+hist(college$Enroll)
+hist(college$Top10perc)
+```
+
+
+
+

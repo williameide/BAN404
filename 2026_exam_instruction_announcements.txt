@@ -1,0 +1,128 @@
+12.05.2026
+
+Dear student,
+
+ 
+
+You are receiving this email because you are registered for the school exam in BAN404
+
+ 
+
+Important information about your exam is provided below.
+
+ 
+
+The exam set comes in one Python-version and one R-version of which you should only solve one. Students who have taken the course in the spring of 2026 solve the Python-version. Students who is retaking the exam may choose the R-version.
+
+ 
+
+The Python-version
+ 
+
+Exam Type: FLOWlock (without the lockdown browser and without an in-app text editor) with Device Monitor. Functions similarly to FLOWassign but requires passwords. You can practice in the FLOWassign demo flow before the exam. You must submit your solution either as an .ipynb or a .qmd -file. It is not allowed to submit ZIP-files. Given that all relevant Python-packages are installed, the code should be possible for the examiners to run.
+
+ 
+
+BEFORE THE EXAM
+
+ 
+
+You should install the Device Monitor before the exam.
+
+You must carefully study the information on our webpages, including details about exam preparations and submission:
+
+ 
+
+https://www.nhh.no/en/for-students/examinations/electronic-school-exam/
+https://www.nhh.no/en/for-students/examinations/electronic-school-exam/electronic-exams-with-the-device-monitor/
+ 
+
+No compensation will be provided for time lost during the exam due to inadequate preparation on your part.
+
+ 
+
+ON THE EXAM DAY
+
+ 
+
+You must start the Device Monitor before the exam starts. Do not stop it before you submit your paper.
+You will download a PDF-file with the exam assignment text and download a CSV-file by clicking on the link provided on the front page of the exam assignment.
+In addition to the downloaded CSV-file, you are only allowed to have one .ipynb or .qmd file open; these must be new, empty files created after the exam begins. Ensure they are saved to your computer’s hard drive and not to cloud storage.
+You must submit one .ipynb or .qmd file. It is not allowed to submit ZIP-files. 
+ 
+
+Internet access is only allowed for WISEflow.
+
+ 
+
+In WISEflow, the exam end time is set to 15:15, but you cannot use the last 15 minutes to make changes to your answer paper. The last 15 minutes are reserved for converting the file to PDF format, uploading, and submitting in WISEflow. Device Monitor will capture images if you continue making changes after the deadline.
+
+ 
+
+If you perform any actions on your computer not explicitly permitted above or stop the Device Monitor during the exam, this will be investigated an attempt to cheat.
+
+ 
+
+The R-version
+ 
+
+Exam Type: FLOWlock (without the lockdown browser and without an in-app text editor) with Device Monitor. Functions similarly to FLOWassign but requires passwords. You can practice in the FLOWassign demo flow before the exam. You must submit your solution either as an .rmd or a .qmd -file. It is not allowed to submit ZIP-files. Given that all relevant R-packages are installed, the code should be possible for the examiners to run.
+
+ 
+
+BEFORE THE EXAM
+
+ 
+
+You should install the Device Monitor before the exam.
+
+You must carefully study the information on our webpages, including details about exam preparations and submission:
+
+ 
+
+https://www.nhh.no/en/for-students/examinations/electronic-school-exam/
+https://www.nhh.no/en/for-students/examinations/electronic-school-exam/electronic-exams-with-the-device-monitor/
+ 
+
+No compensation will be provided for time lost during the exam due to inadequate preparation on your part.
+
+ 
+
+ON THE EXAM DAY
+
+ 
+
+You must start the Device Monitor before the exam starts. Do not stop it before you submit your paper.
+You will download a PDF-file with the exam assignment text, and download a CSV-file by clicking on the link provided on the front page of the exam assignment.
+In addition to the downloaded CSV-file, you are only allowed to have one .rmd or .qmd file open; these must be new, empty files created after the exam begins. Ensure they are saved to your computer’s hard drive and not to cloud storage.
+You must submit one .rmd or .qmd file. It is not allowed to submit ZIP-files. 
+ 
+
+Internet access is only allowed for WISEflow.
+
+ 
+
+In WISEflow, the exam end time is set to 15:15, but you cannot use the last 15 minutes to make changes to your answer paper. The last 15 minutes are reserved for converting the file to PDF format, uploading, and submitting in WISEflow. Device Monitor will capture images if you continue making changes after the deadline.
+
+ 
+
+If you perform any actions on your computer not explicitly permitted above or stop the Device Monitor during the exam, this will be investigated an attempt to cheat.
+
+
+12.05.2025
+
+Instructions for the exam
+1. I recommend that you makes sure that you, at least, have the libraries included in this yaml-file installed (BAN404_exam.yml Download BAN404_exam.yml). You should feel free to install other libraries as well.
+
+3. You are not allowed to use any AI-tools on the exam, so make sure that any AI-assistants in Positron (or Rstudio if you are retaking the exam with R) are deactivated and preferably deinstalled.
+
+3. Information about the data which will be analyzed on the exam will be given at least one day before the exam so that you can make sure that you are able to read it.
+
+06.05.2026
+
+About the exam
+
+Some comments about the exam:
+
+Concerning Deep Learning: During the lecture about this topic (which could have been named "Neural Networks" since only simple versions were considered) I used functions such as MLPRegressor, from the sklearn.neural_network library, rather than more advanced approach, using torch and some other libraries, taken by the book. Also, I did not treat convolutional, nor recurrent, neural networks and you should not expect to be asked about that on the exam.
+On descriptive statistics: When this is asked for, the choices of plots and tables to use are context dependent, and are often part of the question. An example, which has occurred on previous exams is something along the lines of "Use descriptive statistics to find promising predictors". In this case some possible methods to use are scatterplots of continuous responses and a continuous predictors, boxplots for continuous responses for different values of a categorical predictor, boxplots of a continuous predictor for different values of a categorical response or a cross tabulation of values for a categorical predictor and a categorical response (perhaps normalized so that each cell estimates P(response | predictor) ).

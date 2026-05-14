@@ -1,0 +1,33 @@
+01.06.2025 15:35
+
+A comment about the dataset insuranceData for the exam
+
+In the help function, the variable kon is, incorrectly, said to be age. This is not correct, kon is gender. This will also be mentioned in one of the exam tasks.
+
+01.06.2025 12:01
+Data for the exam
+
+The two datasets that you will use on the exam are
+
+The file data_task1.csvDownload data_task1.csv
+The dataset dataOhlsson in the R-package insuranceData. Make sure to install the R-package.
+
+data_task1 is the name
+
+29.05-2025
+R snippets and data for the exam
+
+1. As you know, only written support material, are allowed on the exam. However, in case you would like to prepare some code before the exam you are allowed to do so by creating so called snippets inside Rstudio (Tools - Global Options - Code). Read more about it here https://docs.posit.co/ide/user/ide/guide/productivity/snippets.htmlLinks to an external site. if you want to. This is, by no means, necessary to solve the exam. I just want to let you know that it is allowed.
+
+2. When the datasets used in the exams are given, at least one day before the exam, there will be one csv-file and one R-package to install.
+
+
+
+25.05.2025 22:09
+Instructions for the exam
+
+1. I recommend that you makes sure that you, at least, have the following packages in your R installation before the exam: MASS, ISLR2, car, class, e1071, leaps, glmnet, pls, splines, gam, tree, tree, randomForest, gbm, ROCR, Matrix. You are allowed to install any packages you would like so there is no need to be minimalistic when you prepare your computer for the exam.
+
+2. It will be mandatory to submit the following files: One pdf-file and one file with the code. Do not deliver a zip-file. I strongly recommend you to make sure that you can write the exam using R markdown (or the similar format quarto) and that you are able to compile the .rmd (or .qmd) file to a pdf. In this way you can submit the resulting pdf-document together with the .rmd (or .qmd) file. In case some of you get into trouble with this solution, it will be possible to submit a pdf-document produced by MS Word and add the R-code as an R-script (.r). In any case, it is important that the pdf-file is clearly written and contain code when necessary to explain what you have done, e.g., if you have created a function by yourself to solve a problem. It should, however, not overload the document; you will, e.g., not have to show that you know how to use the mean-function.
+
+3. Information about the data which will be analyzed on the exam will be given at least one day before the exam.
