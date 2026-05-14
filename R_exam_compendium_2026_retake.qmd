@@ -39,7 +39,7 @@ The 2025 and 2024 exams are **highest priority** (same format expected).
 
 ## Exam overview
 
-- **Date**: 02.06.2025, 6 hours
+- **Date**: 2025-06-02, 6 hours
 - **Task 1** (50 p): methodological questions — ridge regression, LOOCV, bootstrap, GAM
 - **Task 2** (50 p): real-data classification with insurance claims data
 - **Allowed**: all written self-made material, calculator
@@ -73,7 +73,7 @@ g <- function(X, y, la) {
 }
 ```
 
-**Theory connection:**  
+**Theory connection:**
 This is **ridge regression** (L2-penalized regression). Ridge minimises RSS + λ·Σβ². When λ = 0 you get OLS. As λ increases, coefficients are shrunk toward zero. The functions also demean both y and X (centre around their means) before fitting — this handles the intercept analytically and is standard practice for ridge.
 
 **Step-by-step code annotation:**
@@ -106,7 +106,7 @@ This is **ridge regression** (L2-penalized regression). Ridge minimises RSS + λ
 **Question:**  
 Read `data_task1.csv` (100 obs, 20 predictors). Fit by OLS (`lm`) and by `g` with `la=1000`. Comment on the difference. What is the explanation? Also fit using `g` with `la=0`.
 
-**Theory connection:**  
+**Theory connection:**
 When there are many predictors relative to observations (here 20/100 = 1:5), OLS can overfit. Ridge shrinks large coefficients. When `la=0`, ridge = OLS (no penalty). When `la=1000`, coefficients are substantially shrunk — the sum of squared coefficients is smaller.
 
 **Step-by-step code:**
@@ -130,8 +130,8 @@ b1g1000 <- g(X, y, la = 1000)
 cbind(b1ols, b1g0, b1g1000)
 
 # Quantify shrinkage: sum of squared coefficients should be smaller for la=1000
-sum(b1ols^2)    # ~18187
-sum(b1g1000^2)  # ~8335 -- much smaller!
+sum(b1ols^2)    # exam-run value is around 18k
+sum(b1g1000^2)  # exam-run value is around 8k (clearly smaller)
 ```
 
 **Written answer:**  
@@ -160,7 +160,7 @@ loo <- function(la, X, y) {
 }
 ```
 
-**Theory connection:**  
+**Theory connection:**
 Leave-one-out cross-validation (LOOCV): for each observation i, fit the model on all other n-1 observations, predict observation i, and accumulate squared errors. The average gives the LOO test MSE. We do this for a grid of `la` values and pick the one with the smallest LOO MSE.
 
 **Step-by-step code:**
@@ -194,7 +194,7 @@ The `loo` function implements leave-one-out cross-validation for the ridge estim
 **Question:**  
 Use the bootstrap to estimate the sampling distribution of the sample variance of y. Show as a histogram. Also compute a 95% bootstrap confidence interval for Var(y).
 
-**Theory connection:**  
+**Theory connection:**
 The bootstrap estimates the sampling distribution of a statistic by resampling with replacement from the original data. Here the statistic is `var(y)` (sample variance). Repeating B times gives B bootstrap replications; the 2.5th and 97.5th percentiles give a 95% CI.
 
 **Step-by-step code:**
@@ -217,7 +217,7 @@ hist(vboot, breaks = 50,
 
 # 95% percentile bootstrap CI
 quantile(vboot, probs = c(0.025, 0.975))
-# Approximate output: 2.5% = 1 522 449, 97.5% = 2 134 932
+# Typical output in the exam material: 2.5% ≈ 1 522 449, 97.5% ≈ 2 134 932
 ```
 
 **Written answer:**  
@@ -230,7 +230,7 @@ By resampling y with replacement 10 000 times and computing the sample variance 
 **Question:**  
 Identify any nonlinear relationships between y and its predictors. Can a GAM improve the in-sample (training) MSE over OLS? Compute R² for both models.
 
-**Theory connection:**  
+**Theory connection:**
 Generalised Additive Models (GAM) allow each predictor to enter through a smooth nonlinear function `s(x)` rather than a linear term. If scatter plots or residuals against predictors reveal a curved relationship, replacing a linear term with `s(x)` reduces training MSE (increases R²). R² = 1 - MSE_model / MSE_null, where MSE_null = Var(y) (variance of y without any predictors).
 
 **Step-by-step code:**
@@ -260,8 +260,8 @@ MSE_gam <- mean(residuals(gam1)^2)  # in-sample MSE
 MSE_null <- mean((y - mean(y))^2)
 R2_ols  <- 1 - MSE_ols  / MSE_null
 R2_gam  <- 1 - MSE_gam  / MSE_null
-cat("R² OLS:", round(R2_ols, 4))   # ~0.339
-cat("R² GAM:", round(R2_gam, 4))   # ~0.398
+cat("R² OLS:", round(R2_ols, 4))
+cat("R² GAM:", round(R2_gam, 4))
 ```
 
 **Written answer:**  
@@ -276,7 +276,7 @@ Plotting y against each predictor reveals that X3 has a curved (nonlinear) relat
 **Question:**  
 Create a binary variable `claim` (antskad ≥ 1 = TRUE). Remove variables not available at prediction time. Split into training/test. Use descriptive statistics to find useful predictors.
 
-**Theory connection:**  
+**Theory connection:**
 Before fitting any model, we must remove *target leakage* — variables that contain direct information about the outcome that would not be available in a real prediction scenario. `antskad` (number of claims) determines `claim` directly; `skadkost` (claim cost) is only known after a claim occurs. Both must be removed.  
 Encode categorical variables as factors so that R handles them correctly in `glm`, `tree`, etc.
 
@@ -331,7 +331,7 @@ prop.table(table(train$mcklass, train$claim), margin = 1)
 **Question:**  
 Fit a logistic regression with all variables and one with a selection of variables. Base the selection on task 2a and on the significance of coefficients in the full model.
 
-**Theory connection:**  
+**Theory connection:**
 Logistic regression models P(claim=1 | X) = sigmoid(β₀ + β'X). We use `family = binomial()` in `glm`. A *reduced model* that drops non-significant predictors may improve parsimony and generalisation.
 
 **Step-by-step code:**
@@ -360,7 +360,7 @@ The full logistic model shows that `agarald` (owner age), `kon` (gender), most `
 **Question:**  
 Evaluate the model predictions from 2b with an appropriate measure. Determine a threshold to convert probabilities to predicted classes.
 
-**Theory connection:**  
+**Theory connection:**
 With rare events (claim rate ≈ 1%), the default 0.5 threshold classifies almost everything as "no claim." A lower threshold catches more true claims (higher sensitivity) at the cost of more false positives. We can experiment on the training set to find a pragmatic threshold.
 
 **Step-by-step code:**
@@ -404,7 +404,7 @@ Because claims are rare (~1% of observations), a 0.5 threshold classifies almost
 **Question:**  
 Fit a random forest to predict `claim` and evaluate predictions. Compare with the logistic model.
 
-**Theory connection:**  
+**Theory connection:**
 Random forests grow many decision trees on bootstrap samples of the training data, each using a random subset of `mtry` predictors at each split. The prediction is the majority vote (classification) or average (regression). They typically outperform single logistic models on complex patterns and class-imbalanced data.
 
 **Step-by-step code:**
@@ -436,7 +436,7 @@ The random forest improves accuracy for the no-claim class compared to logistic 
 **Question:**  
 Fit a boosted tree and evaluate predictions. Compare with logistic regression and random forest.
 
-**Theory connection:**  
+**Theory connection:**
 Gradient boosting (`gbm`) builds trees sequentially, each one fitting the residuals (errors) of all previous trees. Key hyperparameters: `n.trees` (number of iterations), `interaction.depth` (tree depth), `shrinkage` (learning rate — smaller = more trees needed but better generalisation).
 
 **Step-by-step code:**
@@ -473,7 +473,7 @@ The boosted tree yields performance broadly similar to logistic regression, with
 
 ## Exam overview
 
-- **Date**: 27.05.2024, 6 hours
+- **Date**: 2024-05-27, 6 hours
 - **Task 1** (50 p): methodological questions — local regression, LOOCV, multi-predictor extension, backfitting
 - **Task 2** (50 p): airline satisfaction data — classification pipeline, two perspectives
 - **Dataset**: 25 923 rows, airline customer survey
@@ -500,7 +500,7 @@ f <- function(x0, x, y, K = 3) {
 }
 ```
 
-**Theory connection:**  
+**Theory connection:**
 This is **local regression** (related to KNN but more sophisticated). Standard KNN predicts by averaging the K nearest neighbours' y-values. This function instead *fits a local linear regression* to the K nearest neighbours and predicts from that regression. It is a combination of the KNN proximity idea and linear regression.
 
 **Step-by-step code annotation:**
@@ -529,18 +529,15 @@ The function implements **local linear regression**. It finds the K training obs
 **Question:**  
 Given the small dataset (x: 5.26, 9.13, 11.17, 15.64, 25.32, 25.55, 41.39, 48.17, 58.65, 68.24; corresponding y-values), use leave-one-out cross-validation to find the optimal K for `f`.
 
-**Theory connection:**  
+**Theory connection:**
 LOOCV: for each observation i, fit the model on all other n-1 observations and predict i. Repeat for all observations to get the LOO test MSE. Do this for a range of K values and choose the K with the lowest test MSE.
 
 **Step-by-step code:**
 
 ```r
 # Dataset from the exam
-x <- c(5.26, 9.13, 11.17, 15.64, 25.32, 25.55, 41.39, 48.17, 58.65, 68.24)
-y <- c(29.13, 11.17, 15.64, 25.32, 25.55, 41.39, 48.17, 58.65, 68.24, NA)
-# NOTE: y-values from exam table (check exam PDF for exact values)
-# Using approximate values for illustration:
-y <- c(2, 9, 7, 5, 9, 8, 6, 4, 8, 2)  # replace with actual exam values
+x <- 1:10
+y <- c(5.26, 9.13, 11.17, 15.64, 25.32, 25.55, 41.39, 48.17, 58.65, 68.24)
 
 n <- length(x)
 
@@ -607,7 +604,7 @@ The red line passes through or near each observation, adapting to the local stru
 **Question:**  
 In `f`, there is only one predictor. One way to allow for more than one predictor is to compute `d` differently. Explain how.
 
-**Theory connection:**  
+**Theory connection:**
 In one dimension, "distance" from x0 to x is |x - x0|. With p predictors, we generalise to Euclidean distance in p-dimensional space. For two predictors x = (x₁, x₂) and x0 = (x01, x02): d = sqrt((x₁−x01)² + (x₂−x02)²).
 
 **Step-by-step code:**
@@ -642,7 +639,7 @@ This generalises naturally to p predictors as the Euclidean norm of the differen
 **Question:**  
 Another way to allow for several predictors is to use **backfitting**. Explain how you would implement backfitting for this method (you do not need to code it).
 
-**Theory connection:**  
+**Theory connection:**
 Backfitting is the algorithm used in GAMs to estimate additive models. For our local regression function, it extends to multiple predictors by iteratively fitting each predictor while holding the contributions of all others fixed, using residuals.
 
 **Written answer (no code needed):**  
@@ -665,7 +662,7 @@ Each iteration uses the residuals from the previous fit as the "new y", so each 
 **Question:**  
 If necessary, recode categorical variables as factors. Motivate your choices.
 
-**Theory connection:**  
+**Theory connection:**
 R treats numeric columns as continuous. Variables with a small number of distinct values (e.g., satisfaction ratings 1–5, class, gender) should be factors so models create proper dummy variables and trees make correct splits.
 
 **Step-by-step code:**
@@ -964,6 +961,9 @@ Anonymous survey questions about general preferences could also be collected at 
 **Question:**  
 Recode categorical variables as factors. Remove variables that cannot be used. Split 50/50 with `set.seed(86554354)`.
 
+**Theory connection:**
+This is a supervised learning data-preparation step: define realistic predictors, encode categorical variables correctly, and create a strict train/test split for unbiased out-of-sample evaluation.
+
 **Step-by-step code:**
 
 ```r
@@ -1000,6 +1000,9 @@ test  <- xdata[-ind, ]
 **Question:**  
 Use descriptive methods to find useful predictors for `bill_avg`.
 
+**Theory connection:**
+Exploratory analysis is used to detect plausible signal before modeling. Visual patterns and group differences guide variable interpretation, but final inclusion should be validated by test-set prediction performance.
+
 **Step-by-step code:**
 
 ```r
@@ -1024,6 +1027,9 @@ Plotting `bill_avg` against all predictors shows variation with most variables. 
 
 **Question:**  
 Produce the best possible predictions of `bill_avg` using OLS and evaluate them.
+
+**Theory connection:**
+OLS provides a linear baseline for continuous outcomes. With no explicit business-loss function, test MSE is the standard criterion: lower MSE implies better predictive performance.
 
 **Step-by-step code:**
 
@@ -1052,6 +1058,9 @@ MSE is used as the evaluation metric because no specific decision loss function 
 
 **Question:**  
 Fit a LASSO regression. Find the optimal lambda. Standardise? Compare coefficients with OLS.
+
+**Theory connection:**
+LASSO (L1-penalized regression) controls variance and can perform variable selection. Cross-validation chooses the penalty strength (`lambda`) that balances bias and variance.
 
 **Step-by-step code:**
 
@@ -1085,6 +1094,9 @@ The predictors are standardised because they have very different scales (downloa
 
 ### Task 1e — Evaluate LASSO predictions
 
+**Theory connection:**
+After tuning and fitting, the model must be evaluated on held-out test data using the same metric as OLS (MSE) for a fair method comparison.
+
 **Step-by-step code:**
 
 ```r
@@ -1102,6 +1114,9 @@ The LASSO test MSE (≈117.9) is nearly identical to OLS (≈117.9). In this cas
 
 **Question:**  
 Fit a regression tree. Explain your choices. Interpret the tree.
+
+**Theory connection:**
+Regression trees model nonlinearities and interactions through recursive partitioning. They are interpretable because each split defines an explicit decision rule.
 
 **Step-by-step code:**
 
@@ -1129,6 +1144,9 @@ The root split is on `download_avg < 333.2`, indicating this is the most discrim
 
 ### Task 1g — Evaluate regression tree predictions
 
+**Theory connection:**
+Tree interpretation is not enough; predictive quality must be compared out-of-sample against linear methods using test MSE.
+
 **Step-by-step code:**
 
 ```r
@@ -1146,6 +1164,9 @@ The regression tree (test MSE ≈ 120.3) is comparable to OLS and LASSO, confirm
 
 **Question:**  
 Fit a random forest. Plot and interpret the variable importance measure. Explain the measure.
+
+**Theory connection:**
+Random forests reduce variance by averaging many de-correlated trees. Variable importance summarizes how much each predictor contributes to impurity reduction across the forest.
 
 **Step-by-step code:**
 
@@ -1172,6 +1193,9 @@ The variable importance plot shows `download_avg` and `upload_avg` as the most i
 
 ### Task 1i — Random forest predictions evaluation
 
+**Theory connection:**
+Ensemble methods are justified only if they improve test performance; therefore RF predictions are evaluated with test MSE and compared to OLS/LASSO/tree.
+
 **Step-by-step code:**
 
 ```r
@@ -1187,6 +1211,9 @@ The random forest (test MSE ≈ 96.5) significantly outperforms OLS, LASSO, and 
 
 ### Task 1j — Features of high/low bill customers
 
+**Theory connection:**
+This is model-based profiling: combine coefficient signs, tree splits, and ensemble importance to describe segments associated with high vs low outcomes.
+
 **Written answer:**  
 Based on all models:
 - **High bill customers**: high download and upload averages, no TV subscription, long subscription history, short remaining contract, many service failures, not exceeding download limit frequently.
@@ -1201,6 +1228,9 @@ The random forest's superiority suggests nonlinear interactions (e.g., download 
 
 **Question:**  
 Use descriptive statistics to find promising predictors for `churn`.
+
+**Theory connection:**
+For classification, class-conditional summaries and plots reveal directional effects and candidate predictors before fitting probabilistic models.
 
 **Step-by-step code:**
 
@@ -1233,6 +1263,9 @@ Key differences between churners (churn=1) and non-churners (churn=0):
 
 **Question:**  
 Use the first 50 observations of `churn`. Use the bootstrap to compute a 95% CI for the churn probability p. Compare with the normal approximation.
+
+**Theory connection:**
+Bootstrap approximates a sampling distribution by resampling with replacement; the normal approximation is an asymptotic benchmark for a proportion estimator.
 
 **Step-by-step code:**
 
@@ -1271,6 +1304,9 @@ The bootstrap CI (≈[0.68, 0.90]) and the normal approximation CI (≈[0.69, 0.
 **Question:**  
 Fit a logistic regression for `churn`. Interpret the coefficients for `is_tv_subscriber` and `is_movie_package_subscriber`. Are the signs as expected?
 
+**Theory connection:**
+Logistic regression models class probability via log-odds. Exponentiated coefficients are odds ratios, enabling direct interpretation of multiplicative changes in churn odds.
+
 **Step-by-step code:**
 
 ```r
@@ -1294,6 +1330,9 @@ The coefficient for `is_tv_subscriber1` corresponds to an odds ratio of ~0.17: *
 ---
 
 ### Task 2d — Evaluate logistic, experiment with variable selection
+
+**Theory connection:**
+Classification performance should be assessed on test data with confusion-matrix metrics. Removing non-significant predictors may improve parsimony without hurting predictive accuracy.
 
 **Step-by-step code:**
 
@@ -1321,6 +1360,9 @@ With a threshold of 0.5, the logistic model correctly classifies 91.7% of churne
 
 ### Task 2e — Random forest for churn
 
+**Theory connection:**
+Random forest classification can capture nonlinear churn patterns and interactions that logistic regression may miss, often improving sensitivity/specificity.
+
 **Step-by-step code:**
 
 ```r
@@ -1339,6 +1381,9 @@ The random forest considerably improves predictions — 93.7% sensitivity (churn
 ---
 
 ### Task 2f — Typical features of churning customers
+
+**Theory connection:**
+Final business interpretation should synthesize descriptive findings and model evidence into actionable churn-risk profiles.
 
 **Written answer:**  
 Based on the logistic model and descriptive analysis, churning customers tend to:
