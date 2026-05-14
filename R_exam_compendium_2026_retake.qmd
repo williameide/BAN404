@@ -1,0 +1,521 @@
+---
+title: "BAN404 R Exam Compendium (Retake-Focused)"
+subtitle: "Built from 2025 material, 2026 announcements, lectures, tutorials, and previous exams"
+author: "Self-study preparation file"
+format:
+  html:
+    toc: true
+    toc-depth: 4
+    number-sections: true
+  pdf:
+    toc: true
+    number-sections: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# How to use this compendium
+
+This file is designed as a **practical exam playbook** for the BAN404 **R-version** school exam.
+
+- Main priority: understand and solve the **latest two R exams (2025 and 2024)**.
+- Secondary priority: cover recurring patterns from 2023/2022/2021 + tutorials + compulsory assignments.
+- Every section includes **what to do**, **why**, and **plug-and-play R skeletons**.
+
+---
+
+# 2025 vs 2026: what the R retake exam is likely to look like
+
+## Key conclusion
+
+Based on course files and exam announcements, your R retake exam is most likely:
+
+1. **Same BAN404 method core** (ISLP chapters and topics),
+2. **Same exam structure style as 2024/2025**,
+3. **R Markdown/Quarto submission** with one `.rmd` or `.qmd` file,
+4. A **6-hour practical modeling exam** with one CSV and possibly one package dataset,
+5. Strong emphasis on:
+   - choosing train/test logic,
+   - model comparison,
+   - threshold/metric choices,
+   - interpretation and pragmatic decisions.
+
+## Material shift (important for retake)
+
+- **2026 cohort** mainly follows Python delivery.
+- **R-retake version** is explicitly available for repeat candidates.
+- Therefore your best signal for R-exam style is:
+  - 2025 R exam,
+  - 2024 R exam,
+  - 2025 R lecture scripts,
+  - older R exams/solutions.
+
+## Exam constraints you must prepare for
+
+- Only one active `.rmd` or `.qmd` during exam.
+- Internet access restricted (WISEflow only).
+- Last 15 minutes reserved for PDF conversion/upload.
+- You should preinstall all relevant packages.
+- You are allowed to prepare written material and snippets.
+
+---
+
+# Package strategy for the exam
+
+## Minimum packages to install before exam
+
+```r
+install.packages(c(
+  "MASS", "ISLR", "ISLR2", "car", "class", "e1071", "leaps", "glmnet", "pls",
+  "splines", "gam", "tree", "randomForest", "gbm", "ROCR", "Matrix",
+  "insuranceData", "boot", "Ecdat", "wooldridge"
+))
+```
+
+## Why each package matters
+
+- `ISLR`, `ISLR2`: canonical datasets used in lectures/exercises.
+- `MASS`, `class`, `e1071`: LDA/QDA/KNN/SVM.
+- `leaps`, `glmnet`, `pls`: subset selection, ridge/lasso, PCR.
+- `splines`, `gam`: nonlinear and additive models.
+- `tree`, `randomForest`, `gbm`: trees, bagging/RF/boosting.
+- `ROCR`: ROC/AUC workflows.
+- `insuranceData`: used in recent exam context.
+- `boot`: bootstrap and confidence intervals.
+
+## Nice-to-have packages
+
+```r
+install.packages(c("tidyverse", "broom", "caret", "yardstick", "janitor", "patchwork"))
+```
+
+Use these only if you are fast with them. Base R is fully acceptable.
+
+---
+
+# 14-lecture map: theory ↔ code ↔ exam usage (R version)
+
+## Lecture 1: intro, prediction vs inference, bias-variance
+- Theory: supervised vs unsupervised, train/test logic.
+- Core code: `summary()`, `plot()`, split data, baseline models.
+- Exam relevance: always used in problem framing + model evaluation choices.
+
+## Lecture 2: linear regression
+- Theory: OLS, coefficient interpretation, intervals, diagnostics.
+- Core code: `lm()`, `summary()`, `predict(..., interval=)`.
+- Exam relevance: frequent baseline model + interpretation tasks.
+
+## Lecture 3: logistic regression
+- Theory: log-odds, probability prediction, thresholding.
+- Core code: `glm(..., family=binomial())`, confusion matrix.
+- Exam relevance: very common in classification tasks.
+
+## Lecture 4: LDA/QDA/KNN
+- Theory: generative vs discriminative classification.
+- Core code: `MASS::lda()`, `MASS::qda()`, `class::knn()`.
+- Exam relevance: method comparison tasks.
+
+## Lecture 5: resampling
+- Theory: validation set, LOOCV, k-fold, bootstrap.
+- Core code: custom loops, `boot` package, CV wrappers.
+- Exam relevance: tuning and error estimation are recurring.
+
+## Lecture 6: time/structured data handling
+- Theory: context-sensitive data structure decisions.
+- Core code: feature selection, plotting, diagnostics.
+- Exam relevance: practical EDA + realistic predictor availability.
+
+## Lecture 7: model selection (subset, regularization intro)
+- Theory: overfitting control and model complexity.
+- Core code: `leaps::regsubsets()`.
+- Exam relevance: choosing interpretable predictor sets.
+
+## Lecture 8: ridge/lasso/PCR
+- Theory: shrinkage and dimension reduction.
+- Core code: `glmnet`, `pls::pcr`.
+- Exam relevance: frequent “compare OLS vs shrinkage” tasks.
+
+## Lecture 9: nonlinear regression (polynomial/step/splines)
+- Theory: flexibility vs interpretability.
+- Core code: `poly()`, `cut()`, spline terms.
+- Exam relevance: identify nonlinearity and improve fit.
+
+## Lecture 10: GAM + backfitting intuition
+- Theory: additive smooth effects.
+- Core code: `gam::gam()`, `s(...)`, compare MSE.
+- Exam relevance: explicitly asked in recent exams.
+
+## Lecture 11: regression/classification trees
+- Theory: recursive partitioning, pruning.
+- Core code: `tree::tree()`, `cv.tree()`, `prune.tree()`.
+- Exam relevance: tree interpretation + prediction evaluation.
+
+## Lecture 12: bagging/random forest/boosting
+- Theory: ensemble variance/bias tradeoff.
+- Core code: `randomForest()`, `gbm()`.
+- Exam relevance: model lift over logistic/tree baselines.
+
+## Lecture 13: SVM / neural-network-level intuition
+- Theory: margin classifiers, kernels, tuning.
+- Core code: `e1071::svm()`, `tune()`.
+- Exam relevance: appears in exercises and possible method discussion.
+
+## Lecture 14: unsupervised learning
+- Theory: PCA, clustering, interpretation.
+- Core code: `prcomp()`, `kmeans()`, `hclust()`.
+- Exam relevance: less dominant in latest exams, but examinable.
+
+---
+
+# Historical question bank with step-by-step solution guide
+
+## High-priority: 2025 exam (full 6-hour school exam)
+
+### Task 1a: identify method in custom R functions (ridge via optimization)
+**What they test**
+- Recognize objective function with penalty.
+- Understand demeaning and optimization workflow.
+
+**Step-by-step**
+1. Inspect objective: RSS + `la * sum(beta^2)`.
+2. Identify as ridge-style penalized regression.
+3. Explain role of demeaning X and y.
+4. Explain what `nlminb` is optimizing.
+
+### Task 1b: compare OLS vs penalized solution
+**What they test**
+- Penalty impact on coefficient size.
+
+**Step-by-step**
+1. Fit OLS with `lm`.
+2. Fit custom function with `la=0` and large `la`.
+3. Compare coefficient vectors and sum of squares.
+4. Explain shrinkage effect clearly.
+
+### Task 1c: LOOCV for tuning lambda
+**What they test**
+- Cross-validation as tuning tool.
+
+**Step-by-step**
+1. Create lambda grid.
+2. Loop: LOOCV test MSE for each lambda.
+3. Plot curve and select minimizing lambda.
+4. Explain consistency with demeaning choice.
+
+### Task 1d: bootstrap variance + CI
+**What they test**
+- Resampling and uncertainty quantification.
+
+**Step-by-step**
+1. Resample y with replacement B times.
+2. Compute variance each sample.
+3. Plot histogram of bootstrap distribution.
+4. Use percentiles for 95% CI.
+
+### Task 1e: detect nonlinearity + GAM improvement
+**What they test**
+- Moving beyond linearity.
+
+**Step-by-step**
+1. Scan predictors for nonlinearity (scatter + residual patterns).
+2. Fit OLS baseline.
+3. Fit GAM with selected smooth terms.
+4. Compare training MSE and compute R² from MSE.
+
+### Task 2a–2e: insurance classification pipeline
+**What they test**
+- End-to-end classification workflow under class imbalance.
+
+**Step-by-step**
+1. Build binary target and remove leakage variables.
+2. Encode factors and split train/test.
+3. Descriptive screening of plausible predictors.
+4. Fit full and reduced logistic models.
+5. Choose threshold pragmatically (can be very low in rare-event setting).
+6. Evaluate confusion matrices by class-wise rates.
+7. Fit RF and boosted trees; compare tradeoffs across classes.
+
+---
+
+## High-priority: 2024 exam (full 6-hour school exam)
+
+### Task 1a–1e: custom local method, LOOCV, distance extension, backfitting
+**What they test**
+- Understanding algorithms, not just using built-ins.
+
+**Step-by-step**
+1. Explain provided custom function line by line.
+2. Implement LOOCV over candidate K.
+3. Plot fitted curve for selected K.
+4. Extend distance from 1D absolute distance to multidimensional Euclidean distance.
+5. Explain backfitting iteration conceptually for multi-predictor additive estimation.
+
+### Task 2a–2g: “Why dissatisfaction?” analysis
+**What they test**
+- explanatory perspective, not only prediction.
+
+**Step-by-step**
+1. Recode factors and decide data split strategy (justify).
+2. Use descriptive statistics to identify associated variables.
+3. Fit logistic model and evaluate fit.
+4. Fit classification tree and interpret branches.
+5. Improve via random forest and variable importance.
+6. Synthesize business interpretation.
+
+### Task 2h–2l: “Operational prediction for new customers”
+**What they test**
+- realistic feature availability assumptions.
+
+**Step-by-step**
+1. Remove unavailable-at-prediction-time variables.
+2. Refit operational logistic model.
+3. Refit operational random forest.
+4. Compare practical predictive performance.
+5. Suggest realistically collectible future variables.
+
+---
+
+## 2023 exam material (marking instructions available)
+
+- Theme appears split between:
+  - predicting **bill average** (regression),
+  - predicting **churn** (classification).
+- Repeated methods:
+  - OLS, LASSO, trees, random forest, confusion matrix, test MSE.
+
+**Preparation takeaway**
+- Always be ready to solve both continuous and binary targets in one exam.
+
+---
+
+## 2022 exam (home exam)
+
+### Core recurring question types
+- OJ classification (logistic/tree/threshold CV).
+- Computers price prediction (OLS/log transform/GAM/bagging).
+- Heavy emphasis on reasoned model-choice arguments.
+
+### Preparation takeaway
+- Be prepared to justify:
+  - split strategy,
+  - metric choice,
+  - threshold choice,
+  - model simplification.
+
+---
+
+## 2021 exam (home exam)
+
+### Core recurring question types
+- Bootstrap distribution + confidence intervals.
+- Volatility regression + bootstraped SE.
+- Insurance data: regression + GAM + logistic + boosting.
+
+### Preparation takeaway
+- Statistical reasoning + coding implementation are integrated.
+
+---
+
+## Tutorials & compulsory assignments (typical question patterns)
+
+### Tutorial 1
+- Manual/simple linear regression + KNN basics.
+- Train/test MSE comparisons.
+
+### Tutorial 2
+- Logistic probability interpretation.
+- KNN classifier probabilities and confusion matrices.
+- Validation vs LOOCV workflows.
+
+### Tutorial 3
+- Ridge/LASSO coefficient shrinkage and lambda tuning.
+- Polynomial vs spline flexibility.
+
+### Tutorial 4
+- Tree split mechanics and RSS minimization.
+- Bagging/RF/boosting comparison.
+- SVM, PCA, clustering foundations.
+
+### Compulsory assignments (2025/2026)
+- Full modeling workflow under reporting constraints.
+- Clear communication and reproducibility expected.
+
+---
+
+# Reusable step-by-step templates (R)
+
+## 1) Clean split + data audit
+
+```r
+set.seed(123)
+str(df)
+summary(df)
+
+n <- nrow(df)
+idx <- sample(seq_len(n), size = floor(0.5*n))
+train <- df[idx, ]
+test  <- df[-idx, ]
+```
+
+## 2) OLS baseline + test MSE
+
+```r
+m_ols <- lm(y ~ ., data = train)
+p_ols <- predict(m_ols, newdata = test)
+mse_ols <- mean((test$y - p_ols)^2)
+```
+
+## 3) Logistic + confusion metrics
+
+```r
+m_log <- glm(y ~ ., data = train, family = binomial())
+prob  <- predict(m_log, newdata = test, type = "response")
+th <- 0.5
+pred <- prob > th
+cm <- table(test$y, pred)
+acc <- sum(diag(cm))/sum(cm)
+prop.table(cm, margin = 1)
+```
+
+## 4) Threshold search (classification)
+
+```r
+ths <- seq(0.01, 0.99, by = 0.01)
+res <- data.frame(th = ths, acc = NA_real_)
+for(i in seq_along(ths)){
+  pred_i <- prob > ths[i]
+  cm_i <- table(test$y, pred_i)
+  res$acc[i] <- sum(diag(cm_i))/sum(cm_i)
+}
+res[which.max(res$acc), ]
+```
+
+## 5) LOOCV skeleton (generic)
+
+```r
+n <- nrow(df)
+se <- numeric(n)
+for(i in seq_len(n)){
+  tr <- df[-i, ]
+  te <- df[i, ]
+  mod <- lm(y ~ ., data = tr)
+  pr  <- predict(mod, newdata = te)
+  se[i] <- (te$y - pr)^2
+}
+mean(se)
+```
+
+## 6) Bootstrap statistic + CI
+
+```r
+set.seed(1)
+B <- 2000
+n <- length(y)
+boot_stat <- numeric(B)
+for(b in seq_len(B)){
+  yb <- sample(y, size = n, replace = TRUE)
+  boot_stat[b] <- var(yb)
+}
+quantile(boot_stat, c(0.025, 0.975))
+hist(boot_stat, breaks = 40)
+```
+
+## 7) Ridge/LASSO
+
+```r
+library(glmnet)
+Xtr <- model.matrix(y ~ . , data = train)[, -1]
+ytr <- train$y
+Xte <- model.matrix(y ~ . , data = test)[, -1]
+
+cv_r <- cv.glmnet(Xtr, ytr, alpha = 0)
+m_r  <- glmnet(Xtr, ytr, alpha = 0, lambda = cv_r$lambda.min)
+pr_r <- as.numeric(predict(m_r, newx = Xte))
+
+cv_l <- cv.glmnet(Xtr, ytr, alpha = 1)
+m_l  <- glmnet(Xtr, ytr, alpha = 1, lambda = cv_l$lambda.min)
+pr_l <- as.numeric(predict(m_l, newx = Xte))
+```
+
+## 8) GAM
+
+```r
+library(gam)
+m_gam <- gam(y ~ x1 + s(x2) + s(x3) + x4, data = train)
+p_gam <- predict(m_gam, newdata = test)
+mse_gam <- mean((test$y - p_gam)^2)
+```
+
+## 9) Tree / RF / Boosting
+
+```r
+library(tree)
+library(randomForest)
+library(gbm)
+
+m_tree <- tree(y ~ ., data = train)
+p_tree <- predict(m_tree, newdata = test)
+
+m_rf <- randomForest(y ~ ., data = train)
+p_rf <- predict(m_rf, newdata = test, type = if(is.factor(train$y)) "class" else "response")
+
+m_bt <- gbm(y ~ ., data = train,
+            distribution = if(is.factor(train$y)) "bernoulli" else "gaussian",
+            n.trees = 1000, interaction.depth = 3, shrinkage = 0.01)
+```
+
+## 10) SVM
+
+```r
+library(e1071)
+m_svm <- svm(y ~ ., data = train, kernel = "linear", cost = 1)
+tn <- tune(svm, y ~ ., data = train, kernel = "radial",
+           ranges = list(cost = c(0.1,1,10), gamma = c(0.1,1,2)))
+best_svm <- tn$best.model
+```
+
+---
+
+# Exam-day workflow (6-hour practical)
+
+1. **0–20 min**: read all tasks, score points, decide order.
+2. **20–60 min**: data cleaning + split + quick EDA.
+3. **60–180 min**: solve core model tasks (OLS/logistic/tree + required CV/bootstrap).
+4. **180–260 min**: advanced methods (GAM/RF/boosting/SVM if asked).
+5. **260–320 min**: interpretation text + compare models + business recommendations.
+6. **320–345 min**: final consistency check, rerun from top.
+7. **Last 15 min**: render PDF and submit files.
+
+---
+
+# Dataset-release-day checklist (day before exam)
+
+When dataset is released:
+
+1. Load data and run `str()`, missingness, class balance, target distribution.
+2. Decide likely target type (regression/classification/both).
+3. Draft 2-3 candidate formulas per likely task.
+4. Pre-compute exploratory plots and note suspicious nonlinearities.
+5. Build one baseline script for regression and one for classification.
+6. Prepare threshold grid and CV utilities for quick reuse.
+
+---
+
+# Final pre-exam focus list (what gives highest return)
+
+1. Logistic + threshold tuning + confusion interpretation.
+2. OLS vs ridge/lasso comparison and interpretation.
+3. GAM for nonlinearity (when and why it helps).
+4. Tree vs RF vs boosting comparison.
+5. LOOCV/k-fold/bootstrap coding loops.
+6. Writing short, decision-oriented interpretation paragraphs.
+
+---
+
+# Limitations and coverage notes
+
+- This compendium covers all uploaded exam/tutorial/assignment materials found in this repository.
+- The 2023 full exam statement PDF is not present; 2023 content is inferred from available marking instructions.
+- If additional old exam PDFs are added, extend the historical question bank section with the same structure.
