@@ -25,9 +25,9 @@ snippet threshold_grid
 	ths <- seq(${1:0.01}, ${2:0.99}, by = ${3:0.01})
 	res <- data.frame(th = ths, acc = NA_real_)
 	for(i in seq_along(ths)){
-	pred_i <- ${4:prob} > ths[i]
-	cm_i <- table(${5:y_true}, pred_i)
-	res$acc[i] <- sum(diag(cm_i))/sum(cm_i)
+		pred_i <- ${4:prob} > ths[i]
+		cm_i <- table(${5:y_true}, pred_i)
+		res$acc[i] <- sum(diag(cm_i))/sum(cm_i)
 	}
 	res[which.max(res$acc), ]
 
@@ -35,11 +35,11 @@ snippet loocv_lm
 	n <- nrow(${1:df})
 	se <- numeric(n)
 	for(i in seq_len(n)){
-	tr <- ${1:df}[-i, ]
-	te <- ${1:df}[i, ]
-	mod <- lm(${2:y} ~ ., data = tr)
-	pr <- predict(mod, newdata = te)
-	se[i] <- (te$${2:y} - pr)^2
+		tr <- ${1:df}[-i, ]
+		te <- ${1:df}[i, ]
+		mod <- lm(${2:y} ~ ., data = tr)
+		pr <- predict(mod, newdata = te)
+		se[i] <- (te$${2:y} - pr)^2
 	}
 	mean(se)
 
@@ -49,8 +49,8 @@ snippet bootstrap_var
 	n <- length(${3:y})
 	boot_stat <- numeric(B)
 	for(b in seq_len(B)){
-	yb <- sample(${3:y}, size = n, replace = TRUE)
-	boot_stat[b] <- var(yb)
+		yb <- sample(${3:y}, size = n, replace = TRUE)
+		boot_stat[b] <- var(yb)
 	}
 	quantile(boot_stat, c(0.025, 0.975))
 	hist(boot_stat, breaks = 40)
