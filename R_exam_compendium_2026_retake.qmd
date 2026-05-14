@@ -459,7 +459,8 @@ m_tree <- tree(y ~ ., data = train)
 p_tree <- predict(m_tree, newdata = test)
 
 m_rf <- randomForest(y ~ ., data = train)
-p_rf <- predict(m_rf, newdata = test, type = if(is.factor(train$y)) "class" else "response")
+rf_type <- if(is.factor(train$y)) "class" else "response"
+p_rf <- predict(m_rf, newdata = test, type = rf_type)
 
 m_bt <- gbm(y ~ ., data = train,
             distribution = if(is.factor(train$y)) "bernoulli" else "gaussian",
