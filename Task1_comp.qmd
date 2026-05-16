@@ -15,6 +15,32 @@ editor: visual
 
 ------------------------------------------------------------------------
 
+## QUICK LOOKUP TABLE (TELL → METHOD)
+
+| If you see this in code… | It is almost certainly… | Section |
+|---|---|---|
+| `sample(..., replace=TRUE)` | Bootstrap / Bagging | 1 / 14 |
+| `for(i in 1:n)` + `X[-i,]` | LOOCV | 3 |
+| `for(i in 1:K)` + `folds == i` | K‑Fold CV | 2 |
+| `sum((y - X%*%b)^2) + la*sum(b^2)` | Ridge | 4 |
+| `sum((y - X%*%b)^2) + la*sum(abs(b))` | Lasso | 6 |
+| `solve(t(X)%*%X)` | OLS closed‑form | 7 |
+| `abs(x-x0)` + `order(d)[1:K]` | KNN | 8 |
+| `y - f2` / `y - f1` in loop | Backfitting (GAM) | 10 |
+| `table(y[o])` | KNN classification | 9 |
+| `exp(eta)/(1+exp(eta))` | Logistic sigmoid | 17 |
+| `log(p/(1-p))` | Log‑odds | 18 |
+| `for(s in candidates)` + RSS/Gini | Tree split | 12 |
+| `mincut` / pruning loop | Tree tuning | 13 |
+| `mtry` in randomForest | Random forest | 15 |
+| `r <- y - fhat` in loop | Boosting | 16 |
+| nested loops over `cost`/`gamma` | SVM tuning | 21 |
+| `prcomp()` + `pca$x` | PCR | 23 |
+| `ROC` / `AUC` code | ROC/AUC | 24 |
+| cluster assignment + centroid update | K‑means | 25 |
+
+------------------------------------------------------------------------
+
 ## GROUP 1: The Resampling Loops (Shuffling the Data)
 
 ### 1. The Bootstrap
@@ -44,6 +70,19 @@ f_boot <- function(data, B=1000) {              # Function takes data and number
 
 **Plug-and-Play Answer:**
 > "This R-function implements the **Bootstrap** method. It estimates the standard error of the [INSERT METRIC]. It runs a `for` loop `B` times, and in each iteration it draws a random sample of size `n` **with replacement** (`replace=TRUE`). It fits the model on this simulated dataset, stores the statistic, and finally returns the standard deviation of the simulated statistics, which is the bootstrapped standard error."
+
+**Typical follow‑up questions (and how to solve):**
+- *“Compute a 95% CI using bootstrap (normal or percentile).”*
+
+```{r}
+#| eval: false
+# Assume bootstrap statistics stored in res
+se_boot <- sd(res)
+ci_normal <- mean(res) + c(-1, 1) * 1.96 * se_boot
+ci_percentile <- quantile(res, c(0.025, 0.975))
+```
+
+**Theory answer:** The **normal CI** assumes approximate normality of the bootstrap distribution; the **percentile CI** does not. The percentile method is more robust if the bootstrap distribution is skewed.
 
 ------------------------------------------------------------------------
 
@@ -79,6 +118,18 @@ f_kfold <- function(X, y, K=5) {                # X predictors, y response, K fo
 **Plug-and-Play Answer:**
 > "This R-function performs **K-Fold Cross-Validation**. The data are split into `K` folds. For each fold `i`, the model is trained on all other folds and tested on fold `i`, producing a test MSE. The function returns the average test MSE across the K folds."
 
+**Typical follow‑up questions (and how to solve):**
+- *“Use CV to pick K or λ.”*
+
+```{r}
+#| eval: false
+Kgrid <- 2:15
+mseK <- sapply(Kgrid, function(K) f_kfold(X, y, K=K))
+Kopt <- Kgrid[which.min(mseK)]
+```
+
+**Theory answer:** CV selects the hyperparameter that minimizes estimated test error, balancing bias/variance.
+
 ------------------------------------------------------------------------
 
 ### 3. Leave-One-Out Cross-Validation (LOOCV)
@@ -109,6 +160,18 @@ loo <- function(X, y) {                          # X predictors, y response
 
 **Plug-and-Play Answer:**
 > "This R-function implements **LOOCV**. It trains the model on all observations except one, predicts the left-out observation, and repeats for every row. The returned value is the mean squared prediction error across all left-out observations."
+
+**Typical follow‑up questions (and how to solve):**
+- *“Use LOOCV to pick λ in ridge/lasso.”*
+
+```{r}
+#| eval: false
+lavec <- seq(0, 5000, length.out=20)
+mses <- sapply(lavec, function(la) loo(X, y))
+la_opt <- lavec[which.min(mses)]
+```
+
+**Theory answer:** LOOCV approximates test error; the λ that minimizes LOOCV is preferred for generalization.
 
 ------------------------------------------------------------------------
 
@@ -150,6 +213,19 @@ g <- function(X, y, la) {
 **Plug-and-Play Answer:**
 > "These functions manually implement **Ridge Regression**. `f` calculates the loss $RSS + \lambda \sum \beta^2$. `g` centers `y` to remove the intercept, **demeans each column of X** so the penalty applies fairly, and then uses `nlminb` to find coefficients that minimize the ridge loss. The point of this penalty is to shrink coefficients and reduce variance, improving generalization."
 
+**Typical follow‑up questions (and how to solve):**
+- *“Compare OLS vs ridge; what happens as λ increases?”*
+
+```{r}
+#| eval: false
+b_ols <- lm(y ~ X)$coef[-1]
+b_ridge0 <- g(X, y, la=0)
+b_ridge1000 <- g(X, y, la=1000)
+cbind(b_ols, b_ridge0, b_ridge1000)
+```
+
+**Theory answer:** λ=0 gives OLS. Large λ shrinks coefficients toward 0 (lower variance, higher bias).
+
 ------------------------------------------------------------------------
 
 ### 5. Ridge with Standardization (often required in practice)
@@ -171,6 +247,9 @@ for(k in 1:ncol(X)) {
 **Plug-and-Play Answer:**
 > "This code **standardizes** the predictors before applying a shrinkage method. It ensures the penalty treats all variables fairly regardless of units, which is crucial for ridge and lasso."
 
+**Typical follow‑up questions (and how to solve):**
+- *“Why not only center?”* — Centering aligns means; scaling aligns variances so penalties are comparable.
+
 ------------------------------------------------------------------------
 
 ### 6. Lasso Regression Engine (Probable 2026)
@@ -191,6 +270,9 @@ f_lasso <- function(b1, X, y, la) {              # b1 = coefficients
 
 **Plug-and-Play Answer:**
 > "This function computes the **Lasso** objective: RSS plus the L1 penalty $\lambda \sum |\beta|$. The absolute value penalty allows coefficients to become exactly zero, so Lasso performs shrinkage and variable selection."
+
+**Typical follow‑up questions (and how to solve):**
+- *“Which predictors are selected?”* — those with non‑zero coefficients after tuning λ.
 
 ------------------------------------------------------------------------
 
@@ -244,6 +326,21 @@ f_knn <- function(x0, x, y, K=3) {
 **Plug-and-Play Answer:**
 > "This function implements **KNN local regression**. It calculates distances from `x0`, selects the K nearest observations, fits a local regression on those K points, and predicts the value at `x0`."
 
+**Typical follow‑up questions (and how to solve):**
+- *“Choose K using LOOCV.”*
+
+```{r}
+#| eval: false
+Kgrid <- 1:15
+mseK <- sapply(Kgrid, function(K) {
+  preds <- sapply(1:n, function(i) f_knn(x[i], x[-i], y[-i], K))
+  mean((y - preds)^2)
+})
+Kopt <- Kgrid[which.min(mseK)]
+```
+
+**Theory answer:** Small K → low bias/high variance; large K → smoother (higher bias/lower variance).
+
 ------------------------------------------------------------------------
 
 ### 9. KNN Classification (Majority Vote)
@@ -295,6 +392,9 @@ f_backfit <- function(x1, x2, y) {
 
 **Plug-and-Play Answer:**
 > "This code implements **backfitting** for a GAM. It alternates between fitting a smooth function for $x_1$ on the residuals after removing $f_2$, then fitting $f_2$ on residuals after removing $f_1$. Repeating this yields the additive model $f_1(x_1)+f_2(x_2)$."
+
+**Typical follow‑up questions (and how to solve):**
+- *“Compare GAM vs linear model.”* — fit both and compare MSE / R².
 
 ------------------------------------------------------------------------
 
@@ -620,3 +720,44 @@ reg <- lm(y ~ Z)                                # Regress y on components
 
 **Plug-and-Play Answer:**
 > "This code performs **PCR**. It first computes principal components of X, then uses the first K components as predictors in a regression model. The goal is dimension reduction with predictive modelling."
+
+------------------------------------------------------------------------
+
+### 24. ROC / AUC Computation (Possible)
+**Math / Theory:** ROC shows TPR vs FPR for thresholds; AUC summarizes ranking quality.
+
+**Why it matters (model improvement):** Threshold‑free evaluation for classification performance.
+
+```{r}
+#| eval: false
+
+library(pROC)
+roc_obj <- roc(test$y, prob)
+auc(roc_obj)
+plot(roc_obj)
+```
+
+**The Tell:** `roc()` and `auc()`.
+
+**Plug-and-Play Answer:**
+> "This code computes **ROC and AUC**, evaluating classification quality across all thresholds. AUC is the probability a random positive gets a higher score than a random negative."
+
+------------------------------------------------------------------------
+
+### 25. K‑Means Clustering (Possible)
+**Math / Theory:** Alternates between assigning points to nearest centroid and updating centroids.
+
+**Why it matters (model improvement):** Discovers structure without labels; useful for segmentation.
+
+```{r}
+#| eval: false
+
+# One manual iteration
+clusters <- apply(X, 1, function(xi) which.min(colSums((t(centers) - xi)^2)))
+centers <- sapply(1:K, function(k) colMeans(X[clusters==k, , drop=FALSE]))
+```
+
+**The Tell:** distance to centroids + centroid update.
+
+**Plug-and-Play Answer:**
+> "This code performs one **k‑means** iteration: assign points to closest centroid, then update centroids to the mean of assigned points."
