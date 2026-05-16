@@ -355,14 +355,15 @@ varImpPlot(rf)
 
 *Style: 2023 exam (two tasks, both with regression + classification, more explanation required)*
 
-**Dataset:** `Churn.csv` from `/home/runner/work/BAN404/BAN404/Previous Exam/2023/Churn.csv`
+**Dataset:** `Churn.csv` from the repo — available at `Previous Exam/2023/Churn.csv` relative to the repository root.
 
 ---
 
 ## Task 1 (50 points) — Predict average bill (regression)
 
 ```{r}
-Churn <- read.csv("/home/runner/work/BAN404/BAN404/Previous Exam/2023/Churn.csv")
+# Adjust path if needed; file is at Previous Exam/2023/Churn.csv in the repo
+Churn <- read.csv("../Previous Exam/2023/Churn.csv")
 ```
 
 ### 1a — Data cleaning and split (10p)
@@ -412,7 +413,8 @@ Churn <- read.csv("/home/runner/work/BAN404/BAN404/Previous Exam/2023/Churn.csv"
 
 ```{r}
 # Task 2b: Bootstrap CI for p = P(churn=1)
-Churn <- read.csv("/home/runner/work/BAN404/BAN404/Previous Exam/2023/Churn.csv")
+# Adjust path if needed; file is at Previous Exam/2023/Churn.csv in the repo
+Churn <- read.csv("../Previous Exam/2023/Churn.csv")
 churn50 <- Churn$churn[1:50]   # First 50 observations
 
 B <- 10000; pboot <- numeric(B); set.seed(1)
