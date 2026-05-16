@@ -259,7 +259,7 @@ for k in range(X.shape[1]):
     Xstd[:, k] = (X[:, k] - np.mean(X[:, k])) / np.std(X[:, k], ddof=1)  # Center + scale each predictor
 ```
 
-**The Tell:** Division by `sd()` after subtracting the mean.
+**The Tell:** Division by `np.std()` after subtracting the mean.
 
 **Plug-and-Play Answer:**
 > "This code **standardizes** the predictors before applying a shrinkage method. It ensures the penalty treats all variables fairly regardless of units, which is crucial for ridge and lasso."
@@ -308,7 +308,7 @@ def f_ols(X, y):
 **The Tell:** `np.linalg.solve(X.T @ X, X.T @ y)`.
 
 **Plug-and-Play Answer:**
-> "This code computes **OLS regression coefficients** using the closed-form matrix solution $(X^T X)^{-1} X^T y$. The `solve()` function inverts the matrix."
+> "This code computes **OLS regression coefficients** using the closed-form normal equations. `np.linalg.solve()` solves $(X^TX)eta = X^Ty` directly for `eta` without explicitly inverting the matrix."
 
 ------------------------------------------------------------------------
 
@@ -519,7 +519,7 @@ def f_bagging(X, y, B=100):
     return preds.mean(axis=1)  # Average predictions across trees
 ```
 
-**The Tell:** `np.random.choice(..., replace=True)` inside a loop + model fit + `rowMeans()`.
+**The Tell:** `np.random.choice(..., replace=True)` inside a loop + model fit + `preds.mean(axis=1)`.
 
 **Plug-and-Play Answer:**
 > "This function implements **Bagging**. It creates many bootstrap samples, fits a decision tree to each, and averages the predictions. Averaging reduces variance and improves prediction accuracy compared to a single tree."
