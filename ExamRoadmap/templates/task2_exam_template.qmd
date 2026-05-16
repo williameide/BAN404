@@ -1,0 +1,231 @@
+---
+title: "BAN404 Exam — Task 2 Template"
+subtitle: "[REPLACE: Dataset description]"
+author: "Candidate [REPLACE: number]"
+date: "[REPLACE: exam date]"
+format:
+  pdf:
+    toc: false
+    number-sections: true
+execute:
+  echo: true
+  warning: false
+  message: false
+  eval: true
+---
+
+# INSTRUCTIONS FOR USE
+# 1. Open this file at the START of the exam
+# 2. Replace all [REPLACE: ...] markers with actual values
+# 3. Delete this instruction block
+# 4. Delete code sections you do not need
+# 5. Add your written answers after each code chunk
+
+---
+
+# Setup
+
+```{r setup}
+# Load packages
+library(MASS); library(ISLR2)
+library(e1071); library(glmnet)
+library(gam); library(tree)
+library(randomForest); library(gbm)
+library(splines)
+
+# Set seed (use seed given in exam, or 123)
+set.seed(123)
+
+# Read data
+data <- read.csv("[REPLACE: filename.csv]")
+# OR: data <- read.csv2("[REPLACE: filename.csv]")  # for semicolon-separated
+
+str(data)
+head(data, 3)
+dim(data)
+```
+
+---
+
+# Task 2a — Data Cleaning and EDA (10p)
+
+## Data Cleaning
+
+```{r clean}
+# STEP 1: Inspect unique values / types for all columns
+summary(data)
+
+# STEP 2: Convert categorical variables to factors
+# [REPLACE: list the columns that need to be factors]
+# data$col1 <- as.factor(data$col1)
+# data$col2 <- as.factor(data$col2)
+
+# STEP 3: Remove leakage / non-predictive variables
+# [REPLACE: list variables to remove and explain why]
+data <- data[, !(names(data) %in% c("[REPLACE: var1]", "[REPLACE: var2]"))]
+
+# STEP 4: Create binary target (if needed)
+# data$target <- as.numeric(data$raw_count >= 1)
+# data$target <- factor(ifelse(data$raw >= 1, "yes", "no"))
+
+# STEP 5: Train/test split (50/50)
+n     <- nrow(data)
+idx   <- sample(1:n, size=floor(n/2))
+train <- data[idx, ]
+test  <- data[-idx, ]
+
+cat("Train size:", nrow(train), "| Test size:", nrow(test))
+prop.table(table(train$target))  # Class balance check
+```
+
+**Written answer — data cleaning:**
+I removed [variable X] because [it is the raw target / only available after the event / has no predictive value as a unique ID]. The variable [Y] was converted to a factor because it represents [a categorical group / a zone / a class]. The data was split 50/50 into training (n=[]) and test (n=[]) sets.
+
+## EDA — Finding Useful Predictors
+
+```{r eda-numeric}
+# Continuous predictors vs binary target: boxplots
+# Uncomment and adjust as needed:
+
+par(mfrow=c(2,3))  # Adjust grid size for your number of plots
+
+# boxplot(var1 ~ target, data=train, main="var1 by target")
+# boxplot(var2 ~ target, data=train, main="var2 by target")
+# boxplot(var3 ~ target, data=train, main="var3 by target")
+
+# Means by group
+# tapply(train$var1, train$target, mean)
+```
+
+```{r eda-categorical}
+# Categorical predictors vs binary target: cross-tables
+# prop.table(table(train$cat_var, train$target), margin=1)
+```
+
+**Written answer — EDA:**
+From the boxplots, [variable A] shows a clear difference between groups (median [X] for target=0 vs [Y] for target=1). [Variable B] shows similar distributions in both groups. The cross-table for [variable C] shows that [category X] has [P]% positive cases vs [Q]% for [category Y], suggesting it is a useful predictor. I conclude that the most promising predictors are: [A, B, C].
+
+---
+
+# Task 2b — Logistic Regression (10p)
+
+```{r logistic}
+# Full model
+logreg_full <- glm(target ~ ., data=train, family=binomial())
+summary(logreg_full)
+
+# Reduced model (based on EDA + significance)
+# [REPLACE: list selected predictors]
+# logreg_red <- glm(target ~ var1 + var2 + var3, data=train, family=binomial())
+
+# Odds ratios
+round(exp(coef(logreg_full)), 3)
+```
+
+**Written answer — logistic regression:**
+The full logistic model shows that [variable A] is strongly significant (p < 0.001) with a coefficient of [X], corresponding to an odds ratio of [OR]. This means a one-unit increase in [A] multiplies the odds of [target] by [OR]. [Variable B] with coefficient [Y] (OR = [OR2]) is [significant/not significant]. Based on the summary, I selected the reduced model with [list variables] as these showed the strongest and most significant associations.
+
+---
+
+# Task 2c — Evaluate Predictions (10p)
+
+```{r evaluate}
+# Predict probabilities on test data
+prob_full <- predict(logreg_full, newdata=test, type="response")
+
+# Check class imbalance to decide threshold
+prop.table(table(train$target))
+
+# Choose threshold (0.5 default; lower if positive class is rare)
+threshold <- 0.5   # [REPLACE: adjust if needed]
+pred_class <- ifelse(prob_full > threshold, 1, 0)
+
+# Confusion matrix
+cm <- table(Actual=test$target, Predicted=pred_class)
+cm
+prop.table(cm, margin=1)  # Row proportions
+
+# Accuracy
+acc_logistic <- sum(diag(cm)) / sum(cm)
+cat("Accuracy:", round(acc_logistic, 4))
+```
+
+**Written answer — evaluation:**
+Using a threshold of [T], the logistic regression achieves an overall accuracy of [A]% on test data. The confusion matrix shows that [X]% of actual positives (sensitivity) and [Y]% of actual negatives (specificity) are correctly classified. The threshold of [T] was chosen [because the positive class represents only [Z]% of observations / to maximize accuracy]. [Add comparison if applicable].
+
+---
+
+# Task 2d — Random Forest (10p)
+
+```{r random-forest}
+library(randomForest)
+
+# Ensure target is a factor
+train$target <- as.factor(train$target)
+test$target  <- as.factor(test$target)
+
+rf <- randomForest(target ~ ., data=train,
+                   mtry=floor(sqrt(ncol(train)-1)),
+                   ntree=500,
+                   importance=TRUE)
+rf   # Print summary including OOB error
+
+# Predict
+pred_rf <- predict(rf, newdata=test)
+cm_rf   <- table(Actual=test$target, Predicted=pred_rf)
+cm_rf
+prop.table(cm_rf, margin=1)
+acc_rf <- sum(diag(cm_rf)) / sum(cm_rf)
+cat("RF Accuracy:", round(acc_rf, 4))
+
+# Variable importance
+varImpPlot(rf)
+```
+
+**Written answer — random forest:**
+The random forest model achieves [accuracy]% accuracy on test data, [better than / similar to / slightly worse than] logistic regression ([logistic accuracy]%). The variable importance plot shows [variable A] is the most important predictor, causing the largest drop in accuracy when permuted. This is consistent with the EDA finding that [A] had the largest group differences. The model [correctly classifies / struggles with] the positive class, achieving [sensitivity]% sensitivity.
+
+---
+
+# Task 2e — Boosted Tree (10p)
+
+```{r boosting}
+library(gbm)
+
+# Target must be 0/1 numeric for bernoulli
+train_bt        <- train
+train_bt$target <- as.numeric(as.character(train$target))
+test_bt         <- test
+
+bt <- gbm(target ~ ., data=train_bt,
+          distribution="bernoulli",
+          n.trees=1000,
+          interaction.depth=3,
+          shrinkage=0.01)
+
+# Predict
+prob_bt  <- predict(bt, newdata=test_bt, n.trees=1000, type="response")
+pred_bt  <- ifelse(prob_bt > threshold, 1, 0)
+cm_bt    <- table(Actual=as.numeric(as.character(test$target)), Predicted=pred_bt)
+cm_bt
+prop.table(cm_bt, margin=1)
+acc_bt <- sum(diag(cm_bt)) / sum(cm_bt)
+cat("Boosting Accuracy:", round(acc_bt, 4))
+```
+
+**Written answer — boosting:**
+The boosted tree model achieves [accuracy]% accuracy on test data. [Compare to logistic and RF.] Boosting builds trees sequentially, each correcting the errors of previous trees. With shrinkage=0.01, learning is slow but stable. [Conclude which model performs best overall and why.]
+
+---
+
+# Summary Comparison
+
+```{r summary-table}
+cat("Model Comparison (Test Accuracy):\n")
+cat("Logistic Regression:", round(acc_logistic, 4), "\n")
+cat("Random Forest:      ", round(acc_rf, 4), "\n")
+cat("Boosted Tree:       ", round(acc_bt, 4), "\n")
+```
+
+**Final written answer:**
+Across all models, [best model] achieves the highest accuracy of [X]%. The analysis suggests that [key predictors] are the most important drivers of [target]. [Business interpretation: what this means for the company/policy/decision]. [Optional: recommendation for which model to use in practice and why.]

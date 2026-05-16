@@ -1,0 +1,376 @@
+---
+title: "Task 2 Playbooks — Dataset Analysis End-to-End"
+author: "BAN404 Self-Study"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: flatly
+execute:
+  echo: true
+  eval: false
+  warning: false
+---
+
+# How to Use This File
+
+Task 2 gives you a real dataset and asks you to analyze it. Every Task 2 follows the same 7-step pipeline. This file gives you:
+- **Playbook A**: Classification (most common — 2021, 2022, 2023, 2024, 2025 Task 2)
+- **Playbook B**: Regression (appears in 2021, 2022, 2023 Task 1 — but can appear in Task 2 too)
+- **Decision guides**: How to make the choices the exam asks about
+- **Written templates**: Fill-in-the-blank answers for each step
+
+> **Key insight:** The content changes (different dataset, different predictors). The **structure never changes.** Master the structure, adapt to the content.
+
+---
+
+# THE 7-STEP PIPELINE (applies to every Task 2)
+
+```
+Step 1: DATA PREP        → clean, factor-encode, train/test split
+Step 2: EDA              → find useful predictors with plots/tables
+Step 3: BASELINE MODEL   → logistic (class) or OLS (regression)
+Step 4: EVALUATE         → confusion matrix + accuracy, or MSE
+Step 5: ENSEMBLE 1       → random forest + variable importance
+Step 6: ENSEMBLE 2       → boosting (or bagging)
+Step 7: COMPARE + INTERPRET → business answer
+```
+
+---
+
+# PLAYBOOK A — Classification Pipeline
+
+## Step 1: Data Preparation
+
+### 1a. Load and inspect data
+```{r}
+# Read data (use read.csv2 for semicolon-separated; read.csv for comma)
+data <- read.csv("data.csv")
+str(data)          # Check column types
+head(data)         # First rows
+summary(data)      # Summary statistics
+names(data)        # Column names
+dim(data)          # Rows x columns
+```
+
+### 1b. Create binary target (if needed)
+```{r}
+# Example: recode a count variable to binary
+data$target <- as.numeric(data$count_variable >= 1)  # 0/1
+# or as factor:
+data$target <- factor(ifelse(data$count_variable >= 1, "yes", "no"))
+```
+
+### 1c. Remove leakage variables
+**Rule:** Remove any variable that:
+- IS the target (e.g., the raw count if target = "count >= 1")
+- Is only observable AFTER the event (e.g., claim cost is only known if there was a claim)
+- Is a perfect proxy for the target (a different ID/code for the same thing)
+
+```{r}
+# Remove by name
+data <- data[, !(names(data) %in% c("id", "raw_count", "cost_after_event"))]
+```
+
+**Written template for exam:** "I removed [variable] because it is [directly derived from the target / only available after the event / a unique identifier with no predictive power]. Keeping it would lead to data leakage — the model would 'cheat' by using information not available at prediction time."
+
+### 1d. Factor encoding
+```{r}
+# Always convert categorical variables to factors
+data$gender  <- as.factor(data$gender)
+data$zone    <- as.factor(data$zone)
+data$class   <- as.factor(data$class)
+
+# Verify
+str(data)   # Should show "Factor" for categorical columns
+```
+
+**When to make something a factor:** If it takes a small number of discrete values and represents a category (gender, zone, class, type), it should be a factor. If it is an ordered number (age, income, score), leave as numeric.
+
+### 1e. Train/test split
+```{r}
+set.seed(123)   # Always set seed for reproducibility
+n     <- nrow(data)
+idx   <- sample(1:n, size=floor(n/2))  # 50/50 split
+train <- data[idx, ]
+test  <- data[-idx, ]
+
+# Check proportions of target
+prop.table(table(train$target))
+prop.table(table(test$target))
+```
+
+**Written template:** "I split the data 50/50 into training (n=[X]) and test sets (n=[Y]) using `set.seed([seed])` for reproducibility. Models are fitted on training data and evaluated on test data to estimate generalization performance."
+
+---
+
+## Step 2: EDA — Finding Useful Predictors
+
+### The EDA Decision Guide
+
+| Predictor type | Target type | Best plot/table |
+|----------------|-------------|-----------------|
+| Continuous | Binary | Boxplot by target group |
+| Continuous | Binary | Mean/SD comparison by group |
+| Categorical | Binary | prop.table — proportion of target=1 per category |
+| Continuous | Continuous | Scatter plot, correlation |
+| Categorical | Continuous | Boxplot of response by category |
+
+```{r}
+# ------- Continuous predictor vs binary target -------
+# Boxplot: do values differ between target=0 and target=1?
+boxplot(age ~ target, data=train, main="Age by target")
+# Means by group:
+tapply(train$age, train$target, mean)
+
+# ------- Categorical predictor vs binary target -------
+# Proportions: what fraction of each category has target=1?
+prop.table(table(train$gender, train$target), margin=1)
+# Column margin=1 means: within each gender, what fraction has target=1?
+
+# ------- Quick scan with sapply -------
+num_vars <- names(train)[sapply(train, is.numeric)]
+for(v in num_vars) {
+  boxplot(train[[v]] ~ train$target, 
+          main=paste(v, "by target"), xlab="target")
+}
+
+# ------- Correlation with target (for numeric target or numeric predictors) -------
+round(cor(train[, sapply(train, is.numeric)]), 2)
+```
+
+**Written template:** "From the boxplots, [variable A] shows a clear difference between target=0 and target=1 groups (median [X] vs [Y]), suggesting it is a useful predictor. [Variable B] shows similar distributions and is unlikely to add predictive power. The cross-table shows that [category X] of [variable C] has a much higher proportion of target=1 ([P]%) compared to [category Y] ([Q]%)."
+
+---
+
+## Step 3: Baseline Model — Logistic Regression
+
+```{r}
+# Full model (all predictors)
+logreg_full <- glm(target ~ ., data=train, family=binomial())
+summary(logreg_full)
+
+# Reduced model (significant predictors only, based on EDA and summary)
+logreg_red <- glm(target ~ age + gender + zone, data=train, family=binomial())
+summary(logreg_red)
+
+# Predict on TEST data
+prob_full <- predict(logreg_full, newdata=test, type="response")
+prob_red  <- predict(logreg_red,  newdata=test, type="response")
+```
+
+**Interpretation guide for coefficients:**
+```{r}
+# On the log-odds scale (raw summary output)
+coef(logreg_full)["age"]    # e.g., -0.05
+
+# On the odds ratio scale (more interpretable)
+round(exp(coef(logreg_full)), 3)
+```
+**Written template:** "The coefficient on [variable] is [coef], corresponding to an odds ratio of exp([coef]) = [OR]. This means a one-unit increase in [variable] multiplies the odds of [target] by [OR]. [Variable] is [statistically significant / not significant] at the 5% level."
+
+---
+
+## Step 4: Evaluate — Confusion Matrix and Threshold
+
+### The threshold problem
+```{r}
+# Check class balance FIRST
+prop.table(table(train$target))
+# If target=1 is rare (< 10%), use a low threshold
+```
+
+**Decision rule for threshold:**
+- Class balance close to 50/50 → use threshold = 0.5
+- Class is rare (e.g., 1–5% positive) → experiment with lower thresholds (0.01–0.1)
+- Goal is prediction precision → optimize accuracy on training set
+- Goal is catching true positives → optimize sensitivity
+
+```{r}
+# Evaluate at chosen threshold
+threshold <- 0.5   # adjust as needed
+
+pred_class <- ifelse(prob_full > threshold, 1, 0)
+cm         <- table(Actual=test$target, Predicted=pred_class)
+cm
+prop.table(cm, margin=1)    # Row-wise: sensitivity per class
+acc <- sum(diag(cm)) / sum(cm)
+cat("Accuracy:", round(acc, 4))
+
+# If imbalanced: scan thresholds
+thresholds <- seq(0.01, 0.5, by=0.01)
+acc_vec    <- sapply(thresholds, function(th) {
+  pred <- ifelse(prob_full > th, 1, 0)
+  mean(pred == as.numeric(as.character(test$target)))
+})
+best_th <- thresholds[which.max(acc_vec)]
+```
+
+**Written template:** "Using a threshold of [T], the logistic model achieves overall accuracy of [A]%. The confusion matrix shows that [X]% of actual positives (target=1) are correctly classified (sensitivity) and [Y]% of actual negatives (target=0) are correctly classified (specificity). The threshold was chosen [because the positive class is rare / to maximize accuracy / to balance sensitivity and specificity]."
+
+---
+
+## Step 5: Random Forest
+
+```{r}
+library(randomForest)
+
+# Target must be a factor for classification
+train$target <- as.factor(train$target)
+test$target  <- as.factor(test$target)
+
+rf <- randomForest(target ~ ., data=train,
+                   mtry=floor(sqrt(ncol(train)-1)),   # sqrt(p) for classification
+                   ntree=500,
+                   importance=TRUE)
+rf    # Print OOB error rate
+
+# Predict classes
+pred_rf <- predict(rf, newdata=test)
+cm_rf   <- table(Actual=test$target, Predicted=pred_rf)
+prop.table(cm_rf, margin=1)
+
+# Or predict probabilities (for threshold tuning)
+prob_rf   <- predict(rf, newdata=test, type="prob")[, 2]  # P(target=1)
+pred_rf2  <- ifelse(prob_rf > threshold, 1, 0)
+cm_rf2    <- table(Actual=test$target, Predicted=pred_rf2)
+
+# Variable importance
+varImpPlot(rf, main="Variable Importance")
+importance(rf)
+```
+
+**Written template:** "The random forest achieves [accuracy]% accuracy on test data. The variable importance plot shows [variable A] is the most important predictor (largest decrease in accuracy when permuted), followed by [B] and [C]. [Variable D] has near-zero importance. Compared to logistic regression ([X]% accuracy), the random forest [performs better/similarly/worse]."
+
+---
+
+## Step 6: Boosting
+
+```{r}
+library(gbm)
+
+# Target must be 0/1 numeric for gbm with distribution="bernoulli"
+train_bt        <- train
+train_bt$target <- as.numeric(as.character(train$target))
+
+bt <- gbm(target ~ ., data=train_bt,
+          distribution="bernoulli",   # Binary classification
+          n.trees=1000,
+          interaction.depth=3,
+          shrinkage=0.01,
+          cv.folds=5)
+
+best_trees <- which.min(bt$cv.error)
+cat("Optimal n.trees:", best_trees)
+
+# Predict
+prob_bt  <- predict(bt, newdata=test, n.trees=best_trees, type="response")
+pred_bt  <- ifelse(prob_bt > threshold, 1, 0)
+cm_bt    <- table(Actual=test$target, Predicted=pred_bt)
+prop.table(cm_bt, margin=1)
+```
+
+**Written template:** "The boosted tree model achieves [accuracy]% accuracy with CV-optimal n.trees=[N]. The confusion matrix shows sensitivity of [S]% and specificity of [Sp]%. [Comparison to logistic/RF]."
+
+---
+
+## Step 7: Compare All Models and Give Business Answer
+
+```{r}
+# Summary table
+results <- data.frame(
+  Model    = c("Logistic full", "Logistic reduced", "Random Forest", "Boosting"),
+  Accuracy = c(acc_full, acc_red, acc_rf, acc_bt),
+  row.names = NULL
+)
+print(results)
+```
+
+**Business answer template:** "Based on the analysis, [variable A] is the strongest predictor of [target]. Customers/policies/individuals with [characteristic] are significantly more likely to [outcome] ([odds ratio/accuracy evidence]). [Variable B] is the second most important factor. The [best model] achieves the highest accuracy of [X]% on test data. To [business goal], the company should focus on [actionable insight]."
+
+---
+
+# PLAYBOOK B — Regression Pipeline
+
+## Differences from Classification
+
+| Step | Classification | Regression |
+|------|---------------|------------|
+| Target | Factor (0/1, yes/no) | Numeric (continuous) |
+| Baseline model | `glm(..., family=binomial)` | `lm(y ~ .)` |
+| Evaluation | Confusion matrix, accuracy | MSE, RMSE, R² |
+| RF | `randomForest(as.factor(y)~.)` | `randomForest(y~.)` |
+| Boosting | `distribution="bernoulli"` | `distribution="gaussian"` |
+| Threshold | Yes (convert prob → class) | No threshold needed |
+
+## Key Code Changes
+```{r}
+# Step 3: OLS baseline
+ols <- lm(y ~ ., data=train)
+MSE_ols  <- mean((test$y - predict(ols, test))^2)
+R2_ols   <- 1 - MSE_ols / var(test$y)
+
+# Step 5: Regression RF
+rf_reg <- randomForest(y ~ ., data=train,
+                       mtry=floor((ncol(train)-1)/3),   # p/3 for regression
+                       ntree=500)
+MSE_rf <- mean((test$y - predict(rf_reg, test))^2)
+
+# Step 6: Regression boosting
+bt_reg <- gbm(y ~ ., data=train, distribution="gaussian",
+              n.trees=1000, interaction.depth=3, shrinkage=0.01)
+MSE_bt <- mean((test$y - predict(bt_reg, test, n.trees=1000))^2)
+
+# Compare
+cat("MSE: OLS=", round(MSE_ols,2), "RF=", round(MSE_rf,2), "BT=", round(MSE_bt,2))
+```
+
+---
+
+# EDA Choice Logic — Quick Reference
+
+> "What descriptive statistics should I use?" — Use this table:
+
+| What you want to know | How to show it |
+|-----------------------|----------------|
+| Distribution of a numeric variable | Histogram, boxplot, `summary()` |
+| Association between numeric predictor and binary target | Boxplot by target group |
+| Association between categorical predictor and binary target | `prop.table(table(cat, target), margin=1)` |
+| Association between two numeric variables | Scatter plot, `cor()` |
+| Class balance (how rare is the positive class?) | `table(y)` and `prop.table(table(y))` |
+| Missing values | `sum(is.na(data))`, `colSums(is.na(data))` |
+| Outliers | Boxplot, or check `summary()` for max vs Q3 |
+
+---
+
+# Model Comparison Logic
+
+After fitting all models, choose the best by:
+1. **Test accuracy** (classification) or **test MSE/RMSE** (regression) — lower MSE, higher accuracy = better
+2. If nearly equal: prefer the **simpler model** (logistic regression over RF if similar accuracy)
+3. If the goal is **interpretability** (which variables matter?): logistic regression or tree
+4. If the goal is **prediction accuracy**: RF or boosting usually wins
+
+```{r}
+# Model comparison table (fill in the values you computed)
+model_comparison <- data.frame(
+  Model    = c("OLS / Logistic", "Tree", "Bagging/RF", "Boosting"),
+  Metric   = c(acc1, acc2, acc3, acc4),   # accuracy or MSE
+  Comments = c("Interpretable", "Visualizable", "Best for variance reduction", "Often best accuracy")
+)
+```
+
+---
+
+# Common Exam Writing Phrases
+
+**Starting EDA:** "To identify potentially useful predictors, I used [boxplots / cross-tables / scatter plots]. The results show..."
+
+**Explaining train/test choice:** "I fit the model on training data to avoid overfitting and evaluate on test data to estimate how the model performs on unseen observations."
+
+**Explaining threshold choice:** "The default threshold of 0.5 is inappropriate here because [the positive class represents only X% of observations / the cost of missing a true positive is high]. I chose threshold [T] which achieves [sensitivity]% sensitivity and [specificity]% specificity."
+
+**Comparing to a benchmark:** "The random forest improves accuracy from [X]% (logistic regression) to [Y]%, a gain of [Z] percentage points. This suggests the model benefits from capturing non-linear interactions between predictors."
+
+**Variable importance interpretation:** "According to the random forest variable importance measure, [variable] contributes most to prediction accuracy. When its values are permuted, model accuracy drops by [X] percentage points. This aligns with the EDA finding that [variable] showed the largest difference between target groups."
