@@ -408,8 +408,8 @@
 | Term | Page(s) found |
 |---|---|
 | sampling | 2, 27, 29, 30, 31, 48 |
-| cross validation | Not found as exact token |
+| cross validation | See `cross-validation` variant: 2, 3, 9, 11, 12, 16, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 39, 40, 48, 49, 51, 52, 63 |
 | cross-validation | 2, 3, 9, 11, 12, 16, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 39, 40, 48, 49, 51, 52, 63 |
 | bagging | 3, 30, 43, 45, 46, 47, 48, 49, 60 |
 | knn | 1, 10, 11, 18, 19, 25, 40, 63 |
-| bootstrapping | Not found as exact token |
+| bootstrapping | See `bootstrap` variant: 2, 3, 27, 29, 30, 31, 45, 47, 48, 49, 66 |
