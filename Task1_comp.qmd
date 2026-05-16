@@ -7,303 +7,258 @@ editor: visual
 
 # TASK 1 CHEAT SHEET: "Explain the Code" Dictionary
 
-**How to use this section in the exam:** 1. Look at the code the professor gives you. 2. Scan the code for "The Tell" (the specific keyword or math symbol that gives away the secret). 3. Find the matching block below. 4. Copy the "Plug-and-Play Answer" and adjust the variable names in the brackets `[ ]`.
+**How to use this section in the exam:**
+1. Look at the code the professor gives you.
+2. Scan the code for "The Tell" (the specific keyword or math symbol that gives away the secret).
+3. Find the matching block below.
+4. Copy the "Plug-and-Play Answer" and adjust the variable names in the brackets `[ ]`.
 
 ------------------------------------------------------------------------
 
 ## GROUP 1: The Resampling Loops (Shuffling the Data)
 
 ### 1. The Bootstrap
-
-**The Logic:** The computer is trying to find the uncertainty (variance, standard error, etc.) of a specific metric. It does this by creating thousands of fake datasets from the original data, making sure to put data points back in the pile after picking them so they can be picked again.
+**Math / Theory:** We want the sampling distribution and standard error of a statistic. We simulate $B$ datasets of size $n$ **with replacement** and compute the statistic each time.
 
 **The Raw Code you might see:**
-
-```{r, eval=FALSE}
-
-f_boot <- function(data, B=1000) {
-  n <- nrow(data)
-  res <- numeric(B)
-  for(i in 1:B) {
-    # THE TELL is on the next line!
-    idx <- sample(1:n, size=n, replace=TRUE) 
-    fake_data <- data[idx, ]
-    model <- lm(y ~ x, data=fake_data)
-    res[i] <- coef(model)[2]
-  }
-  return(sd(res))
-}
-```
-
-**The Tell:** Look for `sample(...)` combined with `replace = TRUE` (or `replace = T`). If you see `replace=TRUE`, it is **100% the Bootstrap**.
-
-**Plug-and-Play Answer:**
-
-> "This R-function implements the **Bootstrap** method. It estimates the standard error (or uncertainty) of the \[INSERT METRIC, e.g., regression coefficient\]. It does this by running a `for` loop `B` times. In each iteration, it draws a random sample of size `n` from the original dataset **with replacement** (indicated by `replace=TRUE`). It then fits the model on this simulated dataset, stores the result, and finally returns the standard deviation of all the simulated results."
-
-### **2. K-Fold Cross Validation**
-
-**The Logic:** The computer is trying to find out how accurate a model is on *unseen* data. It chops the data into K blocks (usually 5 or 10). It holds one block back, trains on the rest, and tests on the holdout block. It repeats this until every block has been the test set.
 
 ```{r}
 #| eval: false
-f_kfold <- function(X, y, K=5) {
-  n <- length(y)
-  # THE TELL is on the next line!
-  folds <- sample(rep(1:K, length=n)) 
-  cv_errors <- numeric(K)
-  
-  for(i in 1:K) {
-    train_X <- X[folds != i, ]
-    train_y <- y[folds != i]
-    test_X <- X[folds == i, ]
-    test_y <- y[folds == i]
-    
-    b <- solve(t(train_X) %*% train_X) %*% t(train_X) %*% train_y
-    preds <- test_X %*% b
-    cv_errors[i] <- mean((test_y - preds)^2)
+
+f_boot <- function(data, B=1000) {              # Function takes data and number of simulations
+  n <- nrow(data)                               # Number of observations
+  res <- numeric(B)                             # Container for the B simulated statistics
+  for(i in 1:B) {                               # Loop over simulations
+    idx <- sample(1:n, size=n, replace=TRUE)    # THE TELL: sample WITH replacement (bootstrap)
+    fake_data <- data[idx, ]                    # Create a bootstrap sample
+    model <- lm(y ~ x, data=fake_data)          # Fit model on bootstrap sample
+    res[i] <- coef(model)[2]                    # Save the statistic (e.g., beta1)
   }
-  return(mean(cv_errors))
+  return(sd(res))                               # Standard error of the statistic
 }
 ```
 
-**The Tell:** Look for the data being split into `K` pieces, and a loop `for(i in 1:K)`. Look closely at `folds != i` (training data) and `folds == i` (test data).
+**The Tell:** `sample(..., replace = TRUE)`.
 
 **Plug-and-Play Answer:**
+> "This R-function implements the **Bootstrap** method. It estimates the standard error of the [INSERT METRIC]. It runs a `for` loop `B` times, and in each iteration it draws a random sample of size `n` **with replacement** (`replace=TRUE`). It fits the model on this simulated dataset, stores the statistic, and finally returns the standard deviation of the simulated statistics, which is the bootstrapped standard error."
 
-> "This R-function performs **K-Fold Cross-Validation**. The goal is to estimate the Test MSE of the model. The function randomly divides the dataset into `K` equally sized groups (folds). It uses a `for` loop to iterate `K` times. In each step `i`, it treats the `i`-th fold as the test set (`folds == i`) and the remaining folds as the training set (`folds != i`). It fits the model on the training data, calculates the squared errors on the test data, and finally returns the average error across all `K` folds."
+------------------------------------------------------------------------
 
-## **GROUP 2: Loss Functions & Optimization (Phase 3 Methods)**
+### 2. K-Fold Cross Validation
+**Math / Theory:** Estimate Test MSE by splitting data into $K$ folds, training on $K-1$, testing on 1, and averaging errors.
 
-### **3. Ridge Regression (Used in 2025 Exam)**
+```{r}
+#| eval: false
 
-**The Logic:** The computer is trying to fit a linear regression, but it wants to shrink the variables to prevent overfitting. It does this by adding a penalty for having large coefficients. The Ridge penalty squares the coefficients.
+f_kfold <- function(X, y, K=5) {                # X predictors, y response, K folds
+  n <- length(y)                                # Number of observations
+  folds <- sample(rep(1:K, length=n))           # THE TELL: assign each row to a fold
+  cv_errors <- numeric(K)                       # Container for fold errors
 
-**The Raw Code you might see:**
+  for(i in 1:K) {                               # Loop through each fold
+    train_X <- X[folds != i, ]                  # Training data (all but fold i)
+    train_y <- y[folds != i]
+    test_X  <- X[folds == i, ]                  # Test data (fold i)
+    test_y  <- y[folds == i]
 
-```{r, eval=FALSE}
-
-f_ridge <- function(b, X, y, la) {
-  # THE TELL is on the next line!
-  loss <- sum((y - X %*% b)^2) + la * sum(b^2) 
-  return(loss)
+    b <- solve(t(train_X)%*%train_X) %*% t(train_X)%*%train_y  # Fit OLS
+    preds <- test_X %*% b                       # Predict on test fold
+    cv_errors[i] <- mean((test_y - preds)^2)    # MSE for this fold
+  }
+  return(mean(cv_errors))                       # Average CV error
 }
-
 ```
 
-**Part A: Loss function**
+**The Tell:** `for(i in 1:K)` with `folds != i` vs `folds == i`.
 
-```{r, eval=FALSE}
+**Plug-and-Play Answer:**
+> "This R-function performs **K-Fold Cross-Validation**. The data are split into `K` folds. For each fold `i`, the model is trained on all other folds and tested on fold `i`, producing a test MSE. The function returns the average test MSE across the K folds."
 
-# Part A: Loss function
+------------------------------------------------------------------------
 
-f <-function(b1,X,y,la){
-  fval <- sum ((y-X%*%b1)ˆ2)+la*sum(b1ˆ2)
+### 3. Leave-One-Out Cross-Validation (LOOCV)
+**Math / Theory:** Special case of K-fold with $K=n$. Train on $n-1$, test on 1, repeat for all rows.
+
+```{r}
+#| eval: false
+
+loo <- function(X, y) {                          # X predictors, y response
+  n <- nrow(X)                                   # Number of observations
+  ydpred <- matrix(0, n, 1)                      # Store 1 prediction per loop
+
+  for(i in 1:n) {                                # THE TELL: loop over every row
+    train_X <- X[-i, ]                           # Train on all but row i
+    train_y <- y[-i]
+    b1 <- g(X = train_X, y = train_y)            # Fit model on n-1 observations
+    ydpred[i] <- X[i, ] %*% b1                   # Predict for left-out row i
+  }
+
+  testMSE <- mean((y - ydpred)^2)                # LOOCV MSE
+  return(testMSE)
+}
+```
+
+**The Tell:** `for(i in 1:n)` and `X[-i, ]`.
+
+**Plug-and-Play Answer:**
+> "This R-function implements **LOOCV**. It trains the model on all observations except one, predicts the left-out observation, and repeats for every row. The returned value is the mean squared prediction error across all left-out observations."
+
+------------------------------------------------------------------------
+
+## GROUP 2: Loss Functions & Optimization (Phase 3 Methods)
+
+### 4. Ridge Regression Engine (Exam 2025 style)
+**Math / Theory:** Ridge minimizes $RSS + \lambda \sum \beta_j^2$. All variables must be centered so the penalty is fair.
+
+```{r}
+#| eval: false
+
+# PART A: Loss function
+f <- function(b1, X, y, la) {                    # b1 = coefficients, la = lambda
+  fval <- sum((y - X%*%b1)^2) + la * sum(b1^2)   # THE TELL: RSS + lambda*sum(beta^2)
   return(fval)
 }
 
-```
-
-```{r, eval=FALSE}
-
+# PART B: Data prep + optimizer
 g <- function(X, y, la) {
-  q <- ncol(X)
-  
-  # 1. THE INTERCEPT TRICK
-  b0 <- mean(y)   
-  yd <- y - b0    
-  
-  # 2. THE DEMEANING LOOP (The biggest exam trap!)
+  q <- ncol(X)                                   # Number of predictors
+  b0 <- mean(y)                                  # Intercept trick: mean of y
+  yd <- y - b0                                   # Center y to remove intercept
+
   Xd <- X
-  for(k in 1:q) Xd[,k] <- X[,k] - mean(X[,k])
-  
-    # 3. THE OPTIMIZER
-  b1start <- rep(0, q)
-  opt <- nlminb(b1start, f, X=Xd, y=yd, la=la)
-  b1 <- opt$par
-  return(b1)
+  for(k in 1:q) {                                # Demeaning loop (critical!)
+    Xd[,k] <- X[,k] - mean(X[,k])                # Center each predictor
+  }
+
+  b1start <- rep(0, q)                           # Start betas at 0
+  opt <- nlminb(b1start, f, X=Xd, y=yd, la=la)   # Optimize loss function
+  return(opt$par)                                # Return ridge coefficients
 }
 ```
 
-*Explanation:* `nlminb` is an R function that means "Non-Linear Minimization with Box Constraints". The professor is telling the computer: *"Start with all coefficients at 0 (`b1start`). Keep guessing new coefficients and plugging them into function `f`. When you find the coefficients that make `fval` as small as possible, stop and give me those numbers (`opt$par`)."*
-
-**The Tell:** Look for the basic OLS math `sum((y - ...)^2)` PLUS a penalty that looks like `la * sum(b^2)`. The key is `b^2` (squaring the coefficients).
+**The Tell:** `sum((y - X%*%b)^2) + la * sum(b^2)` and the demeaning loop.
 
 **Plug-and-Play Answer:**
+> "These functions manually implement **Ridge Regression**. `f` calculates the loss $RSS + \lambda \sum \beta^2$. `g` centers `y` to remove the intercept, **demeans each column of X** so the penalty applies fairly, and then uses `nlminb` to find coefficients that minimize the ridge loss."
 
-> If you see this exact two-part chunk (`f` and `g`) on the exam, here is the flawless answer that proves you understand everything:
->
-> "These functions work together to manually implement **Ridge Regression**.
->
-> The `f` function calculates the objective loss: the standard sum of squared errors plus the **L2 shrinkage penalty** (`la * sum(b1^2)`), which penalizes large coefficients to reduce model variance.
->
-> The `g` function prepares the data and finds the optimal coefficients. Crucially, it calculates the mean of y (`b0`) and subtracts it to remove the intercept. It then uses a `for` loop to **demean (center) every X variable**. This is mathematically required for Ridge Regression because the shrinkage penalty must be applied fairly; if variables are not on the same scale, the penalty will disproportionately affect variables with smaller numerical scales. Finally, the function uses `nlminb`, an optimization solver, to find the specific β1 coefficients that minimize the loss function `f`, and returns them."
+------------------------------------------------------------------------
 
-### **4. Lasso Regression (The logical next step for 2026)**
+### 5. Lasso Regression Engine (Probable 2026)
+**Math / Theory:** Lasso minimizes $RSS + \lambda \sum |\beta_j|$ and can shrink coefficients to exactly 0.
 
-**The Logic:** Exactly the same as Ridge, but instead of shrinking everything near zero, it wants to delete useless variables completely by forcing them to exactly zero. It does this by using the Absolute Value instead of the square.
+```{r}
+#| eval: false
 
-**The Raw Code you might see:**
-
-```{r, eval=FALSE}
-f_lasso <- function(b, X, y, la) {
-  # THE TELL is on the next line!
-  loss <- sum((y - X %*% b)^2) + la * sum(abs(b)) 
-  return(loss)
+f_lasso <- function(b1, X, y, la) {              # b1 = coefficients
+  fval <- sum((y - X%*%b1)^2) + la * sum(abs(b1))# THE TELL: absolute value penalty
+  return(fval)
 }
 ```
 
-**The Tell:** Look for `abs(b)` (Absolute Value) instead of `b^2`.
+**The Tell:** `abs(b1)` instead of `b1^2`.
 
 **Plug-and-Play Answer:**
+> "This function computes the **Lasso** objective: RSS plus the L1 penalty $\lambda \sum |\beta|$. The absolute value penalty allows coefficients to become exactly zero, so Lasso performs shrinkage and variable selection."
 
-> "This R-function calculates the objective loss function for **Lasso Regression** (L1 Regularization). The first part is the standard Residual Sum of Squares. The second part `la * sum(abs(b))` is the **L1 shrinkage penalty**. By using the absolute value of the coefficients instead of the square, the Lasso algorithm is able to force some coefficients to become exactly zero. This means this function mathematically performs both regularization and **variable selection**."
+------------------------------------------------------------------------
 
-### **5. Ordinary Least Squares (OLS) via Matrix Math**
+### 6. Ordinary Least Squares (OLS) Matrix Formula
+**Math / Theory:** $\hat{\beta} = (X^T X)^{-1} X^T y$.
 
-**The Logic:** This is just standard Linear Regression, but instead of using the friendly `lm()` function, the professor wrote out the raw linear algebra formula.
+```{r}
+#| eval: false
 
-**The Raw Code you might see:**
-
-```{r, eval=FALSE}
 f_ols <- function(X, y) {
-  # THE TELL is on the next line!
-  b <- solve(t(X) %*% X) %*% t(X) %*% y 
+  b <- solve(t(X) %*% X) %*% t(X) %*% y          # THE TELL: (X'X)^-1 X'y
   return(b)
 }
 ```
 
-**The Tell:** Look for `solve()`, which in R means "invert a matrix", combined with `%*%` (matrix multiplication).
+**The Tell:** `solve()` with `t(X) %*% X`.
 
 **Plug-and-Play Answer:**
-
-> "This R-function computes the exact mathematical coefficients for **Ordinary Least Squares (OLS) Linear Regression**. Instead of using optimization to estimate the coefficients, it uses the closed-form matrix algebra solution: β\^=(XTX)−1XTy. In R, `t(X)` transposes the matrix, `%*%` performs matrix multiplication, and `solve()` computes the inverse of the matrix. It returns the regression coefficients."
-
-This tells RStudio: *"Display this code with pretty colors, but DO NOT run it."* This way, your compendium knits perfectly into an HTML or PDF file without needing the datasets to actually exist!
+> "This code computes **OLS regression coefficients** using the closed-form matrix solution $(X^T X)^{-1} X^T y$. The `solve()` function inverts the matrix."
 
 ------------------------------------------------------------------------
 
 ## GROUP 3: The 2024 & 2025 Actual Exam Functions
 
-### 6. Leave-One-Out Cross-Validation (LOOCV) (Used in 2025 Exam)
+### 7. K-Nearest Neighbors (KNN) Local Regression (Exam 2024 style)
+**Math / Theory:** Find the K closest points to $x_0$ and fit a local model on only those neighbors.
 
-**The Logic:** This is the extreme version of K-Fold CV. Instead of chopping the data into 5 blocks, it leaves exactly *one single row* out. It trains the model on all other rows, tests on the 1 row left out, and repeats this for every single row in the dataset.
-
-**The Raw Code you might see (From 2025):**
-
-```{r, eval=FALSE}
-
-
-loo <- function(la,X,y)
-{
-  n <- nrow(X)
-  q <- ncol(X)
-  b0 <- mean(y)
-  yd <- y- b0
-  Xd <- X
-# THE TELL is on the next line!
-  for(k in 1:q) Xd[,k] <- X[,k]- mean(X[,k])
-  ydpred <- matrix(0,n,1)
-  for(i in 1:n)
-  {
-  b1 <- g(X=X[-i,],y=y[-i],la)
-  ydpred[i] <- Xd[i,]%*%b1
-  }
-  testMSE <- mean((yd-ydpred)ˆ2)
-  return(testMSE)
-}
-```
-
-**The Tell:** Look for `for(i in 1:n)` (looping exactly as many times as there are rows). Then look for `X[-i, ]` (training data: everything EXCEPT row i) and `X[i, ]` (test data: ONLY row i).
-
-**Plug-and-Play Answer:**
-
-> "This R-function implements **Leave-One-Out Cross-Validation (LOOCV)** to estimate the Test MSE for a specific tuning parameter `la`. It uses a `for` loop that iterates exactly `n` times (the total number of observations). In each iteration `i`, it drops the `i`-th observation from the training data (`X[-i, ]`, `y[-i]`), fits the model using the helper function `g`, and then predicts the value for the single held-out observation `X[i, ]`. Finally, it computes and returns the average squared prediction error across all `n` iterations."
-
-### **7. K-Nearest Neighbors (KNN) Local Regression (Used in 2024 Exam)**
-
-**The Logic:** To predict a new point, the computer looks at all the data, finds the K points that are physically closest to the new point, and builds a tiny local regression just on those neighbors.
-
-**The Raw Code you might see (From 2024):**
-
-```{r, eval = FALSE}
-
+```{r}
+#| eval: false
 
 f_knn <- function(x0, x, y, K=3) {
-  # THE TELL is the next 2 lines!
-  d <- abs(x - x0)          
-  o <- order(d)[1:K]        
-  
-  xl <- x[o]
-  yl <- y[o]
+  d <- abs(x - x0)                               # THE TELL: distance from x0 to all x
+  o <- order(d)[1:K]                             # Indices of K closest points
+
+  xl <- x[o]                                     # K closest x values
+  yl <- y[o]                                     # K closest y values
   xydata <- data.frame(xl=xl, yl=yl)
-  
-  reg <- lm(yl ~ xl, data=xydata)
+
+  reg <- lm(yl ~ xl, data=xydata)                # Fit local regression on neighbors
   ypred <- predict(reg, newdata=data.frame(xl=x0, yl=1))
   return(ypred)
 }
 ```
 
-**The Tell:** Look for `abs(x - x0)` (calculating the distance between points) and `order(d)[1:K]` (sorting the distances and picking the K closest ones).
+**The Tell:** `abs(x - x0)` and `order(d)[1:K]`.
 
 **Plug-and-Play Answer:**
+> "This function implements **KNN local regression**. It calculates distances from `x0`, selects the K nearest observations, fits a local regression on those K points, and predicts the value at `x0`."
 
-> "This R-function implements a form of **K-Nearest Neighbors (KNN) Local Regression**. To predict the value for a target point `x0`, the function first calculates the absolute distance between `x0` and all other `x` observations (`abs(x - x0)`). It then orders these distances and selects the `K` closest observations (`order(d)[1:K]`). Finally, instead of just averaging the neighbors, it fits a simple linear regression (`lm`) strictly on those `K` nearest neighbors, and uses that local line to predict the value for `x0`."
+------------------------------------------------------------------------
 
-## **GROUP 4: Advanced Non-Linear Mechanics (Highly Probable Targets)**
+## GROUP 4: Advanced Non-Linear Mechanics (Highly Probable Targets)
 
-### **8. The Backfitting Algorithm (GAMs)**
+### 8. Backfitting Algorithm (GAMs)
+**Math / Theory:** Iteratively fit each smooth term while holding others fixed: $y = f_1(x_1) + f_2(x_2)$.
 
-**The Logic:** How does a GAM fit multiple curvy lines at the same time? It guesses the curve for X1, subtracts it from Y, and fits the curve for X2 on the leftovers (residuals). It repeats this ping-pong process until the curves stop changing. *(Note: You were asked to explain this in theory in 2022 and 2024!)*
-
-**The Raw Code you might see:**
-
-```{r, eval = FALSE }
+```{r}
+#| eval: false
 
 f_backfit <- function(x1, x2, y) {
-  f1 <- rep(0, length(y))
-  f2 <- rep(0, length(y))
-  
-  # THE TELL is on the next lines!
-  for(i in 1:10) {
-    f1 <- smooth.spline(x1, y - f2)$y
-    f2 <- smooth.spline(x2, y - f1)$y
+  f1 <- rep(0, length(y))                        # Initialize f1
+  f2 <- rep(0, length(y))                        # Initialize f2
+
+  for(i in 1:10) {                               # Iterate to convergence
+    f1 <- smooth.spline(x1, y - f2)$y            # Fit f1 on residuals (y - f2)
+    f2 <- smooth.spline(x2, y - f1)$y            # Fit f2 on residuals (y - f1)
   }
-  return(f1 + f2)
+  return(f1 + f2)                                # Final additive fit
 }
 ```
 
-**The Tell:** Look for `y - f2` and `y - f1` inside a smoothing function. Fitting a model on "Y minus the other variable" is the definition of backfitting.
+**The Tell:** `y - f2` and `y - f1` inside a smooth.
 
 **Plug-and-Play Answer:**
+> "This code implements **backfitting** for a GAM. It alternates between fitting a smooth function for $x_1$ on the residuals after removing $f_2$, then fitting $f_2$ on residuals after removing $f_1$. Repeating this yields the additive model $f_1(x_1)+f_2(x_2)$."
 
-> "This R-function implements the **Backfitting Algorithm**, which is used to fit Generalized Additive Models (GAMs). Because it cannot estimate the non-linear effects of multiple variables simultaneously, it uses an iterative approach. It holds the estimate for `f2` constant, subtracts it from `y` to isolate the residual effect, and fits a smoothing spline for `f1` on that residual. It then holds `f1` constant and does the same for `f2`. This ping-pong process repeats (here, 10 times) until the non-linear curves converge."
+------------------------------------------------------------------------
 
-### **9. Bootstrap Aggregation (Bagging) Loop**
+### 9. Bagging Loop (Bootstrap Aggregation)
+**Math / Theory:** Build many trees on bootstrap samples, then average predictions to reduce variance.
 
-**The Logic:** To fix the instability of a single Decision Tree, the computer bootstraps 500 fake datasets, grows a tree on each one, and averages the predictions.
-
-**The Raw Code you might see:**
-
-```{r, eval=FALSE}
+```{r}
+#| eval: false
 
 f_bagging <- function(X, y, B=100) {
   n <- nrow(X)
-  preds <- matrix(0, nrow=n, ncol=B)
-  
+  preds <- matrix(0, nrow=n, ncol=B)             # Store B predictions
+
   for(i in 1:B) {
-    # THE TELL: Bootstrap sample + fitting a tree inside a loop!
-    idx <- sample(1:n, replace=TRUE) 
-    tree_mod <- tree(y ~ ., data=X[idx, ])
-    preds[, i] <- predict(tree_mod, newdata=X)
+    idx <- sample(1:n, replace=TRUE)             # Bootstrap sample
+    tree_mod <- tree(y ~ ., data=X[idx, ])       # Fit tree on bootstrap sample
+    preds[, i] <- predict(tree_mod, newdata=X)   # Predict on full data
   }
-  
-  return(rowMeans(preds))
+
+  return(rowMeans(preds))                        # Average predictions across trees
 }
 ```
 
-**The Tell:** A combination of two things we've seen: `sample(..., replace=TRUE)` PLUS a model like `tree()` being fit *inside* the loop, followed by `rowMeans()` at the end.
+**The Tell:** `sample(..., replace=TRUE)` inside a loop + model fit + `rowMeans()`.
 
 **Plug-and-Play Answer:**
-
-> "This R-function manually implements **Bagging (Bootstrap Aggregating)** for decision trees. It runs a `for` loop `B` times. In each iteration, it draws a bootstrapped sample of the data (with replacement). It then fits a highly flexible decision tree on that specific bootstrapped sample and records the predictions. Because single trees have high variance, the function concludes by using `rowMeans()` to average the predictions of all `B` trees together, which drastically reduces the variance and improves predictive accuracy without increasing bias."
+> "This function implements **Bagging**. It creates many bootstrap samples, fits a decision tree to each, and averages the predictions. Averaging reduces variance and improves prediction accuracy compared to a single tree."
