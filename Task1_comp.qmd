@@ -262,3 +262,171 @@ f_bagging <- function(X, y, B=100) {
 
 **Plug-and-Play Answer:**
 > "This function implements **Bagging**. It creates many bootstrap samples, fits a decision tree to each, and averages the predictions. Averaging reduces variance and improves prediction accuracy compared to a single tree."
+
+------------------------------------------------------------------------
+
+### 10. Tree Split Logic (Regression RSS or Classification Gini)
+**Math / Theory:** Trees choose the split that minimizes impurity: RSS (regression) or Gini/Entropy (classification).
+
+```{r}
+#| eval: false
+
+best_split <- function(x, y) {
+  candidates <- sort(unique(x))                 # Candidate split points
+  best_rss <- Inf                               # Start with very large RSS
+  best_s <- NA
+
+  for(s in candidates) {                        # Try each split point
+    left  <- y[x < s]                           # Left region
+    right <- y[x >= s]                          # Right region
+    rss <- sum((left - mean(left))^2) +         # RSS left
+           sum((right - mean(right))^2)         # RSS right
+
+    if(rss < best_rss) {                        # Keep the best split
+      best_rss <- rss
+      best_s <- s
+    }
+  }
+  return(best_s)
+}
+```
+
+**The Tell:** Loop over split points and compute RSS or Gini for each.
+
+**Plug-and-Play Answer:**
+> "This code implements **tree split selection**. It tests each candidate split point, computes impurity (here RSS), and chooses the split that minimizes impurity. This is the core of recursive binary splitting in decision trees."
+
+------------------------------------------------------------------------
+
+### 11. Boosting Loop (Sequential Residual Fitting)
+**Math / Theory:** Boosting builds trees sequentially on residuals: $\hat f(x) = \sum_{b=1}^B \nu \hat f_b(x)$.
+
+```{r}
+#| eval: false
+
+boost <- function(X, y, B=100, nu=0.1) {
+  fhat <- rep(0, length(y))                     # Initial predictions
+
+  for(b in 1:B) {                               # THE TELL: sequential loop
+    r <- y - fhat                               # Residuals (errors)
+    tree_b <- tree(r ~ ., data=X)               # Fit tree on residuals
+    fhat <- fhat + nu * predict(tree_b, X)      # Update predictions with shrinkage
+  }
+  return(fhat)
+}
+```
+
+**The Tell:** Residual update each loop (`r <- y - fhat`).
+
+**Plug-and-Play Answer:**
+> "This function implements **boosting**. It starts with predictions 0, computes residuals, fits a weak learner to the residuals, and updates the prediction by adding a shrunken version of that learner. This sequential procedure reduces bias and can improve accuracy."
+
+------------------------------------------------------------------------
+
+## GROUP 5: Classification Mechanics (Highly Probable)
+
+### 12. Logistic Regression Engine (Sigmoid / Log-Odds)
+**Math / Theory:** $p(x)=\frac{e^{\eta}}{1+e^{\eta}}$ with $\eta=\beta_0+\beta^T x$. Log-odds: $\log\frac{p}{1-p}=\eta$.
+
+```{r}
+#| eval: false
+
+logistic_pred <- function(X, b) {
+  eta <- X %*% b                               # Linear predictor
+  p <- exp(eta) / (1 + exp(eta))               # THE TELL: sigmoid function
+  return(p)                                    # Predicted probability
+}
+```
+
+**The Tell:** `exp(eta)/(1+exp(eta))`.
+
+**Plug-and-Play Answer:**
+> "This code computes **logistic regression probabilities** using the sigmoid function. The linear predictor $\eta=X\beta$ is mapped to a probability by $p=\frac{e^{\eta}}{1+e^{\eta}}$."
+
+------------------------------------------------------------------------
+
+### 13. Threshold & Confusion Matrix
+**Math / Theory:** Classification by threshold: $\hat y = 1$ if $p>t$. Confusion matrix summarizes TP/TN/FP/FN.
+
+```{r}
+#| eval: false
+
+prob <- predict(model, newdata=test, type="response")  # Predicted probabilities
+pred <- prob > 0.5                                      # THE TELL: threshold rule
+conf <- table(truth=test$y, predicted=pred)             # Confusion matrix
+acc <- sum(diag(conf)) / sum(conf)                      # Accuracy
+```
+
+**The Tell:** `pred <- prob > 0.5` and `table(...)`.
+
+**Plug-and-Play Answer:**
+> "This code converts predicted probabilities into class labels using a threshold (0.5). It then computes a confusion matrix and accuracy. This is how classification performance is evaluated."
+
+------------------------------------------------------------------------
+
+## GROUP 6: Possible (Less Likely) Code Chunks
+
+### 14. SVM Tuning Grid (Cost / Gamma)
+**Math / Theory:** Tune hyperparameters $C$ and $\gamma$ by CV to find best classification boundary.
+
+```{r}
+#| eval: false
+
+best <- Inf
+for(C in c(0.1,1,10)) {
+  for(g in c(0.5,1,2)) {
+    fit <- svm(y ~ ., data=train, kernel="radial", cost=C, gamma=g)
+    pred <- predict(fit, newdata=valid)
+    err <- mean(pred != valid$y)
+    if(err < best) {
+      best <- err; bestC <- C; bestG <- g
+    }
+  }
+}
+```
+
+**The Tell:** Nested loops over `cost` and `gamma` with error comparison.
+
+**Plug-and-Play Answer:**
+> "This code performs a grid search to tune **SVM hyperparameters** (cost and gamma). It trains a model for each combination, evaluates validation error, and selects the parameters with the lowest error."
+
+------------------------------------------------------------------------
+
+### 15. Polynomial / Step Function CV Loop
+**Math / Theory:** Choose degree (or number of cuts) by comparing validation MSE.
+
+```{r}
+#| eval: false
+
+K <- 10
+MSE <- numeric(K)
+for(k in 1:K) {
+  reg <- lm(y ~ poly(x, k), data=train)         # Polynomial degree k
+  pred <- predict(reg, newdata=test)
+  MSE[k] <- mean((test$y - pred)^2)
+}
+which.min(MSE)
+```
+
+**The Tell:** Loop over `k` and compute MSE for each.
+
+**Plug-and-Play Answer:**
+> "This code uses validation to choose the **polynomial degree**. It fits models of increasing degree, computes test MSE for each, and selects the degree with the smallest MSE."
+
+------------------------------------------------------------------------
+
+### 16. PCR Projection (Principal Components Regression)
+**Math / Theory:** Project $X$ onto top components $Z = XV$ and regress $y$ on $Z$.
+
+```{r}
+#| eval: false
+
+pca <- prcomp(X, scale.=TRUE)                   # PCA on centered/scaled X
+Z <- pca$x[,1:K]                                # First K principal components
+reg <- lm(y ~ Z)                                # Regress y on components
+```
+
+**The Tell:** `prcomp()` + using `pca$x` as predictors.
+
+**Plug-and-Play Answer:**
+> "This code performs **PCR**. It first computes principal components of X, then uses the first K components as predictors in a regression model. The goal is dimension reduction with predictive modelling."
