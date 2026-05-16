@@ -1,0 +1,514 @@
+---
+title: "Task 1 Mastery — Method-by-Method Exam Preparation"
+author: "BAN404 Self-Study"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: flatly
+execute:
+  echo: true
+  eval: false
+  warning: false
+---
+
+# How to Use This File
+
+Every Task 1 on BAN404 exams follows this formula:
+1. You are **given R functions** (you did not write them)
+2. You must **explain what they do**
+3. You must **use them** on data
+4. You must **modify or extend** them
+
+This file teaches you to do all four steps for every high-probability method.
+
+**For each method:**
+- **Recognition cue** — the single line or pattern that identifies the method instantly
+- **Plain English** — what the function is doing, step by step
+- **Why it is used** — the statistical motivation
+- **Key assumptions** — what must be true for the method to be valid
+- **Exam follow-up patterns** — the typical modifications/extensions examiners ask
+- **Full R code** — working implementation you can use
+- **Written answer template** — fill-in-the-blank exam answer
+
+---
+
+# METHOD 1: Ridge Regression ⭐ HIGHEST PRIORITY
+
+## Recognition Cue
+```{r}
+sum((y - X%*%b1)^2) + la * sum(b1^2)    # THE TELL: b1^2 penalty
+```
+The key is `sum(b1^2)` — squaring the coefficients. This is the L2 penalty.
+
+Also look for `nlminb(b1start, f, ...)` — numerical optimizer minimising this function.
+
+## Plain English Explanation
+The function `f` computes a score (objective value) for a set of regression coefficients `b1`.
+- The first part `sum((y - X%*%b1)^2)` is the **residual sum of squares (RSS)** — it measures how well the coefficients fit the data.
+- The second part `la * sum(b1^2)` is the **penalty** — it punishes large coefficients.
+- The optimizer finds the `b1` that makes this score as small as possible.
+- The function `g` prepares the data by **demeaning** (centering) y and each column of X, so the penalty applies fairly to all predictors.
+
+## Why It Is Used
+Ridge regression reduces **variance** in the coefficient estimates. When:
+- Predictors are correlated (multicollinearity)
+- The number of predictors is large relative to observations
+- The regular OLS estimates are unstable
+
+Ridge shrinks coefficients toward zero without setting them exactly to zero.
+
+## Key Assumptions
+1. Predictors and response should be **demeaned** (centered) before applying ridge so the intercept is handled separately
+2. Ideally predictors should be on the same scale (standardized), though the 2025 exam version only demeans, not scales
+3. A **tuning parameter λ (lambda)** must be chosen, typically via LOOCV
+
+## Exam Follow-Up Patterns
+
+### Pattern A: Compare OLS vs Ridge
+```{r}
+# OLS via lm
+b_ols <- lm(y ~ X)$coef[-1]
+
+# Ridge with la=0 (should equal OLS)
+b_r0 <- g_ridge(X, y, la=0)
+
+# Ridge with la=1000 (shrinkage)
+b_r1000 <- g_ridge(X, y, la=1000)
+
+# Compare all three
+round(cbind(OLS=b_ols, Ridge_0=b_r0, Ridge_1000=b_r1000), 4)
+
+# Quantify shrinkage
+sum(b_ols^2)      # Large
+sum(b_r1000^2)    # Smaller — ridge shrinks
+```
+
+### Pattern B: LOOCV to find optimal λ
+```{r}
+# Broad grid first
+lavec <- seq(0, 10000, length.out=20)
+mses  <- sapply(lavec, function(la) loo_ridge(la, X, y))
+plot(lavec, mses, type="l", main="LOOCV MSE vs lambda")
+
+# Refine around the minimum
+la_min_broad <- lavec[which.min(mses)]
+lavec2 <- seq(la_min_broad - 1000, la_min_broad + 1000, length.out=20)
+mses2  <- sapply(lavec2, function(la) loo_ridge(la, X, y))
+la_opt <- lavec2[which.min(mses2)]
+cat("Optimal lambda:", la_opt)
+```
+
+### Pattern C: Is standardization necessary?
+Answer: The demeaning in `g` ensures the intercept is handled correctly (= mean(y)). Demeaning is **necessary** for the intercept trick. Full standardization (dividing by sd) is needed if predictors are on very different scales, so the penalty treats them equally. The 2025 exam's `g` function only demeans (not divides by sd), so it applies a slightly unfair penalty to variables with larger scales.
+
+## Written Answer Template
+
+> "The function `f` computes the **ridge regression objective function**: the sum of squared residuals (RSS) plus a penalty term `λ · Σβ²`. This is **ridge regression** (L2-penalized regression).
+>
+> The function `g` estimates the ridge regression coefficients for a given penalty parameter `λ`. It first demeans both y and each column of X so that the intercept equals the mean of y. It then uses numerical optimization (`nlminb`) to minimize `f` and returns the optimal coefficients.
+>
+> When `λ = 0`, ridge reduces to OLS and the coefficients are identical. When `λ` increases, coefficients are **shrunk toward zero** — this reduces variance at the cost of a small increase in bias, which often improves test performance when predictors are numerous or correlated."
+
+---
+
+# METHOD 2: LOOCV — Leave-One-Out Cross-Validation ⭐ HIGHEST PRIORITY
+
+## Recognition Cue
+```{r}
+for(i in 1:n) {
+  b1 <- g(X=X[-i,], y=y[-i], la)   # THE TELL: X[-i,] removes row i
+  preds[i] <- X[i,] %*% b1
+}
+```
+The key is `X[-i,]` — excluding row i from training.
+
+## Plain English Explanation
+The loop runs once for every observation (n times total).
+- In each iteration i: remove observation i from the dataset
+- Fit the model on the remaining n-1 observations
+- Predict observation i using the fitted model
+- Store the prediction error `(y[i] - pred[i])^2`
+At the end, return the average squared prediction error across all n iterations.
+
+## Why It Is Used
+LOOCV gives an **almost unbiased** estimate of how well the model generalizes to new data. It is especially used when:
+- The dataset is small (n is small)
+- You need to choose a tuning parameter (λ for ridge, K for KNN)
+- You want to compare models honestly
+
+## Key Assumptions
+- Observations are **independent** (i.i.d.)
+- The data is shuffled or randomly ordered (so leaving out one row gives a random test case)
+
+## Exam Follow-Up Patterns
+
+### Pattern A: Why demean inside the LOOCV loop?
+The demeaning must happen on the **training fold only** in each iteration. The test prediction uses the demeaned X values from the full dataset because the means of the training fold were used to center X during model fitting. This ensures consistency between training and prediction.
+
+### Pattern B: λ grid search with LOOCV
+```{r}
+# This is the most common exam task
+lavec <- seq(0, 5000, length.out=20)
+mses  <- sapply(lavec, function(la) loo_ridge(la, X, y))
+la_opt <- lavec[which.min(mses)]
+cat("Optimal lambda:", la_opt)
+
+# Best model using optimal lambda
+b_opt <- g_ridge(X, y, la=la_opt)
+```
+
+## Written Answer Template
+
+> "The function `loo` implements **leave-one-out cross-validation (LOOCV)**. In each iteration `i`, it removes observation `i` from the dataset, fits the ridge model on the remaining `n-1` observations using function `g`, and predicts observation `i` using the held-out predictor values. The function returns the average squared prediction error (testMSE) across all `n` iterations.
+>
+> LOOCV is used here to **choose the optimal λ**: we evaluate the LOOCV test MSE for a grid of λ values and select the λ that minimizes it. This is the standard method for hyperparameter selection when n is small, as it uses the data efficiently."
+
+---
+
+# METHOD 3: Bootstrap ⭐ HIGHEST PRIORITY
+
+## Recognition Cue
+```{r}
+idx <- sample(1:n, size=n, replace=TRUE)   # THE TELL: replace=TRUE
+```
+The key is `replace=TRUE` in `sample()`.
+
+## Plain English Explanation
+The bootstrap estimates the **sampling distribution** of any statistic (mean, variance, coefficient, etc.).
+- Create a "fake" dataset of size n by drawing rows **with replacement** (so some rows appear twice, others not at all)
+- Compute the statistic on this fake dataset
+- Repeat B times (typically B=1000 or 10000)
+- The spread of the B estimates is the **standard error**
+- The 2.5% and 97.5% percentiles give a **95% confidence interval**
+
+## Why It Is Used
+The bootstrap is used when:
+- The analytic formula for the standard error is complex or unknown
+- You want to estimate uncertainty without distributional assumptions
+- You want a confidence interval for any statistic
+
+## Exam Follow-Up Patterns
+
+### Pattern A: Bootstrap for variance of y (from 2025 exam)
+```{r}
+set.seed(1)
+n <- length(y); B <- 1000
+vboot <- numeric(B)
+for(b in 1:B) {
+  yb      <- sample(y, size=n, replace=TRUE)
+  vboot[b] <- var(yb)
+}
+hist(vboot, breaks=50, main="Bootstrap distribution of Var(y)")
+# 95% CI — percentile method (no normality assumption)
+quantile(vboot, c(0.025, 0.975))
+# 95% CI — normal approximation
+mean(vboot) + c(-1,1)*1.96*sd(vboot)
+```
+
+### Pattern B: Bootstrap for regression coefficient (from 2021 exam)
+```{r}
+set.seed(1); B <- 1000
+coef_boot <- numeric(B)
+for(b in 1:B) {
+  idx <- sample(1:n, replace=TRUE)
+  mod <- lm(y ~ x, data=data[idx, ])
+  coef_boot[b] <- coef(mod)[2]   # Slope coefficient
+}
+sd(coef_boot)   # Bootstrap SE
+# Compare to lm SE:
+summary(lm(y ~ x, data=data))$coef[2, 2]
+```
+
+### Pattern C: Two types of CI
+- **Normal approximation:** `mean(res) ± 1.96 × sd(res)` — assumes bootstrap distribution is bell-shaped
+- **Percentile method:** `quantile(res, c(0.025, 0.975))` — uses empirical quantiles, more robust for skewed distributions
+
+## Written Answer Template
+
+> "This function implements the **bootstrap** method. It estimates the sampling distribution of [INSERT STATISTIC] by resampling.
+>
+> In each of the `B` iterations, a random sample of size `n` is drawn **with replacement** from the data (`replace=TRUE`). The statistic is computed on each bootstrap sample. The standard deviation of the `B` bootstrap values is the **bootstrapped standard error**.
+>
+> A 95% confidence interval can be computed in two ways: (1) the **normal approximation** assumes the bootstrap distribution is approximately normal; (2) the **percentile method** uses the 2.5th and 97.5th percentiles of the bootstrap distribution directly, requiring no distributional assumption."
+
+---
+
+# METHOD 4: GAM — Generalized Additive Model ⭐ HIGH PRIORITY
+
+## Recognition Cue
+```{r}
+f1 <- smooth.spline(x1, y - f2)$y   # THE TELL: smooth.spline on residuals
+f2 <- smooth.spline(x2, y - f1)$y   # ...and y-f1, y-f2 in alternating loop
+```
+Also: `gam(y ~ s(x1) + x2)` — `s()` means smooth term.
+
+## Plain English Explanation
+
+### Backfitting algorithm (when shown as code):
+The loop alternates between fitting two smooth functions:
+1. Start: both f1 and f2 set to 0 (flat line)
+2. Fit f1 to the partial residuals (y minus the current f2)
+3. Update f2 to the partial residuals (y minus the updated f1)
+4. Repeat until changes are tiny
+5. Return f1 + f2 as the final GAM prediction
+
+### Using gam library:
+`gam(y ~ s(x1) + x2)` fits a smooth function for x1 and a linear function for x2. The `s()` function tells GAM to be flexible (non-linear) for x1.
+
+## Why It Is Used
+- When some predictors have **non-linear** relationships with y
+- A GAM extends linear regression by allowing each predictor to have its own smooth function
+- Retains interpretability: you can plot each predictor's effect separately
+- If the relationship is truly linear, the smooth s(x) will be approximately linear
+
+## How to Detect Non-Linearity (Exam Task 1e/2e style)
+```{r}
+# Scan all predictors with scatter plots
+par(mfrow=c(4, 5))
+for(j in 1:ncol(X)) {
+  plot(X[,j], y, main=paste("X", j), xlab="", ylab="y")
+}
+# Look for curved patterns, U-shapes, step patterns
+```
+
+## Full Example
+```{r}
+library(gam)
+
+# Fit GAM with variable X3 as smooth (identified as non-linear)
+gam1 <- gam(y ~ s(X3) + X1 + X2 + X4, data=train)
+plot(gam1, se=TRUE)   # Shows partial effects
+
+# Compare MSE
+ols  <- lm(y ~ ., data=train)
+MSE_ols  <- mean(residuals(ols)^2)
+MSE_gam  <- mean(residuals(gam1)^2)
+MSE_null <- var(train$y)
+
+R2_ols <- 1 - MSE_ols/MSE_null
+R2_gam <- 1 - MSE_gam/MSE_null
+cat("R² OLS:", round(R2_ols,4), "  R² GAM:", round(R2_gam,4))
+```
+
+## Written Answer Template
+
+> "This code implements a **Generalized Additive Model (GAM)** using the backfitting algorithm. GAMs extend linear regression by replacing each linear term β_j × x_j with a smooth function f_j(x_j). The model is: y = f_1(x_1) + f_2(x_2) + ε.
+>
+> Backfitting estimates each smooth function iteratively. In each iteration, f_1 is fitted on the partial residuals (y - f_2), then f_2 is fitted on the updated partial residuals (y - f_1). This continues until the functions stabilize.
+>
+> GAMs can improve predictions when predictors have non-linear relationships with y. Here, the GAM reduces training MSE from [OLS MSE] to [GAM MSE], increasing R² from [OLS R²] to [GAM R²]."
+
+---
+
+# METHOD 5: KNN Local Regression ⭐ MED-HIGH PRIORITY
+
+## Recognition Cue
+```{r}
+d <- abs(x - x0)            # THE TELL: distance from x0
+o <- order(d)[1:K]          # K nearest indices
+```
+
+## Plain English Explanation
+For a query point x0:
+1. Compute the distance from x0 to every other data point
+2. Find the K closest data points (`order(d)[1:K]`)
+3. Fit a small linear regression using only those K neighbors
+4. Return the predicted value at x0 from that local regression
+
+## Why It Is Used
+KNN local regression is **non-parametric**: it does not assume a global linear relationship. It adapts to local patterns in the data. Small K = more flexible (low bias, high variance). Large K = smoother (high bias, low variance).
+
+## Exam Follow-Up Patterns
+
+### Pattern A: Extend to multiple predictors
+Instead of `abs(x - x0)` (one predictor), use Euclidean distance:
+```{r}
+d <- sqrt(rowSums((X - matrix(x0, nrow(X), ncol(X), byrow=TRUE))^2))
+```
+Or for standardized predictors:
+```{r}
+d <- sqrt(rowSums(((X - matrix(x0, nrow(X), ncol(X), byrow=TRUE)) / 
+                   matrix(apply(X,2,sd), nrow(X), ncol(X), byrow=TRUE))^2))
+```
+
+### Pattern B: Backfitting for multi-predictor KNN
+Backfitting with KNN is analogous to GAM backfitting: alternately fit KNN on residuals for each predictor until convergence.
+
+## Written Answer Template
+
+> "The function `f` implements **K-nearest-neighbor local regression**. Given a query point `x0`, it:
+> 1. Computes the absolute distance from `x0` to all observations
+> 2. Selects the `K` closest observations
+> 3. Fits a local linear regression on those `K` neighbors
+> 4. Returns the predicted value at `x0`
+>
+> The parameter K controls flexibility: small K = high flexibility (low bias, high variance); large K = smoother fit (higher bias, lower variance). LOOCV is used to choose the optimal K."
+
+---
+
+# METHOD 6: Logistic Regression ⭐ HIGHEST PRIORITY
+
+## Recognition Cue
+```{r}
+glm(y ~ ., data=train, family=binomial())    # THE TELL: family=binomial
+# or: exp(eta) / (1 + exp(eta))             # THE TELL: sigmoid function
+```
+
+## Coefficient Interpretation (Key Exam Skill)
+```{r}
+mod <- glm(churn ~ age + income, data=train, family=binomial())
+coef(mod)["age"]    # e.g., -0.05
+
+# Interpretation:
+# On the LOG-ODDS scale: age increases by 1 → log-odds decreases by 0.05
+# On the ODDS scale: multiply by exp(-0.05) = 0.951 → 4.9% lower odds
+exp(coef(mod))      # Odds ratios — more intuitive to interpret
+```
+
+**Template:** "A one-unit increase in [variable] is associated with a [increase/decrease] in the log-odds of [outcome] of [coefficient], holding other variables constant. The odds ratio is exp([coefficient]) = [value], meaning the odds of [outcome] are [value] times [higher/lower]."
+
+## Full Exam Workflow
+```{r}
+# 1. Fit
+logreg <- glm(as.factor(y) ~ ., data=train, family=binomial())
+summary(logreg)
+
+# 2. Check significance and consider reducing model
+logreg_reduced <- glm(y ~ x1 + x3 + x5, data=train, family=binomial())
+
+# 3. Predict probabilities on TEST
+prob <- predict(logreg, newdata=test, type="response")
+
+# 4. Choose threshold (default 0.5, but tune if imbalanced)
+pred <- ifelse(prob > 0.5, 1, 0)
+
+# 5. Evaluate
+cm  <- table(Actual=test$y, Predicted=pred)
+acc <- sum(diag(cm)) / sum(cm)
+prop.table(cm, margin=1)
+```
+
+---
+
+# METHOD 7: Random Forest ⭐ HIGHEST PRIORITY
+
+## Recognition Cue
+```{r}
+randomForest(y ~ ., mtry=3, ...)    # THE TELL: randomForest + mtry
+```
+
+## Plain English Explanation
+Random forests grow many decision trees. Each tree:
+1. Is trained on a **bootstrap sample** of the training data
+2. At each split, only considers a **random subset of mtry predictors**
+
+The final prediction averages all trees (regression) or takes a majority vote (classification). The `mtry < p` restriction decorrelates the trees, improving the variance reduction from averaging.
+
+## Variable Importance — How to Explain It
+```{r}
+varImpPlot(rf)    # Plot
+importance(rf)    # Numbers
+```
+**MeanDecreaseAccuracy:** When this predictor is randomly permuted (its values shuffled), how much does out-of-bag accuracy drop? Higher = more important.
+**MeanDecreaseGini:** How much does this predictor reduce Gini impurity across all splits in all trees? Higher = more important.
+
+**Written template:** "The variable importance plot shows [variable] is the most important predictor, as randomizing its values leads to the largest decrease in prediction accuracy. [Variable 2] and [variable 3] are also important. [Variable 4] has near-zero importance, suggesting it contributes little to predictions."
+
+---
+
+# METHOD 8: Boosting ⭐ HIGH PRIORITY
+
+## Recognition Cue
+```{r}
+r <- y - fhat    # THE TELL: compute residuals each iteration
+fhat <- fhat + nu * predict(tree_b, X)   # Update with shrunken tree
+```
+Also: `gbm(..., distribution="bernoulli")` or `distribution="gaussian"`
+
+## Plain English Explanation
+Boosting builds trees **sequentially**:
+1. Start with a flat prediction (zeros or mean(y))
+2. Fit a small tree to the **residuals** (errors)
+3. Update predictions by adding a small fraction (shrinkage `nu`) of the tree's predictions
+4. Repeat B times
+Each tree corrects the errors of all previous trees. Boosting reduces **bias** (unlike bagging which reduces variance).
+
+## Key Parameters
+| Parameter | Effect | Typical value |
+|-----------|--------|---------------|
+| `n.trees` | More trees = more flexible but risk overfitting | 500–2000 |
+| `interaction.depth` | Tree depth = complexity | 1–5 |
+| `shrinkage` | Learning rate; smaller = need more trees but better | 0.001–0.1 |
+
+## Written Answer Template
+
+> "The boosted tree model uses the `gbm` function with `distribution='bernoulli'` for binary classification. It sequentially fits small trees, each correcting the errors of the previous ones.
+>
+> On test data, the model achieves [confusion matrix result]. The threshold was set to [threshold]. Compared to logistic regression, boosting [performs better/similarly/worse] on the [class] class. The key difference is that boosting builds up prediction accuracy gradually through many weak learners, while logistic regression fits a single global model."
+
+---
+
+# METHOD 9: Decision Tree — Fit, Interpret, Prune
+
+## Recognition Cue
+```{r}
+tree(y ~ ., data=train)    # THE TELL: tree() function
+# or: for(s in candidates) RSS_left + RSS_right   # split search loop
+```
+
+## Reading a Tree Plot
+- Each **internal node** shows the split condition (e.g., "age < 30")
+- Follow **left branch if TRUE**, right branch if FALSE
+- **Terminal nodes (leaves)** show the predicted value (regression) or class (classification)
+
+## Full Code
+```{r}
+library(tree)
+t <- tree(y ~ ., data=train)
+plot(t); text(t, pretty=0)
+
+# Prune using CV
+cv_t    <- cv.tree(t)
+best_sz <- cv_t$size[which.min(cv_t$dev)]
+t_pruned <- prune.tree(t, best=best_sz)
+plot(t_pruned); text(t_pruned, pretty=0)
+
+# Evaluate
+pred_t <- predict(t_pruned, newdata=test)
+MSE_t  <- mean((test$y - pred_t)^2)
+```
+
+---
+
+# METHOD 10: OLS — Baselines and Comparisons
+
+## Key role in exams
+OLS always appears as the **baseline** to compare ridge/lasso/GAM/tree against.
+
+## What to show
+```{r}
+ols <- lm(y ~ ., data=train)
+summary(ols)             # See R², p-values
+MSE_ols_train <- mean(residuals(ols)^2)
+pred_ols_test <- predict(ols, newdata=test)
+MSE_ols_test  <- mean((test$y - pred_ols_test)^2)
+
+# R² computation
+R2_train <- summary(ols)$r.squared         # From lm output
+R2_manual <- 1 - MSE_ols_train / var(train$y)   # Manual formula
+```
+
+---
+
+# Quick Answer Templates Glossary
+
+| Situation | Template start |
+|-----------|---------------|
+| Identify a method | "This code implements **[METHOD]**, which..." |
+| Explain a loop | "The for loop runs n/K/B times. In each iteration..." |
+| Compare models | "Ridge reduces the sum of squared coefficients from [X] to [Y], indicating strong shrinkage. This reduces variance at the cost of a small increase in bias." |
+| Threshold choice | "With a class imbalance of [X]% positive cases, the default threshold of 0.5 classifies almost all observations as negative. A lower threshold of [T] was chosen to balance sensitivity and specificity." |
+| GAM vs OLS | "The GAM improves training R² from [X] to [Y], suggesting that variable [Z] has a non-linear relationship with y. The GAM is preferred when the linear model leaves systematic patterns in the residuals." |
+| Variable importance | "The variable [X] shows the largest decrease in accuracy when permuted, making it the most important predictor. [Y] and [Z] are also important. [W] contributes little." |
