@@ -85,7 +85,7 @@ This file is meant to be the **one big safety net** for BAN404. It is written fo
 ## Safe package setup
 
 ```{r}
-# Load the tidyverse first because BAN404 answers can be written in tidyverse style.  # We do this so data loading, wrangling, and plotting all work with one consistent grammar.
+# Load the tidyverse first because BAN404 answers should stay in one tidyverse-friendly workflow for data loading, wrangling, and plotting.
 library(tidyverse)  # Core data tools used throughout the cheatsheet and many BAN404 workflows.
 
 # Load modeling packages that BAN404 repeatedly uses in old exams.  # We load them early so we do not lose time mid-exam when switching methods.
@@ -1074,7 +1074,8 @@ ridge_objective_2025 <- function(b1, X, y, la) {        # b1 is the vector of sl
 g_ridge_2025 <- function(X, y, la) {                    # Inputs are predictor matrix, response vector, and lambda.
   q <- ncol(X)                                          # Count how many slope coefficients we must estimate.
   y_centered <- y - mean(y)                             # Center y so the intercept can be handled separately.
-  X_centered <- scale(X, center = TRUE, scale = FALSE)  # Center each predictor but do not standardize because the BAN404 ridge objective is written for centered raw columns, not unit-variance columns.
+  X_centered <- scale(X, center = TRUE, scale = FALSE)  # Center each predictor.
+                                                          # Do not standardize because the BAN404 ridge objective is written for centered raw columns, not unit-variance columns.
   start_b <- rep(0, q)                                  # Start optimization at zero for a stable neutral starting point.
   opt <- nlminb(start_b, ridge_objective_2025, X = X_centered, y = y_centered, la = la)  # Numerically minimize the ridge criterion.
   opt$par                                               # Return the slope coefficients only.
@@ -1314,7 +1315,7 @@ acc_churn_2023 <- sum(diag(cm_churn_2023)) / sum(cm_churn_2023)  # Classificatio
 # Optional: bootstrap the churn rate itself.  # This shows when bootstrap is used for uncertainty around a proportion, not model tuning.
 set.seed(1)                                               # Reproducible resampling.
 B_churn_2023 <- 1000                                      # Number of bootstrap samples.
-churn_numeric_2023 <- as.numeric(churn_2023$churn) - 1            # Convert a factor with levels 0 and 1 into numeric 0/1 safely.
+churn_numeric_2023 <- as.numeric(churn_2023$churn) - 1            # Factors are 1-indexed internally, so subtracting 1 converts a 0/1 factor into numeric 0/1.
 boot_rate_2023 <- replicate(
   B_churn_2023,                                           # Repeat the resampling many times.
   mean(sample(churn_numeric_2023, size = length(churn_numeric_2023), replace = TRUE))  # Bootstrap sample proportion of churners.
