@@ -295,7 +295,7 @@ rf_mod <- randomForest(
   formula = rf_formula,                                                      # use the same response and a reasonable predictor set
   data = train_data,
   ntree = 500,                                                               # many trees gives a more stable forest
-  mtry = max(1, floor(sqrt(rf_predictor_count))),                            # use sqrt(p), where p is the number of predictors in the formula; if p = 1, you lose the random feature-selection part
+  mtry = max(1, floor(sqrt(rf_predictor_count))),                            # use sqrt(p), where p is the number of predictors in the formula; if p = 1, random feature selection becomes meaningless
   importance = TRUE
 )
 
