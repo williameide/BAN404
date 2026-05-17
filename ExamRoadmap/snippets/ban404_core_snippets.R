@@ -129,7 +129,7 @@ loo_ridge <- function(lambda, X, y) {
   for (i in seq_len(n)) {
     X_train <- X[-i, , drop = FALSE]                                        # training predictors for this split
     y_train <- y[-i]                                                        # training response for this split
-    x_test_centered <- X[i, ] - colMeans(X_train)                           # center the left-out row using the training means only
+    x_test_centered <- X[i, ] - colMeans(X_train)                           # center the left-out row with training means only, which avoids leakage
     y_train_mean <- mean(y_train)                                           # same intercept logic as inside g_ridge
 
     b1 <- g_ridge(X = X_train, y = y_train, lambda = lambda)                # fit ridge on the n - 1 training observations
