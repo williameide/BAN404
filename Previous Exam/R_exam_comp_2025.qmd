@@ -18,6 +18,7 @@ execute:
   warning: false
   message: false
   eval: false
+  error: true
 ---
 
 # How to use this compendium
@@ -111,7 +112,7 @@ g <- function(X, y, la) {
 
 1.  **Is it a Tree-based method (Trees, RF, Boosting)?** No. There is no splitting logic, no Gini/Entropy, and no recursive partitioning. Instead, we see matrix multiplication (`X %*% b1`), which definitively means this is a **Linear Model**.
 2.  **Is it Logistic Regression?** No. Logistic regression uses a logit link function (e.g., `exp(x)/(1+exp(x))`) and maximizes likelihood. Here, the first part of `f` is `sum((y - X %*% b1)^2)`, which is the **Residual Sum of Squares (RSS)**. RSS is used for continuous regression, not classification.
-3.  **Is it standard Ordinary Least Squares (OLS)?** Close, but no. Standard OLS *only* minimizes the RSS. If the function was just `sum((y - X %*% b1)^2)`, it would be OLS. But this function adds a penalty term (`+ la * ...`), meaning it is a **Regularized (Shrinkage) method**.
+3.  **Is it standard Ordinary Least Squares (OLS)?** Close, but no. Standard OLS *only* minimizes the RSS. If the function was just `sum((y - X %*% b1)^2)`, it would be OLS. But this function adds a penalty term (`+ la *`), meaning it is a **Regularized (Shrinkage) method**.
 4.  **Is it Lasso or Ridge?** Look exactly at the penalty term: `la * sum(b1^2)`.
     -   If it was **Lasso**, it would penalize the absolute value: `la * sum(abs(b1))`.
     -   Because it penalizes the **squared coefficients** (`b1^2`), it is the $L_2$ norm.
@@ -211,7 +212,7 @@ cat("\nSum of squared coefficients (Ridge la=1000):", round(sum_sq_ridge1000, 2)
 
 That table is a goldmine for an exam answer! You can see the shrinkage happening right before your eyes. Look at **X4** dropping from 61.55 to 39.41, or **X2** shrinking from -17.16 to -5.46. If you want, you can drop a line into your exam text saying: *"For example, the coefficient for X4 is shrunk from 61.55 in the OLS model down to 39.41 in the Ridge model."*
 
-*(Notice how in the written text I used inline R code `` `r round(...)` `` so the text automatically updates with the real numbers! This is a massive flex on an exam).*
+*(Notice how in the written text I used inline R code r round()so the text automatically updates with the real numbers! This is a massive flex on an exam).*
 
 **AAA-Grade Written Answer:**\
 When we estimate the model using the `g` function with $\lambda = 0$, the resulting coefficients are identical to the Ordinary Least Squares (OLS) coefficients obtained via the `lm()` function. This is mathematically expected: when the penalty parameter $\lambda$ is zero, the L2 penalty term disappears, and the Ridge objective function reduces to simply minimizing the Residual Sum of Squares (RSS), which is exactly what OLS does.
@@ -308,7 +309,7 @@ By demeaning both $y$ and the $X$-variables (centering them around zero), the in
 **Question:**\
 Use the bootstrap method to estimate the sampling distribution of the sample variance of the variable y in `data_task1.csv`, $S^2 = \frac{1}{n-1} \sum_{i=1}^n (y_i - \bar{y})^2$. Show the result as a histogram. Also, use the bootstrap to compute a 95% confidence interval of the variance of y, $\sigma_y^2 = Var(y)$.
 
-**How to recognize this method on the exam (The Detective Work):** - **The trigger word:** The question explicitly asks for the "bootstrap method" to estimate a "sampling distribution" and a "confidence interval." - **Why use the Bootstrap?** Traditional statistics require formulas (like standard errors) that rely on strict assumptions, usually that the data is perfectly normally distributed. The variance of a sample is particularly sensitive to non-normality. The Bootstrap bypasses this entirely: it treats our actual sample as the "population," and repeatedly draws "fake samples" from it *with replacement*. - **The Code "Tell":** Any time you see or need to write `sample(..., replace = TRUE)` inside a `for` loop, you are doing a Bootstrap.
+**How to recognize this method on the exam (The Detective Work):** - **The trigger word:** The question explicitly asks for the "bootstrap method" to estimate a "sampling distribution" and a "confidence interval." - **Why use the Bootstrap?** Traditional statistics require formulas (like standard errors) that rely on strict assumptions, usually that the data is perfectly normally distributed. The variance of a sample is particularly sensitive to non-normality. The Bootstrap bypasses this entirely: it treats our actual sample as the "population," and repeatedly draws "fake samples" from it *with replacement*. - **The Code "Tell":** Any time you see or need to write sample(dotdotdot, replace = TRUE) inside a `for` loop, you are doing a Bootstrap.
 
 **Step-by-step code (Runnable Execution):**
 
@@ -360,11 +361,11 @@ abline(v = var(y), col = "black", lwd = 2)
 **Written Answer:**\
 To estimate the sampling distribution of the sample variance of the variable $y$, I implemented the **Bootstrap resampling method**. Because theoretical confidence intervals for variance rely heavily on the assumption that the underlying data is normally distributed, the bootstrap offers a robust, non-parametric alternative.
 
-The procedure works by treating our original 100 observations of $y$ as the population. I ran a loop $B = 10,000$ times. In each iteration, I generated a new bootstrap sample by drawing $n=100$ observations from $y$ **with replacement** (`sample(..., replace = TRUE)`). I then calculated the sample variance for this bootstrap sample and stored it.
+The procedure works by treating our original 100 observations of $y$ as the population. I ran a loop $B = 10,000$ times. In each iteration, I generated a new bootstrap sample by drawing $n=100$ observations from $y$ **with replacement** (sample(dotdotdot, replace = TRUE)). I then calculated the sample variance for this bootstrap sample and stored it.
 
 The resulting histogram visualizes the empirical sampling distribution of the variance. It is approximately bell-shaped and centered around the original sample variance (the solid black line).
 
-To compute the **95% confidence interval**, I used the *percentile method*. By extracting the 2.5th and 97.5th percentiles of my 10,000 bootstrap variance estimates (`quantile(..., probs = c(0.025, 0.975))`), I obtained a 95% confidence interval of **\[`r format(round(ci_95[1], 2), scientific=FALSE)`, `r format(round(ci_95[2], 2), scientific=FALSE)`\]** (represented by the red dashed lines on the histogram). This means we are 95% confident that the true population variance of $y$ lies within this range, without having to make strict assumptions about the underlying distribution of the data.
+To compute the **95% confidence interval**, I used the *percentile method*. By extracting the 2.5th and 97.5th percentiles of my 10,000 bootstrap variance estimates (`quantile(dotdotdot, probs = c(0.025, 0.975))`), I obtained a 95% confidence interval of **\[`r format(round(ci_95[1], 2), scientific=FALSE)`, `r format(round(ci_95[2], 2), scientific=FALSE)`\]** (represented by the red dashed lines on the histogram). This means we are 95% confident that the true population variance of $y$ lies within this range, without having to make strict assumptions about the underlying distribution of the data.
 
 ------------------------------------------------------------------------
 
@@ -571,7 +572,7 @@ Fit a random forest to predict `claim` and evaluate predictions. Compare with th
 
 **Step-by-step code:**
 
-```{r}
+```{r, eval=FALSE}
 library(randomForest)
 
 # Fit random forest; convert claim to factor for classification
@@ -627,4 +628,3 @@ prop.table(cm_bt, margin = 1)
 
 **Written answer:**\
 The boosted tree yields performance broadly similar to logistic regression, with approximately 70% of claims and 67% of non-claims correctly classified at a threshold of 0.01. It does not clearly outperform logistic regression here, which may reflect the difficulty of predicting rare claims from the available predictors. The random forest is the strongest performer among the three methods on the no-claim class, while logistic regression and boosting show higher sensitivity.
-
