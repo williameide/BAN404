@@ -422,6 +422,9 @@ df %>%
 ### When to use it
 Use OLS when the response is continuous and you want the cleanest baseline model. In BAN404, OLS is often the **starting benchmark** before a more flexible or regularized model.
 
+### Response type
+Continuous numeric outcome.
+
 ### Core theory in easy words
 OLS draws the line or hyperplane that makes the residual sum of squares as small as possible.
 
@@ -433,12 +436,29 @@ OLS draws the line or hyperplane that makes the residual sum of squares as small
 - Strong multicollinearity can make coefficients unstable.
 - OLS does **not** require every predictor to look normal in a histogram.
 
-### If OLS looks too simple, what should I try next?
+### What to tune
+
+- Plain OLS has no main tuning parameter.
+- The practical choices are usually **which predictors to include**, whether to **transform `y`**, and whether the model needs a **more flexible follow-up method**.
+
+### How to evaluate
+
+- Use **MSE** or **RMSE** on test data for prediction.
+- Use **R-squared** when the exam explicitly asks about explained variation.
+- For explanatory questions, also inspect **coefficient signs**, **standard errors**, and whether the direction makes business sense.
+
+### How to improve it
 
 - If coefficients look unstable because predictors overlap heavily → try **ridge** or **LASSO**.
 - If plots suggest curvature → try **GAM**.
 - If you suspect interactions or threshold effects → try **tree-based models**.
 - If the residual distribution looks ugly but the task is mainly predictive → still keep OLS as a baseline, then compare with more flexible models using the same test metric.
+
+### How to interpret it
+
+- Each coefficient is the expected change in `y` from a one-unit change in that predictor, holding the other predictors fixed.
+- The intercept is the expected `y` when all predictors are zero, though it is often less interesting than the slopes.
+- If OLS is only the baseline, the main interpretation job is often: **what is the direction of the main effects, and how strong is the benchmark fit before improvement models are tested?**
 
 ### Full runnable template
 
@@ -484,6 +504,12 @@ r2_ols <- 1 - sum((test$y - y_pred)^2) / sum((test$y - mean(test$y))^2)  # Highe
 - "Convert probabilities to 0/1 predictions"
 - "Use confusion matrix and threshold"
 
+### When to use it
+Use logistic regression when the response is binary and you want the safest interpretable baseline for classification.
+
+### Response type
+Binary classification outcome, usually stored as 0/1 or as a two-level factor.
+
 ### Core theory in easy words
 Logistic regression predicts the **probability** that an observation belongs to class 1. Then you convert that probability into a class label using a threshold, often 0.5 unless the question suggests otherwise.
 
@@ -495,6 +521,12 @@ Logistic regression predicts the **probability** that an observation belongs to 
 - Very strong multicollinearity can make coefficients unstable.
 - Perfect or near-perfect separation can break or distort the fit.
 - Logistic regression does **not** require the predictors to be normally distributed.
+
+### What to tune
+
+- The main practical tuning choice is the **classification threshold**.
+- You may also tune the **predictor set** if the question asks for a reduced operational model.
+- If plain logistic is too rigid, the next tuning step is often to compare with a more flexible classifier rather than over-complicating the logistic model itself.
 
 ### What to check before trusting the model
 
@@ -518,6 +550,12 @@ hist(pred_prob_train)  # Rare-event data often produces many small fitted probab
 3. Tune the **threshold** if 0.5 is unrealistic.  
 4. If the exam asks for better prediction, compare with **classification tree**, **random forest**, or **boosting**.  
 5. If the exam asks "why", lean on the logistic coefficients; if it asks "who should we flag", lean more on threshold choice and predictive metrics.
+
+### How to evaluate
+
+- Start with a **confusion matrix**.
+- Then report **accuracy**, and when class imbalance matters also **sensitivity** and **specificity**.
+- If the exam is about rare claims/defaults/churn, explain why threshold choice matters before claiming the model is good or bad.
 
 ### Full runnable template
 
@@ -571,6 +609,19 @@ best_threshold <- threshold_scores %>%
   pull(threshold)  # Extract the winning threshold value.
 ```
 
+### How to improve it
+
+- Remove **future-unavailable variables** for operational prediction.
+- Tune the **threshold** instead of blindly using 0.5.
+- Compare with **classification tree**, **random forest**, or **boosting** if nonlinearities or interactions may matter.
+- If interpretation matters most, a reduced logistic model may be the best improvement rather than a black-box model.
+
+### How to interpret it
+
+- A positive coefficient means the predictor increases the **log-odds** of the positive class, holding other predictors fixed.
+- In plain language, you usually interpret the **direction** and importance rather than writing out log-odds algebra.
+- The predicted probabilities matter operationally because they tell you **how strongly** each case looks like a positive outcome before thresholding.
+
 ### Typical BAN404 variations
 - **Explanatory logistic**: keep realistic predictors and discuss directions/significance.
 - **Operational prediction logistic**: remove future-unavailable variables first.
@@ -598,8 +649,41 @@ best_threshold <- threshold_scores %>%
 - "Use cross-validation"
 - "Explain what this loop does"
 
+### When to use it
+Use CV when the exam is about **choosing a tuning parameter** or estimating generalization error without spending the full test set.
+
+### Response type
+Not a model family by itself. It is a **resampling procedure** that can be used with both regression and classification.
+
 ### Core theory in easy words
 CV estimates how well a model generalizes to new data. LOOCV is the extreme version where you leave out one observation at a time.
+
+### Assumptions and weaknesses
+
+- Observations should be reasonably **independent**.
+- CV is for **tuning/evaluation**, not for estimating the sampling distribution of a statistic.
+- LOOCV can be computationally slow if the underlying model fit is heavy.
+
+### What to tune
+
+- Whatever the exam asks for: `K`, `lambda`, threshold, number of neighbors, tree size, or another model-setting choice.
+
+### How to evaluate
+
+- Use **average CV error** for regression.
+- Use **average CV accuracy** or another class metric for classification.
+- The best tuning value is the one that optimizes the chosen CV score.
+
+### How to improve it
+
+- Replace ad hoc guesses with a **grid search** over sensible candidate values.
+- If the dataset is small, LOOCV is often safer than a simple single split.
+- If LOOCV is too slow, a smaller **k-fold CV** version can be used.
+
+### How to interpret it
+
+- The point is not the loop itself; the point is that CV gives an **approximately honest estimate** of how each tuning choice should generalize.
+- In written answers, emphasize that CV helps choose the tuning value **before final test evaluation**.
 
 ### Generic LOOCV skeleton
 
@@ -654,8 +738,42 @@ best_value <- param_grid[which.min(cv_scores)]  # which.min finds the index of t
 - "Bootstrap the standard error"
 - "Show the result as a histogram"
 
+### When to use it
+Use bootstrap when the target is **uncertainty about a statistic** such as a mean, variance, coefficient, or proportion.
+
+### Response type
+Not a model family by itself. It is a **resampling method** used for inference-like uncertainty questions.
+
 ### Core theory in easy words
 The bootstrap pretends your sample is the population. It repeatedly samples **with replacement** and recalculates the statistic each time.
+
+### Assumptions and weaknesses
+
+- The sample should be reasonably representative of the population you care about.
+- Bootstrap is about the **sampling distribution of a statistic**, not about model tuning.
+- If the data-generating structure is complex and the sample is tiny or highly dependent, bootstrap results can become unstable.
+
+### What to tune
+
+- The practical tuning choice is usually **`B`**, the number of bootstrap resamples.
+- Sometimes you also choose **which statistic** to store: a mean, variance, coefficient, proportion, and so on.
+
+### How to evaluate
+
+- Look at the **histogram** of the bootstrap statistics.
+- Report the **bootstrap standard error** and/or a **confidence interval**.
+- If asked to compare methods, show both **percentile** and **normal-approximation** intervals.
+
+### How to improve it
+
+- Increase `B` if the histogram or interval looks unstable.
+- Resample **whole rows** when the statistic depends on relationships between predictors and response.
+- Keep bootstrap separate from train/test prediction logic unless the question explicitly asks for a bootstrap prediction procedure.
+
+### How to interpret it
+
+- The stored bootstrap values approximate how the statistic would vary across repeated samples from the population.
+- A wide interval means high uncertainty; a narrow interval means the statistic looks more stable.
 
 ### Bootstrap a variance or mean
 
@@ -707,13 +825,35 @@ boot_se <- sd(coef_boot)                      # Bootstrap standard error is the 
 
 ## 5. Ridge regression
 
-### What signals it?
+### What exam wording signals it?
 - `sum((y - X%*%b1)^2) + la * sum(b1^2)`
 - custom optimizer with `nlminb`
 - question about demeaning and lambda
 
+### When to use it
+Use ridge when the response is continuous, the OLS baseline is reasonable, and you want to reduce variance from many or correlated predictors.
+
+### Response type
+Usually continuous regression in BAN404.
+
 ### Core theory in easy words
 Ridge is OLS plus a penalty on large coefficients. It shrinks coefficients toward zero to reduce variance.
+
+### Assumptions and weaknesses
+
+- The response is usually **continuous**.
+- Ridge still starts from a basically **linear mean structure**.
+- It shrinks coefficients but usually does **not** set them exactly to zero, so it is less interpretable than sparse methods like LASSO.
+
+### What to tune
+
+- The main tuning parameter is **`lambda`**.
+- You may also need to decide whether predictors should be **centered or standardized**, depending on the exact implementation.
+
+### How to evaluate
+
+- Compare ridge against OLS using the **same regression metric**, usually test MSE or CV MSE.
+- If the question is theoretical, also explain what happens at **`lambda = 0`** and at large `lambda`.
 
 ### BAN404-style custom ridge template
 
@@ -744,6 +884,17 @@ b_ridge1000 <- g_ridge(X, y, la = 1000)       # Strong penalty shrinks coefficie
 ### Common BAN404 written point
 When `lambda = 0`, ridge becomes OLS. When `lambda` becomes large, coefficients are pulled toward zero, which increases bias a bit but often reduces variance a lot.
 
+### How to improve it
+
+- Tune `lambda` with **LOOCV** or **k-fold CV** instead of guessing.
+- If ridge helps but you also want variable selection, compare with **LASSO**.
+- If the linear form itself is too rigid, compare with **GAM** or tree-based models instead of only shrinking coefficients.
+
+### How to interpret it
+
+- Focus on the **shrinkage pattern** rather than classical p-values.
+- The main written message is usually: ridge keeps all predictors but makes the coefficients smaller and often generalizes better than unstable OLS.
+
 ### Past exam links
 - 2025 Task 1a–c
 
@@ -751,13 +902,36 @@ When `lambda = 0`, ridge becomes OLS. When `lambda` becomes large, coefficients 
 
 ## 6. LASSO
 
-### What signals it?
+### What exam wording signals it?
 - absolute value penalty
 - `glmnet`
 - coefficient selection/shrinkage to zero
 
+### When to use it
+Use LASSO when the response is continuous and you want both shrinkage and possible variable selection.
+
+### Response type
+Usually continuous regression in BAN404.
+
 ### Core theory in easy words
 LASSO is like ridge, but the penalty is based on **absolute values**. This means it can set some coefficients exactly to zero and therefore perform variable selection.
+
+### Assumptions and weaknesses
+
+- LASSO still assumes the core predictive relationship is basically **linear**.
+- It is sensitive to the scale of predictors, so standardization is usually important.
+- When predictors are very correlated, LASSO may select one and drop another in a way that looks unstable.
+
+### What to tune
+
+- The main tuning parameter is **`lambda`**.
+- In `glmnet`, you should also be aware of **standardization**, because scale affects the penalty.
+
+### How to evaluate
+
+- Use **CV error** to choose `lambda`.
+- Then compare the final model with OLS or ridge using **test MSE** or the same regression metric.
+- Also inspect how many coefficients became exactly zero.
 
 ### Full runnable template
 
@@ -783,6 +957,17 @@ mse_lasso <- mean((test$y - y_pred_lasso)^2)  # Smaller is better.
 coef(lasso_fit)  # Variables with zero coefficients are effectively removed.
 ```
 
+### How to improve it
+
+- Tune `lambda` with **CV** instead of guessing.
+- Compare with **ridge** if predictors are highly correlated and you do not want aggressive selection.
+- Compare with **GAM** or tree-based models if the bigger problem is nonlinearity rather than too many linear predictors.
+
+### How to interpret it
+
+- The key interpretation point is that some predictors may be shrunk all the way to **zero**, which makes the model simpler.
+- If the exam asks "which variables matter most," the nonzero coefficients give a first answer, but always connect them back to the business context.
+
 ### Past exam links
 - 2023 Task 1d–e
 
@@ -790,14 +975,37 @@ coef(lasso_fit)  # Variables with zero coefficients are effectively removed.
 
 ## 7. GAM / smoothing splines / backfitting
 
-### What signals it?
+### What exam wording signals it?
 - "There might be non-linear relationships"
 - `s(x)`
 - `smooth.spline`
 - backfitting explanation
 
+### When to use it
+Use GAM when a continuous response still suggests a regression problem, but the straight-line OLS assumption looks too restrictive for some predictors.
+
+### Response type
+Usually continuous regression in BAN404.
+
 ### Core theory in easy words
 A GAM lets some predictors stay linear while other predictors are allowed to bend smoothly. It is a good upgrade when the OLS straight-line assumption is too rigid.
+
+### Assumptions and weaknesses
+
+- The response is usually **continuous** in BAN404’s GAM questions.
+- Smooth terms help with **nonlinearity**, but GAM is still more structured and less automatic than a fully flexible tree ensemble.
+- Too much smoothing can underfit; too much wiggliness can overfit.
+
+### What to tune
+
+- Which predictors should be modeled with **smooth terms**.
+- In some settings, the **smoothness / effective degrees of freedom**.
+- The practical BAN404 choice is often simply: **which variable gets `s(x)`**.
+
+### How to evaluate
+
+- Compare GAM with OLS using the **same regression metric**, often MSE or explained variation.
+- Also evaluate whether the smooth plot looks substantively meaningful rather than adding wiggles for no reason.
 
 ### Full runnable template
 
@@ -828,6 +1036,17 @@ plot(gam_fit, se = TRUE)                           # Shows the estimated smooth 
 ### Backfitting in plain English
 Backfitting updates one smooth term at a time by fitting it to the part of `y` not currently explained by the other smooth terms. Then it cycles until the updates stop changing much.
 
+### How to improve it
+
+- Start from **OLS**, then only add smooth terms where plots suggest curvature.
+- Compare one-smooth GAM with a larger GAM rather than making everything smooth immediately.
+- If a GAM still misses strong interactions or complex structure, compare with **random forest** or **boosting**.
+
+### How to interpret it
+
+- Interpret the **shape** of the smooth term: increasing, decreasing, U-shaped, flattening, and so on.
+- The main story is usually not a single slope coefficient, but whether the relationship is clearly **nonlinear** and whether that improves fit over OLS.
+
 ### Past exam links
 - 2021 Task 2d–e
 - 2022 Task 2e–f
@@ -838,13 +1057,30 @@ Backfitting updates one smooth term at a time by fitting it to the part of `y` n
 
 ## 8. KNN / local regression
 
-### What signals it?
+### What exam wording signals it?
 - distance calculation `d <- abs(x - x0)`
 - `order(d)[1:K]`
 - local fit using nearest neighbors
 
+### When to use it
+Use KNN/local regression when the exam asks for a local prediction rule driven by **nearby observations** rather than one global line.
+
+### Response type
+Usually continuous regression in BAN404’s local regression tasks.
+
 ### Core theory in easy words
 KNN/local regression predicts a point using the observations closest to it. Small `K` means very flexible; large `K` means smoother but more biased.
+
+### Assumptions and weaknesses
+
+- Nearby observations should carry similar information about the response.
+- Distance matters a lot, so **scale differences** across predictors can distort the method.
+- Small `K` can overfit badly; large `K` can oversmooth and miss local structure.
+
+### What to tune
+
+- The key tuning parameter is **`K`**, the number of neighbors.
+- In multivariate settings you may also need to think about **distance definition** and **standardization**.
 
 ### One-predictor local regression template
 
@@ -879,6 +1115,24 @@ K_best <- K_grid[which.min(cv_mse)]                    # Best K minimizes LOOCV 
 ### Multi-predictor note
 When there are several predictors, replace the 1D absolute distance with a multivariate distance such as Euclidean distance. Standardization becomes important because large-scale variables otherwise dominate the distance.
 
+### How to evaluate
+
+- Use **LOOCV** or CV to choose `K`.
+- Compare candidate `K` values using **CV MSE** for regression.
+- Final predictive comparison should still be made on the same test set as other regression models if the task includes a final model comparison.
+
+### How to improve it
+
+- Tune `K` instead of choosing it arbitrarily.
+- Standardize predictors in multi-predictor distance problems.
+- If the local method is too unstable, compare with **GAM** or tree-based regression models.
+
+### How to interpret it
+
+- Small `K` means the fit is **very local and flexible**.
+- Large `K` means the fit is **smoother and more biased**.
+- In written answers, the main interpretation is usually the **bias-variance tradeoff** rather than a coefficient story.
+
 ### Past exam links
 - 2024 Task 1a–e
 
@@ -886,10 +1140,30 @@ When there are several predictors, replace the 1D absolute distance with a multi
 
 ## 9. Regression tree
 
-### What signals it?
+### What exam wording signals it?
 - continuous target
 - tree plot / branch interpretation
 - compare to OLS or RF using MSE
+
+### When to use it
+Use a regression tree when the response is continuous and you suspect important **cutoffs, interactions, or nonlinear splits**.
+
+### Response type
+Continuous regression outcome.
+
+### Core theory in easy words
+A regression tree repeatedly splits the predictor space into regions and predicts the average `y` inside each terminal region.
+
+### Assumptions and weaknesses
+
+- Trees do not need linearity, but a single tree can be **unstable**.
+- Small changes in the data can change the split structure a lot.
+- A single regression tree often predicts worse than bagging or random forest, even if it is easy to explain.
+
+### What to tune
+
+- In simple BAN404 workflows, the practical tuning choices are tree size / complexity and whether to prune.
+- Even when no explicit pruning is shown, the exam may still ask whether a larger ensemble would improve stability.
 
 ### Full runnable template
 
@@ -908,6 +1182,22 @@ y_pred_tree <- predict(tree_reg, newdata = test)  # Continuous predictions from 
 mse_tree <- mean((test$y - y_pred_tree)^2)        # Lower is better.
 ```
 
+### How to evaluate
+
+- Use **test MSE** for continuous outcomes.
+- If the exam gives both OLS and tree, compare them on the **same split** and the **same error metric**.
+
+### How to improve it
+
+- If the single tree is unstable or weak, move to **bagging** or **random forest**.
+- If the tree is too rough for the task, compare it with **GAM** or another smoother regression method.
+
+### How to interpret it
+
+- Interpret each branch as a sequence of **if-then split rules**.
+- Each terminal node prediction is the mean response for observations landing in that region.
+- Trees are especially good when the exam asks you to explain **segments** rather than coefficients.
+
 ### Past exam links
 - 2023 Task 1f–g
 
@@ -915,10 +1205,30 @@ mse_tree <- mean((test$y - y_pred_tree)^2)        # Lower is better.
 
 ## 10. Classification tree
 
-### What signals it?
+### What exam wording signals it?
 - binary/categorical target
 - plot and interpret a branch
 - use threshold or direct class prediction
+
+### When to use it
+Use a classification tree when the response is categorical and you want a split-based classifier that is easy to visualize.
+
+### Response type
+Binary or multiclass classification outcome.
+
+### Core theory in easy words
+A classification tree repeatedly splits the predictor space into regions that become as pure as possible with respect to the class labels.
+
+### Assumptions and weaknesses
+
+- Trees do not assume linearity or normal predictors.
+- A single classification tree can be easy to explain but often **unstable** and weaker than an ensemble.
+- Threshold choice can still matter when you convert predicted class probabilities rather than using the direct class output.
+
+### What to tune
+
+- Tree size / complexity and any probability threshold if you use predicted probabilities.
+- In BAN404, the most exam-relevant practical choice is often whether to compare the single tree with **random forest**.
 
 ### Full runnable template
 
@@ -942,6 +1252,22 @@ cm_tree <- table(actual = test$y, predicted = pred_class_tree)
 acc_tree <- sum(diag(cm_tree)) / sum(cm_tree)
 ```
 
+### How to evaluate
+
+- Use a **confusion matrix** and **accuracy**.
+- If the class balance is uneven, also report **sensitivity** and **specificity** or at least discuss why accuracy may be incomplete.
+
+### How to improve it
+
+- Compare the single tree with **random forest** or **boosting** if the question asks for better prediction.
+- Tune the threshold if you are using probabilities and the positive class is rare.
+
+### How to interpret it
+
+- Interpret each split as a decision rule.
+- Interpret each leaf as the predicted class or dominant class profile for that segment.
+- The strength of the model is interpretability by **rules**, not by coefficients.
+
 ### Past exam links
 - 2022 Task 1d–f
 - 2024 Task 2e
@@ -950,8 +1276,29 @@ acc_tree <- sum(diag(cm_tree)) / sum(cm_tree)
 
 ## 11. Bagging
 
+### What exam wording signals it?
+- "bagging"
+- "many bootstrap trees"
+- "improve a single tree by averaging"
+
+### When to use it
+Use bagging when a single tree is too unstable and you want to reduce variance by averaging many bootstrap trees.
+
+### Response type
+Can be used for both regression and classification.
+
 ### Core theory in easy words
 Bagging means fitting many trees on bootstrap samples and averaging them. This reduces variance compared with a single unstable tree.
+
+### Assumptions and weaknesses
+
+- Bagging inherits the tree advantage of not needing linearity.
+- It is usually more stable than a single tree but less interpretable.
+- Because every split sees all predictors, bagging usually helps less than random forest when tree correlation is a big problem.
+
+### What to tune
+
+- The main practical choices are **`ntree`** and, in the randomForest approximation, setting **`mtry = p`**.
 
 ### Safe bagging approximation template
 
@@ -964,6 +1311,21 @@ bag_fit <- randomForest(y ~ ., data = train, mtry = p, ntree = 200)  # mtry = p 
 pred_bag <- predict(bag_fit, newdata = test)                  # Averaged prediction across bootstrap trees.
 ```
 
+### How to evaluate
+
+- Use **MSE** for regression bagging and a **confusion matrix / accuracy** for classification bagging.
+- Compare bagging with the corresponding **single tree** on the same split.
+
+### How to improve it
+
+- Increase `ntree` if performance looks unstable.
+- Compare with **random forest** if bagging still seems too correlated across trees.
+
+### How to interpret it
+
+- Bagging is usually interpreted at the **model-comparison level**, not by individual splits.
+- The key interpretation is that averaging many unstable trees often improves predictive stability.
+
 ### Past exam links
 - 2022 Task 2g–h
 - conceptually related in later random forest tasks
@@ -972,13 +1334,30 @@ pred_bag <- predict(bag_fit, newdata = test)                  # Averaged predict
 
 ## 12. Random forest
 
-### What signals it?
+### What exam wording signals it?
 - explicit random forest request
 - variable importance plot
 - compare with logistic/tree/OLS
 
+### When to use it
+Use random forest when you want a strong flexible model that can capture nonlinearities and interactions automatically.
+
+### Response type
+Can be used for both regression and classification.
+
 ### Core theory in easy words
 Random forest is like bagging plus extra randomness in predictor selection. This decorrelates the trees and usually improves prediction further.
+
+### Assumptions and weaknesses
+
+- Random forest does not need linearity or normal predictors.
+- It is usually strong for prediction but weaker for clean coefficient-style interpretation.
+- Variable importance helps, but it does not replace a full causal or explanatory story.
+
+### What to tune
+
+- The main tuning choices are **`ntree`** and **`mtry`**.
+- In exam answers, you can also frame the comparison itself as the main tuning/improvement step if the task does not demand a full search.
 
 ### Classification template
 
@@ -1011,6 +1390,23 @@ y_pred_rf <- predict(rf_reg, newdata = test)
 mse_rf <- mean((test$y - y_pred_rf)^2)
 ```
 
+### How to evaluate
+
+- Use **MSE** for regression forests.
+- Use **confusion matrix**, **accuracy**, and often **sensitivity/specificity** for classification forests.
+- Compare the forest with the corresponding simpler baseline: OLS, logistic, or a single tree.
+
+### How to improve it
+
+- Increase `ntree` or tune `mtry` if the question asks for model refinement.
+- If the response is binary and rare, combine the forest with **threshold tuning** rather than relying only on default class output.
+- If interpretability matters more than raw performance, fall back to a simpler baseline even if RF predicts slightly better.
+
+### How to interpret it
+
+- Interpret the model mainly through **predictive performance** and **variable importance**.
+- Avoid pretending the forest gives one clean coefficient per predictor; its strength is pattern capture, not a tidy linear equation.
+
 ### Past exam links
 - 2023 Task 1h–i and 2e
 - 2024 Task 2f and 2k
@@ -1020,13 +1416,30 @@ mse_rf <- mean((test$y - y_pred_rf)^2)
 
 ## 13. Boosting
 
-### What signals it?
+### What exam wording signals it?
 - "boosted tree"
 - `gbm`
 - compare with random forest or logistic
 
+### When to use it
+Use boosting when the exam asks for a sequential tree ensemble that may squeeze out more predictive power than a single tree.
+
+### Response type
+Can be used for both regression and classification.
+
 ### Core theory in easy words
 Boosting builds trees **sequentially**, where each new tree tries to correct the mistakes of the earlier trees. Small learning rates make it learn more cautiously.
+
+### Assumptions and weaknesses
+
+- Boosting is very flexible and does not rely on linearity.
+- It can perform well, but it is less interpretable than simpler baseline models.
+- If tuned too aggressively, it can overfit.
+
+### What to tune
+
+- The main tuning choices are **`n.trees`**, **`interaction.depth`**, and **`shrinkage`**.
+- For classification tasks, the **threshold** can also matter after probability prediction.
 
 ### Classification template
 
@@ -1078,6 +1491,23 @@ y_pred_boost <- predict(boost_reg, newdata = test, n.trees = 1000)
 # Evaluate with MSE.  # Same metric as other regression models.
 mse_boost <- mean((test$y - y_pred_boost)^2)
 ```
+
+### How to evaluate
+
+- Use **MSE** for regression boosting.
+- Use **confusion matrix**, **accuracy**, and where relevant **sensitivity/specificity** for classification boosting.
+- Compare against simpler baselines such as logistic regression, a single tree, or random forest depending on the exam wording.
+
+### How to improve it
+
+- Tune `n.trees`, `interaction.depth`, and `shrinkage` rather than fixing them blindly.
+- Use a lower threshold in rare-event classification if 0.5 is unrealistic.
+- If boosting does not clearly improve predictive performance, the safer exam recommendation may still be the simpler baseline.
+
+### How to interpret it
+
+- Interpret boosting mainly through **comparative predictive performance**, not through one clean set of coefficients.
+- The written takeaway is usually whether the sequential ensemble actually improved prediction enough to justify the extra complexity.
 
 ### Past exam links
 - 2021 Task 3d
