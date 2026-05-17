@@ -45,6 +45,7 @@ oj_data <- OJ %>%
   mutate(across(where(is.character), as.factor))
 
 # Convert low-cardinality numeric variables to factor where meaningful.
+# We use cutoff 5 here to mirror the 2022 marking approach for OJ coding fields.
 oj_data <- oj_data %>%
   mutate(across(where(is.numeric), ~ if (n_distinct(.x) <= 5) as.factor(.x) else .x))
 

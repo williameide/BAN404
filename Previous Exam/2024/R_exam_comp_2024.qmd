@@ -111,7 +111,7 @@ tibble(K = K_grid, loo_mse = cv_mse)
 K_opt
 ```
 
-**AAA-Grade Written Answer:** LOOCV evaluates each candidate K by repeatedly leaving out one observation, fitting on the rest, and predicting the omitted point. The K with the lowest mean LOOCV squared error is selected as optimal. For this dataset, the optimum is K close to 5, which balances smoothness and flexibility.
+**AAA-Grade Written Answer:** LOOCV evaluates each candidate K by repeatedly leaving out one observation, fitting on the rest, and predicting the omitted point. The K with the lowest mean LOOCV squared error is selected as optimal. For this dataset, the optimal value is K close to 5, which balances smoothness and flexibility.
 
 ## Task 1c
 
@@ -245,9 +245,10 @@ airline <- read_csv("airline.csv", show_col_types = FALSE)
 airline <- airline %>% mutate(across(where(is.character), as.factor))
 
 # Convert low-cardinality integer-coded columns to factor.
-# This captures fields like 0 to 5 satisfaction ratings and binary indicators.
+# We use a cutoff of 7 unique values to capture survey scales and binary/ordinal categories.
+factor_level_cutoff <- 7
 airline <- airline %>%
-  mutate(across(where(is.numeric), ~ if (n_distinct(.x, na.rm = TRUE) <= 7) as.factor(.x) else .x))
+  mutate(across(where(is.numeric), ~ if (n_distinct(.x, na.rm = TRUE) <= factor_level_cutoff) as.factor(.x) else .x))
 
 # Check resulting classes.
 glimpse(airline)

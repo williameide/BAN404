@@ -377,6 +377,7 @@ logit3_fit <- glm(clm ~ veh_body + agecat + veh_value + exposure, data = train3,
 prob3 <- predict(logit3_fit, newdata = test3, type = "response")
 
 # Lower threshold to reduce false negatives when missing claims is costly.
+# Value 0.07 is chosen after validation-style experimentation to prioritize sensitivity.
 th <- 0.07
 pred3 <- if_else(prob3 > th, 1, 0)
 cm3 <- table(actual = test3$clm, predicted = pred3)
