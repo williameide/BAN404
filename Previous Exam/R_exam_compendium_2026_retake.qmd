@@ -1,0 +1,1050 @@
+---
+title: "BAN404 R Exam Compendium — 2026 Retake Survival File"
+subtitle: "Exam-centered R cheatsheet, method playbook, and worked BAN404 logic"
+author: "William + Copilot"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: flatly
+  pdf:
+    toc: true
+    number-sections: true
+execute:
+  echo: true
+  eval: false
+  warning: false
+  message: false
+editor: visual
+---
+
+# How to use this file in the exam
+
+This file is meant to be the **one big safety net** for BAN404. It is written for a student who may understand the course ideas better than the R syntax, package names, or full modeling workflow.
+
+## The exam workflow from A to Z
+
+1. **Find the response type first**  
+   - If `y` is numeric/continuous, think **regression**.  
+   - If `y` is yes/no, 0/1, churn/not churn, satisfied/dissatisfied, think **classification**.  
+   - If there is no `y`, think **unsupervised learning** like PCA or k-means.
+
+2. **Find the goal of the question**  
+   - "Explain what the code does" → identify the method from the code tell.  
+   - "Predict" → build model + evaluate on test data.  
+   - "Which variables matter?" → use EDA + interpretable model.  
+   - "Find optimal K / lambda / threshold" → use CV or LOOCV.
+
+3. **Pick the correct evaluation metric**  
+   - Continuous `y` → usually **MSE**, sometimes **R²**.  
+   - Binary/categorical `y` → usually **confusion matrix + accuracy**, sometimes threshold discussion.  
+   - Unsupervised → **variance explained**, **scree plot**, or **elbow plot**.
+
+4. **Decide which data to use**  
+   - Explanatory question → usually training data or all data if no prediction claim is being made.  
+   - Predictive question → hold out test data.  
+   - Tuning question → CV/LOOCV on training data.  
+   - Final score comparison → same split and same metric for all models.
+
+5. **Choose the safest BAN404 answer**  
+   - Start with the course baseline.  
+   - Then compare with the improved method the question is hinting at.  
+   - Do not overcomplicate if a simple valid model answers the exact question.
+
+6. **Always finish with plain-language interpretation**  
+   - What did the model say?  
+   - Did it improve prediction?  
+   - Why was the metric appropriate?  
+   - Which variables or patterns mattered most?
+
+---
+
+# BAN404 method recognition table
+
+| If the question or code shows... | It is probably... | Tune what? | Evaluate with... | Seen in BAN404 |
+|---|---|---|---|---|
+| `sum((y - X%*%b)^2) + la*sum(b^2)` | Ridge regression | `lambda` | Test/LOOCV MSE | 2025 |
+| `sum(abs(b))` or `alpha = 1` in `glmnet` | LASSO | `lambda` | Test/CV MSE | 2023 |
+| `X[-i, ]` or `for(i in 1:n)` | LOOCV | `lambda`, `K`, threshold | CV MSE / CV accuracy | 2024, 2025 |
+| `sample(..., replace = TRUE)` | Bootstrap or bagging | `B` sometimes | CI / SE / accuracy / MSE | 2021, 2023, 2025 |
+| `order(d)[1:K]` | KNN / local regression | `K` | LOOCV MSE / accuracy | 2024 |
+| `s(x)` or `smooth.spline(...)` | GAM / smoothing spline | degrees of freedom / smoothness | MSE / R² | 2021, 2022, 2025 |
+| `glm(..., family = binomial)` | Logistic regression | threshold | confusion matrix / accuracy | 2021–2025 |
+| `tree(...)` | Regression/classification tree | tree size / pruning | MSE or accuracy | 2022, 2023, 2024 |
+| `randomForest(...)` | Random forest / bagging approximation | `mtry`, `ntree` | MSE / accuracy / variable importance | 2022–2025 |
+| `gbm(...)` | Boosting | trees, depth, shrinkage | MSE / accuracy | 2021, 2025 |
+| `prcomp(...)` | PCA | number of PCs | variance explained | theory / possible fallback |
+| `svm(...)` or `cost`, `gamma` | SVM | `cost`, `gamma` | accuracy | theory / possible fallback |
+| `kmeans(...)` | K-means | number of clusters `K` | WCSS / elbow | theory / possible fallback |
+
+---
+
+# Universal data loading cookbook
+
+## Safe package setup
+
+```{r}
+# Load the tidyverse first because BAN404 answers can be written in tidyverse style.  # We do this so data loading, wrangling, and plotting all work with one consistent grammar.
+library(tidyverse)  # Core data tools used throughout the cheatsheet and many BAN404 workflows.
+
+# Load modeling packages that BAN404 repeatedly uses in old exams.  # We load them early so we do not lose time mid-exam when switching methods.
+library(glmnet)       # Needed for ridge and lasso with matrix input, as in 2023-style regularization tasks.
+library(gam)          # Needed for GAM and smoothing terms, especially 2025 Task 1e style questions.
+library(tree)         # Needed for regression trees and classification trees from 2022–2024 style tasks.
+library(randomForest) # Needed for random forest and bagging-style tree ensembles in many Task 2 questions.
+library(gbm)          # Needed for boosted trees, which appeared clearly in 2021 and 2025.
+library(MASS)         # Useful fallback package for LDA/QDA if theory or code asks for it.
+library(e1071)        # Useful fallback package for SVM if BAN404 theory or a rare exam twist asks for it.
+```
+
+## Safe CSV loading templates
+
+### Case 1: normal comma-separated file
+
+```{r}
+# Read a standard comma-separated csv.  # This is the safest starting point when the exam file looks normal.
+df <- read_csv("my_data.csv", show_col_types = FALSE)  # read_csv guesses column types and is tidyverse-friendly.
+
+# Inspect structure immediately.  # We do this to see whether columns became character, numeric, or logical.
+glimpse(df)  # glimpse is fast and exam-friendly for checking whether import went wrong.
+```
+
+### Case 2: semicolon-separated file
+
+```{r}
+# Read a semicolon-separated csv.  # This is important because the 2025 exam explicitly used read.csv2 style data import.
+df <- read_csv2("my_data.csv", show_col_types = FALSE)  # read_csv2 expects semicolons and comma decimals by default.
+
+# Check the import right away.  # If everything became one big text column, the separator assumption was wrong.
+glimpse(df)  # Always verify before modeling.
+```
+
+### Case 3: first real row does not start at A1
+
+```{r}
+# Skip junk rows above the real header.  # This solves the exam twist where the actual table starts below the top row.
+df <- read_csv("my_data.csv", skip = 3, show_col_types = FALSE)  # skip = 3 means ignore the first three rows before the header.
+
+# Re-check that column names now make sense.  # If names are still wrong, try a different skip value.
+colnames(df)  # Column names are the first clue that the import worked.
+```
+
+### Case 4: weird missing values
+
+```{r}
+# Tell read_csv which strings should count as NA.  # This prevents text placeholders from breaking summaries and models.
+df <- read_csv(
+  "my_data.csv",                              # File path to the exam dataset.
+  na = c("", "NA", "N/A", "Missing", "?"), # Common non-standard missing value strings.
+  show_col_types = FALSE                       # Keeps the output cleaner during the exam.
+)
+```
+
+## Safe cleaning template
+
+```{r}
+# Start with a raw dataset object.  # Keeping a raw copy lets us restart if we make a cleaning mistake.
+df_raw <- read_csv("my_data.csv", show_col_types = FALSE)  # Always keep the untouched original.
+
+# Create a working copy for analysis.  # This is where all changes should happen.
+df <- df_raw %>%
+  janitor::clean_names() %>%                                # Makes column names easier to type and less error-prone.
+  mutate(across(where(is.character), as.factor))            # Converts text columns to factors when they are categorical.
+
+# Check what happened.  # We need to verify whether any variable was converted in a way we do not want.
+glimpse(df)
+```
+
+## Common exam data problems → safest fixes
+
+| Problem | Safe fix |
+|---|---|
+| Header not on first row | use `skip = ...` in `read_csv()` or `read_csv2()` |
+| Semicolon file | use `read_csv2()` |
+| Decimal comma | use `read_csv2()` |
+| Text placeholders for missing values | use `na = c(...)` |
+| ID column like `id` or `customer_id` | remove with `select(-id)` |
+| Binary target stored as yes/no text | convert to factor with clear levels |
+| Binary target stored as 0/1 | keep numeric for some models or convert to factor for classification summaries |
+| Character predictors | convert to factor with `mutate(across(where(is.character), as.factor))` |
+| Leakage variable | remove before train/test split and explain why |
+| Future-unavailable variable | remove if prediction is for new customers/future observations |
+| `glmnet` with factors | create dummy variables using `model.matrix()` |
+| Distance-based method | standardize predictors before KNN/PCA/SVM/k-means |
+
+---
+
+# Universal wrangling and split templates
+
+## Create or modify columns safely
+
+```{r}
+# Create a binary claim variable.  # This exact type of target engineering appeared in the 2025 insurance task.
+df <- df %>%
+  mutate(claim = if_else(antskad >= 1, "yes", "no")) %>%  # Translate count outcome into binary event indicator.
+  mutate(claim = factor(claim, levels = c("no", "yes")))  # Make the reference class explicit for later models.
+```
+
+```{r}
+# Remove obvious leakage or useless variables.  # BAN404 repeatedly tests whether you can identify unrealistic predictors.
+df <- df %>%
+  select(-id, -antskad, -skadkost)  # Remove identifiers and post-outcome variables that would leak target information.
+```
+
+## Recode factors safely
+
+```{r}
+# Convert selected variables to factors.  # This is common in airline, churn, insurance, and OJ-style datasets.
+df <- df %>%
+  mutate(
+    gender = as.factor(gender),                     # Gender is categorical, not numeric distance information.
+    customer_type = as.factor(customer_type),       # Customer type should be treated as categories.
+    satisfaction = as.factor(satisfaction)          # Binary or multiclass target should be explicit as a factor.
+  )
+```
+
+## Standard 50/50 split
+
+```{r}
+# Set a seed first.  # Fixed seeds are important because BAN404 often gives one directly in the question.
+set.seed(86554354)  # Reproducibility matters for matching your written answer to your output.
+
+# Create row indices for the training set.  # We sample observation numbers, not the data itself.
+idx <- sample(seq_len(nrow(df)), size = floor(nrow(df) / 2))  # Half the observations go to training.
+
+# Build train and test sets.  # This is the standard predictive workflow in many BAN404 tasks.
+train <- df[idx, ]   # Training data is used for fitting and CV.
+test  <- df[-idx, ]  # Test data is held back for honest final evaluation.
+```
+
+## Standard 70/30 split
+
+```{r}
+# Use a 70/30 split when the question does not dictate 50/50 and you want more training signal.  # This is a safe generic fallback.
+set.seed(123)  # Reproducible split.
+idx <- sample(seq_len(nrow(df)), size = floor(0.70 * nrow(df)))  # 70 percent train.
+train <- df[idx, ]  # Fit models here.
+test  <- df[-idx, ] # Evaluate final predictions here.
+```
+
+## Model matrix for `glmnet`
+
+```{r}
+# Build X and y for regularized regression.  # glmnet requires a numeric matrix, so factors must become dummies.
+X_train <- model.matrix(y ~ ., data = train)[, -1]  # model.matrix creates dummy variables and drops the intercept column manually.
+y_train <- train$y                                   # Response stays as a numeric vector for regression.
+
+# Build a test matrix using the same formula.  # We need the same columns at prediction time.
+X_test <- model.matrix(y ~ ., data = test)[, -1]    # Same dummy structure for test data.
+y_test <- test$y                                    # True test response for evaluation.
+```
+
+## When to use full data, training data, test data, or CV
+
+| Situation | Safest BAN404 choice |
+|---|---|
+| "Why are customers dissatisfied?" | training data or all data for explanation |
+| "Predict new customers" | train/test split |
+| "Find optimal lambda/K/threshold" | CV or LOOCV on training data |
+| "Compare models fairly" | same training/test split and same metric |
+| Very small dataset | LOOCV or k-fold CV |
+| Final performance claim | test data |
+
+---
+
+# Metric map
+
+## Regression metrics
+
+| Metric | Use when | What it means | Typical BAN404 use |
+|---|---|---|---|
+| MSE | continuous `y` | average squared prediction error | OLS, ridge, lasso, GAM, trees |
+| RMSE | continuous `y` | square root of MSE, same units as `y` | optional readable supplement |
+| R² | continuous `y` | share of variation explained | 2025 Task 1e |
+| Adjusted R² | OLS model fit comparison | penalizes too many predictors | optional explanatory answer |
+
+```{r}
+# Compute test MSE.  # This is the most common BAN404 regression metric.
+mse_test <- mean((y_test - y_pred)^2)  # Squaring punishes large errors more than small ones.
+
+# Compute RMSE.  # Useful when you want the error back in the original units of y.
+rmse_test <- sqrt(mse_test)  # Easier to interpret than MSE, though less emphasized in BAN404.
+
+# Compute R-squared from fitted values.  # This is useful when the exam directly asks for explained variation.
+r2 <- 1 - sum((y_test - y_pred)^2) / sum((y_test - mean(y_test))^2)  # Standard out-of-sample R² formula.
+```
+
+## Classification metrics
+
+| Metric | Use when | What it means | Typical BAN404 use |
+|---|---|---|---|
+| Confusion matrix | classification | table of true vs predicted classes | every Task 2 classification pipeline |
+| Accuracy | classification | share classified correctly | 2021–2025 |
+| Error rate | classification | 1 - accuracy | same story, just reversed |
+| Sensitivity | costly false negatives | share of positives correctly found | threshold discussion |
+| Specificity | costly false positives | share of negatives correctly found | threshold discussion |
+
+```{r}
+# Build a confusion matrix.  # This is the standard first classification evaluation step in BAN404.
+cm <- table(actual = y_test, predicted = y_pred_class)  # Rows are truth, columns are predictions.
+
+# Compute accuracy.  # Accuracy is the most common summary metric in the old exams.
+accuracy <- sum(diag(cm)) / sum(cm)  # Correct predictions divided by all predictions.
+
+# Compute error rate.  # Sometimes useful if the theory talks about classification error.
+error_rate <- 1 - accuracy  # Lower is better.
+```
+
+## Unsupervised metrics
+
+| Method | Main metric | What to show |
+|---|---|---|
+| PCA | variance explained | scree plot + cumulative explained variance |
+| K-means | within-cluster sum of squares | elbow plot |
+
+---
+
+# High-probability method playbooks
+
+## 1. OLS / linear regression
+
+### What exam wording signals it?
+- "Fit an OLS model"
+- "Use `lm()`"
+- "Predict a continuous variable"
+- "Compare with ridge / lasso / GAM"
+
+### When to use it
+Use OLS when the response is continuous and you want the cleanest baseline model. In BAN404, OLS is often the **starting benchmark** before a more flexible or regularized model.
+
+### Core theory in easy words
+OLS draws the line or hyperplane that makes the residual sum of squares as small as possible.
+
+### Full runnable template
+
+```{r}
+# Fit a multiple linear regression model.  # This is the standard baseline for a continuous response in BAN404.
+ols_fit <- lm(y ~ ., data = train)  # The dot means "use all remaining predictors in train".
+
+# View the coefficient table.  # This helps with interpretation and with deciding whether some variables look weak.
+summary(ols_fit)  # Gives coefficients, standard errors, t-values, p-values, and model fit summaries.
+
+# Predict on the held-out test set.  # Test data gives an honest view of generalization performance.
+y_pred <- predict(ols_fit, newdata = test)  # Use the fitted linear model to predict unseen observations.
+
+# Evaluate with test MSE.  # Continuous responses should usually be scored with MSE in BAN404.
+mse_ols <- mean((test$y - y_pred)^2)  # Smaller MSE means better predictive performance.
+
+# Optional: compute test R-squared.  # Useful when the exam asks for explained variation.
+r2_ols <- 1 - sum((test$y - y_pred)^2) / sum((test$y - mean(test$y))^2)  # Higher is better.
+```
+
+### Typical BAN404 variations
+- If the response is skewed, try `lm(log(y) ~ ., data = train)`.
+- If the question is explanatory, focus more on coefficients and less on squeezing out tiny predictive gains.
+- If the question asks whether OLS is worse than ridge/lasso/GAM, compare **same split + same metric**.
+
+### Common traps
+- Forgetting to remove leakage variables.
+- Using accuracy or confusion matrix for a continuous `y`.
+- Comparing training MSE for one model with test MSE for another.
+
+### Past exam links
+- 2023 Task 1c
+- 2025 Task 1b baseline comparison
+- 2022 Task 2c and 2d
+
+---
+
+## 2. Logistic regression
+
+### What exam wording signals it?
+- "Predict churn / claim / dissatisfaction"
+- "Fit a logistic model"
+- "Convert probabilities to 0/1 predictions"
+- "Use confusion matrix and threshold"
+
+### Core theory in easy words
+Logistic regression predicts the **probability** that an observation belongs to class 1. Then you convert that probability into a class label using a threshold, often 0.5 unless the question suggests otherwise.
+
+### Full runnable template
+
+```{r}
+# Fit logistic regression for a binary outcome.  # family = binomial tells R this is a classification probability model.
+logit_fit <- glm(y ~ ., data = train, family = binomial())  # This is the standard BAN404 logistic workflow.
+
+# Inspect coefficients.  # Signs tell direction and p-values help with explanatory discussion.
+summary(logit_fit)  # Positive coefficient means higher log-odds of class 1, all else equal.
+
+# Predict probabilities on test data.  # Logistic regression naturally gives probabilities first, not class labels.
+pred_prob <- predict(logit_fit, newdata = test, type = "response")  # response returns probabilities between 0 and 1.
+
+# Choose a threshold.  # 0.5 is the default unless the exam asks you to explore another choice.
+threshold <- 0.5  # A lower threshold catches more positives but may create more false positives.
+
+# Convert probabilities to class predictions.  # We now turn probability into the final yes/no answer.
+pred_class <- if_else(pred_prob > threshold, "yes", "no") %>%
+  factor(levels = levels(train$y))  # Matching levels avoids confusion matrix ordering mistakes.
+
+# Evaluate predictions.  # Confusion matrix plus accuracy is the standard BAN404 output.
+cm_logit <- table(actual = test$y, predicted = pred_class)  # Shows true/false positives and negatives.
+acc_logit <- sum(diag(cm_logit)) / sum(cm_logit)            # Share classified correctly.
+```
+
+### Typical BAN404 variations
+- **Explanatory logistic**: keep realistic predictors and discuss directions/significance.
+- **Operational prediction logistic**: remove future-unavailable variables first.
+- **Threshold discussion**: if false negatives are more costly, lower the threshold somewhat.
+
+### Common traps
+- Forgetting `family = binomial()`.
+- Using `predict()` without `type = "response"` and then treating log-odds as probabilities.
+- Leaving leakage variables in when predicting future customers.
+
+### Past exam links
+- 2021 Task 3
+- 2022 Task 1c
+- 2023 Task 2c–d
+- 2024 Task 2d and 2j
+- 2025 Task 2b–c
+
+---
+
+## 3. LOOCV and k-fold CV
+
+### What exam wording signals it?
+- "Find optimal K"
+- "Choose lambda"
+- "Use cross-validation"
+- "Explain what this loop does"
+
+### Core theory in easy words
+CV estimates how well a model generalizes to new data. LOOCV is the extreme version where you leave out one observation at a time.
+
+### Generic LOOCV skeleton
+
+```{r}
+# Define a generic LOOCV function for a tuning parameter.  # This is the classic BAN404 structure from 2024 and 2025.
+loo_model <- function(tune_value, X, y) {                    # tune_value could be lambda, K, threshold, etc.
+  n <- nrow(X)                                               # Number of observations.
+  pred <- numeric(n)                                         # Storage for one prediction per left-out row.
+
+  for (i in seq_len(n)) {                                    # Loop once per observation.
+    X_train <- X[-i, , drop = FALSE]                         # Training predictors: all rows except i.
+    y_train <- y[-i]                                         # Training response: all values except i.
+    X_test  <- X[i, , drop = FALSE]                          # Test predictors: the left-out observation.
+
+    # Replace the next line with the model fit that uses tune_value.  # This is where ridge/KNN/etc. is fitted.
+    fit_i <- lm(y_train ~ ., data = as.data.frame(X_train))  # Placeholder example using OLS.
+
+    # Predict the held-out case.  # LOOCV works by repeating this for every single row.
+    pred[i] <- predict(fit_i, newdata = as.data.frame(X_test))
+  }
+
+  mean((y - pred)^2)                                         # Return LOOCV MSE so smaller is better.
+}
+```
+
+### Generic tuning loop
+
+```{r}
+# Create candidate tuning values.  # The question usually wants the value that minimizes estimated test error.
+param_grid <- seq(0, 1000, length.out = 20)  # Example grid for lambda or another continuous tuning parameter.
+
+# Score every candidate value.  # sapply makes a compact loop over the grid.
+cv_scores <- sapply(param_grid, function(v) loo_model(v, X, y))  # One CV score per candidate.
+
+# Pick the best tuning value.  # Best means smallest error for regression or largest accuracy for classification.
+best_value <- param_grid[which.min(cv_scores)]  # which.min finds the index of the smallest CV error.
+```
+
+### Past exam links
+- 2024 Task 1b
+- 2025 Task 1c
+- 2022 threshold tuning
+- 2021 Task 2c CV choice discussion
+
+---
+
+## 4. Bootstrap
+
+### What exam wording signals it?
+- "Estimate the sampling distribution"
+- "Compute a 95% confidence interval"
+- "Bootstrap the standard error"
+- "Show the result as a histogram"
+
+### Core theory in easy words
+The bootstrap pretends your sample is the population. It repeatedly samples **with replacement** and recalculates the statistic each time.
+
+### Bootstrap a variance or mean
+
+```{r}
+# Set bootstrap parameters.  # B should be fairly large so the estimated sampling distribution is stable.
+set.seed(1)                 # Makes the bootstrap reproducible in the exam write-up.
+B <- 1000                   # Number of bootstrap resamples.
+n <- length(y)              # Original sample size.
+boot_stat <- numeric(B)     # Storage for one bootstrap statistic per iteration.
+
+# Run the bootstrap loop.  # The tell is sample(..., replace = TRUE).
+for (b in seq_len(B)) {     # Repeat B times.
+  y_boot <- sample(y, size = n, replace = TRUE)  # Draw a fake sample with replacement.
+  boot_stat[b] <- var(y_boot)                    # Replace var() with mean(), coef(), or another statistic if needed.
+}
+
+# Plot the bootstrap distribution.  # BAN404 has explicitly asked for histograms of bootstrap results.
+hist(boot_stat, breaks = 40)                     # Visualizes the estimated sampling distribution.
+
+# Compute two common 95 percent confidence intervals.  # Use both when the exam asks you to compare methods.
+ci_percentile <- quantile(boot_stat, c(0.025, 0.975))                    # Empirical percentile interval.
+ci_normal <- mean(boot_stat) + c(-1, 1) * 1.96 * sd(boot_stat)           # Normal approximation interval.
+```
+
+### Bootstrap a regression coefficient
+
+```{r}
+# Bootstrap a slope coefficient by resampling rows.  # We must resample whole rows so x and y stay linked.
+set.seed(1)                                   # Reproducible bootstrap.
+B <- 1000                                     # Number of bootstrap samples.
+coef_boot <- numeric(B)                       # Storage for the bootstrapped slope estimates.
+
+for (b in seq_len(B)) {                       # Repeat B times.
+  idx <- sample(seq_len(nrow(df)), replace = TRUE)  # Resample row indices, not single columns.
+  fake_data <- df[idx, ]                           # Build a bootstrap dataset.
+  fit_b <- lm(y ~ x, data = fake_data)             # Refit the regression on the bootstrap sample.
+  coef_boot[b] <- coef(fit_b)[2]                   # Save the slope coefficient of interest.
+}
+
+boot_se <- sd(coef_boot)                      # Bootstrap standard error is the standard deviation of the stored coefficients.
+```
+
+### Past exam links
+- 2021 Task 1a–e
+- 2023 Task 2b
+- 2025 Task 1d
+
+---
+
+## 5. Ridge regression
+
+### What signals it?
+- `sum((y - X%*%b1)^2) + la * sum(b1^2)`
+- custom optimizer with `nlminb`
+- question about demeaning and lambda
+
+### Core theory in easy words
+Ridge is OLS plus a penalty on large coefficients. It shrinks coefficients toward zero to reduce variance.
+
+### BAN404-style custom ridge template
+
+```{r}
+# Define the ridge objective function.  # This is the exact 2025-style method tell.
+ridge_objective <- function(b1, X, y, la) {                     # b1 = slope coefficients, la = lambda penalty.
+  sum((y - X %*% b1)^2) + la * sum(b1^2)                       # RSS plus L2 penalty.
+}
+
+# Define a ridge fitting helper.  # Demeaning isolates the intercept so the penalty does not shrink it.
+g_ridge <- function(X, y, la) {                                # Inputs are predictor matrix, response vector, lambda.
+  q <- ncol(X)                                                 # Number of predictors.
+  b0 <- mean(y)                                                # Intercept becomes mean(y) after centering.
+  yd <- y - b0                                                 # Center the response.
+  Xd <- X                                                      # Copy X so we can center every predictor column.
+  for (k in seq_len(q)) Xd[, k] <- X[, k] - mean(X[, k])       # Demean predictors column by column.
+  b1start <- rep(0, q)                                         # Start optimization at zero coefficients.
+  opt <- nlminb(b1start, ridge_objective, X = Xd, y = yd, la = la)  # Numerically minimize the ridge criterion.
+  opt$par                                                      # Return the estimated slope coefficients.
+}
+
+# Compare OLS, ridge with lambda = 0, and ridge with strong shrinkage.  # This was central in 2025 Task 1b.
+b_ols <- coef(lm(y ~ X))[-1]                  # OLS slopes only.
+b_ridge0 <- g_ridge(X, y, la = 0)             # Ridge with zero penalty should match OLS.
+b_ridge1000 <- g_ridge(X, y, la = 1000)       # Strong penalty shrinks coefficients toward zero.
+```
+
+### Common BAN404 written point
+When `lambda = 0`, ridge becomes OLS. When `lambda` becomes large, coefficients are pulled toward zero, which increases bias a bit but often reduces variance a lot.
+
+### Past exam links
+- 2025 Task 1a–c
+
+---
+
+## 6. LASSO
+
+### What signals it?
+- absolute value penalty
+- `glmnet`
+- coefficient selection/shrinkage to zero
+
+### Core theory in easy words
+LASSO is like ridge, but the penalty is based on **absolute values**. This means it can set some coefficients exactly to zero and therefore perform variable selection.
+
+### Full runnable template
+
+```{r}
+# Build design matrices first.  # glmnet cannot use factors directly, so model.matrix creates dummies.
+X_train <- model.matrix(y ~ ., data = train)[, -1]          # Numeric matrix of predictors with dummy-coded factors.
+y_train <- train$y                                          # Response vector.
+X_test <- model.matrix(y ~ ., data = test)[, -1]            # Matching predictor matrix for test data.
+
+# Tune lambda with cross-validation.  # alpha = 1 means LASSO rather than ridge.
+cv_lasso <- cv.glmnet(X_train, y_train, alpha = 1, standardize = TRUE)  # Cross-validated LASSO fit.
+
+# Fit final LASSO at the best lambda.  # lambda.min is the tuning value with the lowest CV error.
+lasso_fit <- glmnet(X_train, y_train, alpha = 1, lambda = cv_lasso$lambda.min, standardize = TRUE)  # Final tuned model.
+
+# Predict on test data.  # We evaluate it the same way as other regression models.
+y_pred_lasso <- as.numeric(predict(lasso_fit, newx = X_test))  # Convert matrix output to plain numeric vector.
+
+# Score with MSE.  # Same metric as OLS or ridge for fair comparison.
+mse_lasso <- mean((test$y - y_pred_lasso)^2)  # Smaller is better.
+
+# Inspect coefficients.  # Exact zeros are the key LASSO signature.
+coef(lasso_fit)  # Variables with zero coefficients are effectively removed.
+```
+
+### Past exam links
+- 2023 Task 1d–e
+
+---
+
+## 7. GAM / smoothing splines / backfitting
+
+### What signals it?
+- "There might be non-linear relationships"
+- `s(x)`
+- `smooth.spline`
+- backfitting explanation
+
+### Core theory in easy words
+A GAM lets some predictors stay linear while other predictors are allowed to bend smoothly. It is a good upgrade when the OLS straight-line assumption is too rigid.
+
+### Full runnable template
+
+```{r}
+# Plot y against candidate predictors first.  # BAN404 often expects you to identify nonlinearity visually.
+train %>%
+  ggplot(aes(x = x1, y = y)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(se = FALSE, color = "red")  # Curvature in the smooth suggests a non-linear relationship.
+
+# Fit the OLS baseline.  # We need a benchmark before claiming GAM improves anything.
+ols_fit <- lm(y ~ ., data = train)  # Linear benchmark.
+mse_ols <- mean(residuals(ols_fit)^2)  # In-sample MSE for baseline comparison.
+
+# Fit a GAM with one smooth term.  # Replace x1 with whichever variable looks clearly non-linear.
+gam_fit <- gam(y ~ s(x1) + x2 + x3, data = train)  # x1 is modeled flexibly, others stay linear here.
+mse_gam <- mean(residuals(gam_fit)^2)              # In-sample MSE for the GAM.
+
+# Compute explained variation from MSE if asked.  # This mirrors the 2025 Task 1e style calculation.
+var_y <- mean((train$y - mean(train$y))^2)         # Total variation benchmark.
+r2_ols <- 1 - mse_ols / var_y                      # Share explained by OLS.
+r2_gam <- 1 - mse_gam / var_y                      # Share explained by GAM.
+
+# Plot the smooth term.  # This gives a visual interpretation of the non-linear effect.
+plot(gam_fit, se = TRUE)                           # Shows the estimated smooth relationship.
+```
+
+### Backfitting in plain English
+Backfitting updates one smooth term at a time by fitting it to the part of `y` not currently explained by the other smooth terms. Then it cycles until the updates stop changing much.
+
+### Past exam links
+- 2021 Task 2d–e
+- 2022 Task 2e–f
+- 2024 Task 1e theory
+- 2025 Task 1e
+
+---
+
+## 8. KNN / local regression
+
+### What signals it?
+- distance calculation `d <- abs(x - x0)`
+- `order(d)[1:K]`
+- local fit using nearest neighbors
+
+### Core theory in easy words
+KNN/local regression predicts a point using the observations closest to it. Small `K` means very flexible; large `K` means smoother but more biased.
+
+### One-predictor local regression template
+
+```{r}
+# Define the BAN404 2024-style local regression function.  # This is KNN-like because it uses nearest neighbors before fitting locally.
+f_local <- function(x0, x, y, K = 3) {                 # x0 is the point we want to predict at.
+  d <- abs(x - x0)                                     # Distance from every observed x to the target x0.
+  o <- order(d)[1:K]                                   # Indices of the K nearest observations.
+  local_df <- tibble(x = x[o], y = y[o])               # Small local dataset of the nearest neighbors.
+  reg <- lm(y ~ x, data = local_df)                    # Local linear regression on only those neighbors.
+  predict(reg, newdata = tibble(x = x0))               # Predict the response at x0.
+}
+```
+
+### Tune `K` with LOOCV
+
+```{r}
+# Define LOOCV for the local regression rule.  # 2024 asked for optimal K using leave-one-out CV.
+loo_local <- function(K, x, y) {
+  pred <- numeric(length(y))                           # One held-out prediction per observation.
+  for (i in seq_along(y)) {
+    pred[i] <- f_local(x0 = x[i], x = x[-i], y = y[-i], K = K)  # Leave out i, fit locally on the rest, predict i.
+  }
+  mean((y - pred)^2)                                   # Average left-out squared error.
+}
+
+K_grid <- 2:10                                         # Candidate neighborhood sizes.
+cv_mse <- sapply(K_grid, function(k) loo_local(k, x, y))  # CV score for each K.
+K_best <- K_grid[which.min(cv_mse)]                    # Best K minimizes LOOCV MSE.
+```
+
+### Multi-predictor note
+When there are several predictors, replace the 1D absolute distance with a multivariate distance such as Euclidean distance. Standardization becomes important because large-scale variables otherwise dominate the distance.
+
+### Past exam links
+- 2024 Task 1a–e
+
+---
+
+## 9. Regression tree
+
+### What signals it?
+- continuous target
+- tree plot / branch interpretation
+- compare to OLS or RF using MSE
+
+### Full runnable template
+
+```{r}
+# Fit a regression tree.  # Trees split the predictor space into boxes and predict the mean inside each box.
+tree_reg <- tree(y ~ ., data = train)  # Continuous response automatically means regression tree.
+
+# Plot the tree.  # BAN404 often expects a plot plus interpretation of a branch.
+plot(tree_reg)                         # Draws the split structure.
+text(tree_reg, pretty = 0)             # Prints split labels and terminal node predictions.
+
+# Predict on test data.  # Same honest evaluation logic as OLS.
+y_pred_tree <- predict(tree_reg, newdata = test)  # Continuous predictions from the tree.
+
+# Evaluate with MSE.  # Continuous response means regression metric.
+mse_tree <- mean((test$y - y_pred_tree)^2)        # Lower is better.
+```
+
+### Past exam links
+- 2023 Task 1f–g
+
+---
+
+## 10. Classification tree
+
+### What signals it?
+- binary/categorical target
+- plot and interpret a branch
+- use threshold or direct class prediction
+
+### Full runnable template
+
+```{r}
+# Fit a classification tree.  # This is the tree analogue of logistic regression for class outcomes.
+tree_cls <- tree(y ~ ., data = train)  # y should be a factor for a clean classification workflow.
+
+# Plot and label the tree.  # Exam answers look stronger when you show the rules visually.
+plot(tree_cls)                         # Tree structure.
+text(tree_cls, pretty = 0)             # Split labels and terminal nodes.
+
+# Get predicted probabilities.  # Many BAN404 tasks want class predictions based on a threshold.
+pred_prob_tree <- predict(tree_cls, newdata = test)  # For classification trees this is usually a probability matrix.
+
+# Convert probabilities to class labels.  # Use the probability of the positive class.
+pred_class_tree <- if_else(pred_prob_tree[, 2] > 0.5, levels(train$y)[2], levels(train$y)[1]) %>%
+  factor(levels = levels(train$y))
+
+# Evaluate the classification tree.  # Same metric style as logistic regression.
+cm_tree <- table(actual = test$y, predicted = pred_class_tree)
+acc_tree <- sum(diag(cm_tree)) / sum(cm_tree)
+```
+
+### Past exam links
+- 2022 Task 1d–f
+- 2024 Task 2e
+
+---
+
+## 11. Bagging
+
+### Core theory in easy words
+Bagging means fitting many trees on bootstrap samples and averaging them. This reduces variance compared with a single unstable tree.
+
+### Safe bagging approximation template
+
+```{r}
+# Approximate bagging with randomForest by letting mtry equal all predictors.  # This is the standard trick in R.
+p <- ncol(train) - 1                                          # Number of predictors, excluding the response.
+bag_fit <- randomForest(y ~ ., data = train, mtry = p, ntree = 200)  # mtry = p means bagging rather than classic RF.
+
+# Predict and evaluate.  # Use MSE for regression or confusion matrix/accuracy for classification.
+pred_bag <- predict(bag_fit, newdata = test)                  # Averaged prediction across bootstrap trees.
+```
+
+### Past exam links
+- 2022 Task 2g–h
+- conceptually related in later random forest tasks
+
+---
+
+## 12. Random forest
+
+### What signals it?
+- explicit random forest request
+- variable importance plot
+- compare with logistic/tree/OLS
+
+### Core theory in easy words
+Random forest is like bagging plus extra randomness in predictor selection. This decorrelates the trees and usually improves prediction further.
+
+### Classification template
+
+```{r}
+# Fit random forest for classification.  # RF is a high-frequency BAN404 improvement model.
+rf_cls <- randomForest(y ~ ., data = train, ntree = 300)  # ntree controls how many trees are averaged.
+
+# Predict classes on test data.  # randomForest handles the voting internally.
+pred_rf_cls <- predict(rf_cls, newdata = test)            # Default for factor y is predicted class.
+
+# Evaluate.  # Same classification scorecard as logistic and trees.
+cm_rf <- table(actual = test$y, predicted = pred_rf_cls)
+acc_rf <- sum(diag(cm_rf)) / sum(cm_rf)
+
+# Inspect variable importance.  # BAN404 often asks for plot plus interpretation.
+varImpPlot(rf_cls)                                        # Visual importance summary.
+importance(rf_cls)                                        # Numeric importance values.
+```
+
+### Regression template
+
+```{r}
+# Fit random forest for regression.  # Same idea, but continuous y means averaging numeric predictions.
+rf_reg <- randomForest(y ~ ., data = train, ntree = 300)  # RF regression often captures nonlinearities and interactions well.
+
+# Predict on test data.  # Honest out-of-sample comparison.
+y_pred_rf <- predict(rf_reg, newdata = test)
+
+# Evaluate with MSE.  # Same regression metric as other continuous-response models.
+mse_rf <- mean((test$y - y_pred_rf)^2)
+```
+
+### Past exam links
+- 2023 Task 1h–i and 2e
+- 2024 Task 2f and 2k
+- 2025 Task 2d
+
+---
+
+## 13. Boosting
+
+### What signals it?
+- "boosted tree"
+- `gbm`
+- compare with random forest or logistic
+
+### Core theory in easy words
+Boosting builds trees **sequentially**, where each new tree tries to correct the mistakes of the earlier trees. Small learning rates make it learn more cautiously.
+
+### Classification template
+
+```{r}
+# Convert y to 0/1 if gbm needs numeric Bernoulli coding.  # Some implementations work more smoothly with numeric targets.
+train_boost <- train %>% mutate(y_num = if_else(y == levels(y)[2], 1, 0))  # Positive class coded as 1.
+test_boost  <- test  %>% mutate(y_num = if_else(y == levels(y)[2], 1, 0))  # Same coding for evaluation.
+
+# Fit a boosted classification model.  # distribution = "bernoulli" means binary classification.
+boost_fit <- gbm(
+  y_num ~ . - y,                  # Use predictors to predict the numeric class target.
+  data = train_boost,             # Training data only.
+  distribution = "bernoulli",    # Binary outcome setup.
+  n.trees = 1000,                 # Number of boosting steps.
+  interaction.depth = 2,          # Tree depth per boosting step.
+  shrinkage = 0.01,               # Learning rate; smaller means slower, often stabler learning.
+  verbose = FALSE                 # Cleaner exam output.
+)
+
+# Predict test probabilities.  # Boosting naturally gives probabilities for Bernoulli tasks.
+pred_prob_boost <- predict(boost_fit, newdata = test_boost, n.trees = 1000, type = "response")
+
+# Convert to classes at threshold 0.5.  # Same final classification logic as logistic regression.
+pred_class_boost <- if_else(pred_prob_boost > 0.5, levels(train$y)[2], levels(train$y)[1]) %>%
+  factor(levels = levels(train$y))
+
+# Evaluate predictions.  # Confusion matrix plus accuracy remains the safe BAN404 choice.
+cm_boost <- table(actual = test$y, predicted = pred_class_boost)
+acc_boost <- sum(diag(cm_boost)) / sum(cm_boost)
+```
+
+### Regression template
+
+```{r}
+# Fit a boosted regression tree.  # Gaussian distribution is the usual choice for continuous y.
+boost_reg <- gbm(
+  y ~ .,                         # Predict continuous y from the predictors.
+  data = train,                  # Training data only.
+  distribution = "gaussian",    # Continuous-response setup.
+  n.trees = 1000,                # Number of boosting trees.
+  interaction.depth = 2,         # Controls how much interaction structure each tree can model.
+  shrinkage = 0.01,              # Small learning rate helps regularize the sequential fitting.
+  verbose = FALSE                # Cleaner output.
+)
+
+# Predict on test data.  # Use the same number of trees chosen in the fitted model if not separately tuned.
+y_pred_boost <- predict(boost_reg, newdata = test, n.trees = 1000)
+
+# Evaluate with MSE.  # Same metric as other regression models.
+mse_boost <- mean((test$y - y_pred_boost)^2)
+```
+
+### Past exam links
+- 2021 Task 3d
+- 2025 Task 2e
+
+---
+
+# Lower-probability fallback sections
+
+## LDA / QDA
+
+Use when the question explicitly mentions discriminant analysis or when theory compares logistic regression with Gaussian class models.
+
+```{r}
+# Fit LDA.  # LDA assumes class-conditional normality with a shared covariance matrix.
+lda_fit <- lda(y ~ ., data = train)  # MASS::lda model.
+
+# Predict on test data.  # Returns classes and posterior probabilities.
+lda_pred <- predict(lda_fit, newdata = test)
+cm_lda <- table(actual = test$y, predicted = lda_pred$class)
+acc_lda <- sum(diag(cm_lda)) / sum(cm_lda)
+```
+
+## SVM
+
+Use if the question explicitly asks for support vector machines or tuning `cost` / `gamma`. Standardization is usually important.
+
+```{r}
+# Fit an SVM classifier.  # Radial kernel adds nonlinear flexibility.
+svm_fit <- svm(y ~ ., data = train, kernel = "radial", cost = 1, gamma = 0.1)  # e1071 workflow.
+pred_svm <- predict(svm_fit, newdata = test)
+cm_svm <- table(actual = test$y, predicted = pred_svm)
+acc_svm <- sum(diag(cm_svm)) / sum(cm_svm)
+```
+
+## PCA / PCR
+
+Use if the question asks to reduce many correlated predictors into a smaller number of components. Standardization is important when variable scales differ.
+
+```{r}
+# Standardize predictors before PCA.  # PCA is scale-sensitive, so large-scale variables otherwise dominate the components.
+X_scaled <- scale(select(df, -y))  # Remove the response before unsupervised dimension reduction.
+
+# Run PCA.  # prcomp is the standard R function.
+pca_fit <- prcomp(X_scaled, center = TRUE, scale. = TRUE)
+
+# Inspect explained variance.  # Scree plots help decide how many components to keep.
+summary(pca_fit)
+plot(pca_fit, type = "l")
+```
+
+## K-means
+
+Use only if the question asks for clustering. Standardization is usually important.
+
+```{r}
+# Standardize variables first.  # Distance-based clustering is distorted by unequal scales.
+X_scaled <- scale(df)
+
+# Fit k-means with a chosen number of clusters.  # nstart > 1 reduces bad random starts.
+km_fit <- kmeans(X_scaled, centers = 3, nstart = 20)
+
+# Inspect within-cluster sum of squares.  # Helps when drawing an elbow plot over several K values.
+km_fit$tot.withinss
+```
+
+---
+
+# Question wording → action map
+
+| If the exam says... | You should probably do... |
+|---|---|
+| "Explain what the following function is doing" | identify the tell, name the method, explain each line in plain English |
+| "Find optimal lambda / K / threshold" | build a CV or LOOCV loop |
+| "Predict new customers" | remove leakage/future-unavailable variables, split train/test, evaluate on test |
+| "Which variables are associated with y?" | do EDA + fit interpretable model |
+| "Can you improve predictions?" | compare baseline with flexible or ensemble model using same metric |
+| "Interpret a branch" | describe the split rule and terminal prediction/class |
+| "Show a 95% confidence interval" | bootstrap and report percentile and/or normal CI |
+| "Why remove variable X?" | explain ID, leakage, or unrealistic future availability |
+| "Find non-linear relationships" | scatterplots + GAM/smooth terms |
+| "Compare model fit" | use same split and same metric |
+
+---
+
+# Written answer templates
+
+## Why ridge differs from OLS
+
+> The ridge model differs from OLS because it adds an L2 penalty, `lambda * sum(beta_j^2)`, to the residual sum of squares. When `lambda = 0`, ridge reduces to OLS. When `lambda` becomes larger, the coefficients are shrunk toward zero, which increases bias slightly but often reduces variance and improves generalization.
+
+## Why demeaning is needed in BAN404-style ridge
+
+> Demeaning is used so the intercept is handled separately and is not penalized. After centering `y` and each column of `X`, the intercept is simply the mean of `y`, while the optimization only needs to estimate the slope coefficients.
+
+## Why train/test is used
+
+> Because the goal is prediction for new observations, the model should be evaluated on unseen test data rather than on the training data it was fitted on. Training performance is usually too optimistic.
+
+## Why CV is used
+
+> Cross-validation is used to estimate test error while selecting a tuning parameter such as `lambda`, `K`, or a classification threshold. It gives a more honest basis for model tuning than training error alone.
+
+## Why a variable is removed
+
+> I removed this variable because it would not realistically be available at prediction time / it directly contains information about the outcome / it is only an identifier and has no stable predictive meaning.
+
+## Why GAM helps
+
+> A GAM helps when the relationship between a predictor and the response is not well approximated by a straight line. By replacing a linear term with a smooth function, the model can capture systematic curvature and often reduce MSE.
+
+## How to interpret variable importance in random forest
+
+> The variable importance plot shows which predictors contribute most to reducing prediction error or node impurity across the forest. A higher importance value means the model relied more on that variable when building strong predictive trees.
+
+---
+
+# Mini exam-day checklist
+
+## Before coding
+- Read the task once for **goal** and once for **data restrictions**.
+- Circle the response variable.
+- Identify whether the task is explanatory, predictive, or tuning-focused.
+- Check whether the exam gives you a seed.
+
+## Before modeling
+- Load data correctly.
+- Check `glimpse()`.
+- Remove ID columns.
+- Remove leakage or future-unavailable variables.
+- Recode factors if needed.
+- Split data if prediction is the goal.
+
+## Before final answer
+- Did I use the correct metric?  
+- Did I evaluate on the correct data?  
+- Did I compare models fairly?  
+- Did I explain *why* the method was appropriate?  
+- Did I write a short plain-language interpretation?
+
+---
+
+# Appendix A — Maximum-output ChatGPT prompt
+
+See `/home/runner/work/BAN404/BAN404/prompts/master_prompt_chatgpt_max.md`.
+
+# Appendix B — Maximum-output Claude prompt
+
+See `/home/runner/work/BAN404/BAN404/prompts/master_prompt_claude_max.md`.
