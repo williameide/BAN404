@@ -109,27 +109,27 @@ tibble(boot_stat = replicate(2000, mean(sample(cars_reg$mpg, replace = TRUE)))) 
 # 3. Ridge-style LOOCV example — full manual structure
 # ============================================================================
 
-f_ridge <- function(b1, X, y, la) {
-  sum((y - X %*% b1)^2) + la * sum(b1^2)                                    # RSS + lambda * L2 penalty
+f_ridge <- function(b1, X, y, lambda) {
+  sum((y - X %*% b1)^2) + lambda * sum(b1^2)                                # RSS + lambda * L2 penalty
 }
 
-g_ridge <- function(X, y, la) {
+g_ridge <- function(X, y, lambda) {
   q <- ncol(X)                                                              # number of predictors
   y_centered <- y - mean(y)                                                 # remove intercept from y before optimization
   X_centered <- scale(X, center = TRUE, scale = FALSE)                      # demean columns but do not scale by sd
   start_vals <- rep(0, q)                                                   # optimization starts at zero coefficients
-  opt <- nlminb(start = start_vals, objective = f_ridge, X = X_centered, y = y_centered, la = la)
+  opt <- nlminb(start = start_vals, objective = f_ridge, X = X_centered, y = y_centered, lambda = lambda)
   opt$par                                                                   # return the minimizing coefficient vector
 }
 
-loo_ridge <- function(la, X, y) {
+loo_ridge <- function(lambda, X, y) {
   n <- nrow(X)                                                              # one loop per observation
   preds <- numeric(n)                                                       # store prediction for each left-out row
   y_centered <- y - mean(y)                                                 # target used in the test error formula
   X_centered <- scale(X, center = TRUE, scale = FALSE)                      # test rows must be centered in the same spirit
 
   for (i in seq_len(n)) {
-    b1 <- g_ridge(X = X[-i, , drop = FALSE], y = y[-i], la = la)            # fit ridge on n - 1 observations
+    b1 <- g_ridge(X = X[-i, , drop = FALSE], y = y[-i], lambda = lambda)            # fit ridge on n - 1 observations
     preds[i] <- X_centered[i, ] %*% b1                                      # predict the left-out row
   }
 

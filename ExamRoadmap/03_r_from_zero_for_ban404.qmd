@@ -1,5 +1,5 @@
 ---
-title: "BAN404 Practical Cheatsheet — Tidyverse First"
+title: "BAN404 Exam Foundation — Practical Cheatsheet in Tidyverse"
 author: "BAN404 Self-Study"
 format:
   html:

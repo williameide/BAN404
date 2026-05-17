@@ -8,11 +8,11 @@
 
 | File | Use it for | Open it when |
 |---|---|---|
-| `/home/runner/work/BAN404/BAN404/ExamRoadmap/01_curriculum_exam_map.md` | See what has been tested before and what is most likely now | When deciding what to prioritize today |
-| `/home/runner/work/BAN404/BAN404/ExamRoadmap/03_r_from_zero_for_ban404.qmd` | Practical tidyverse-first code foundation, EDA flow, plots, and interpretation help | When you need runnable starter code and reminders |
-| `/home/runner/work/BAN404/BAN404/ExamRoadmap/snippets/ban404_core_snippets.R` | Full runnable mini-examples for common BAN404 methods | When you want copy-adjust-run code |
-| `/home/runner/work/BAN404/BAN404/ExamRoadmap/templates/task2_exam_template.qmd` | Step-by-step Task 2 answer template for the actual exam | Open first when Task 2 starts |
-| `/home/runner/work/BAN404/BAN404/Previous Exam/R_exam_compendium_2026_retake.qmd` | Worked previous exams that should be turned into your fastest reference source | When practicing likely exam tasks |
+| `ExamRoadmap/01_curriculum_exam_map.md` | See what has been tested before and what is most likely now | When deciding what to prioritize today |
+| `ExamRoadmap/03_r_from_zero_for_ban404.qmd` | Practical tidyverse-first code foundation, EDA flow, plots, and interpretation help | When you need runnable starter code and reminders |
+| `ExamRoadmap/snippets/ban404_core_snippets.R` | Full runnable mini-examples for common BAN404 methods | When you want copy-adjust-run code |
+| `ExamRoadmap/templates/task2_exam_template.qmd` | Step-by-step Task 2 answer template for the actual exam | Open first when Task 2 starts |
+| `Previous Exam/R_exam_compendium_2026_retake.qmd` | Worked previous exams that should be turned into your fastest reference source | When practicing likely exam tasks |
 
 ---
 
@@ -40,19 +40,19 @@
 ## Which file to open for each need
 
 ### If you need to understand what plot to use
-Open: `/home/runner/work/BAN404/BAN404/ExamRoadmap/03_r_from_zero_for_ban404.qmd`
+Open: `ExamRoadmap/03_r_from_zero_for_ban404.qmd`
 
 ### If you need runnable code you can copy and adjust
-Open: `/home/runner/work/BAN404/BAN404/ExamRoadmap/snippets/ban404_core_snippets.R`
+Open: `ExamRoadmap/snippets/ban404_core_snippets.R`
 
 ### If you need a ready structure for Task 2
-Open: `/home/runner/work/BAN404/BAN404/ExamRoadmap/templates/task2_exam_template.qmd`
+Open: `ExamRoadmap/templates/task2_exam_template.qmd`
 
 ### If you need to see how similar questions were solved before
-Open: `/home/runner/work/BAN404/BAN404/Previous Exam/R_exam_compendium_2026_retake.qmd`
+Open: `Previous Exam/R_exam_compendium_2026_retake.qmd`
 
 ### If you need to decide what topics are most likely
-Open: `/home/runner/work/BAN404/BAN404/ExamRoadmap/01_curriculum_exam_map.md`
+Open: `ExamRoadmap/01_curriculum_exam_map.md`
 
 ---
 
@@ -81,9 +81,9 @@ Open: `/home/runner/work/BAN404/BAN404/ExamRoadmap/01_curriculum_exam_map.md`
 
 | Year | Main dataset |
 |---|---|
-| 2025 | `/home/runner/work/BAN404/BAN404/Previous Exam/2025/data_task1.csv` and `insuranceData::dataOhlsson` |
-| 2024 | `/home/runner/work/BAN404/BAN404/Previous Exam/2024/airline.csv` |
-| 2023 | `/home/runner/work/BAN404/BAN404/Previous Exam/2023/Churn.csv` |
+| 2025 | `Previous Exam/2025/data_task1.csv` and `insuranceData::dataOhlsson` |
+| 2024 | `Previous Exam/2024/airline.csv` |
+| 2023 | `Previous Exam/2023/Churn.csv` |
 | 2022 | Package datasets / exam-provided context |
 | 2021 | Package datasets / exam-provided context |
 

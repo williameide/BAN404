@@ -9,9 +9,9 @@ format:
     number-sections: true
 execute:
   echo: true
-  eval: true
   warning: false
   message: false
+  eval: true
 ---
 
 # How to use this template during the exam
@@ -41,6 +41,7 @@ file_delimiter <- ","                                                      # cha
 
 target_var     <- "[REPLACE_WITH_TARGET]"                                   # the variable you want to predict
 positive_class <- "[REPLACE_WITH_POSITIVE_CLASS]"                           # e.g. "yes", "1", "claim", "satisfied"
+negative_class <- "[REPLACE_WITH_NEGATIVE_CLASS]"                           # make the opposite class explicit to avoid guessing later
 
 factor_vars    <- c("[REPLACE_FACTOR_1]", "[REPLACE_FACTOR_2]")            # list every categorical variable you want as a factor
 id_vars        <- c("[REPLACE_ID_IF_ANY]")                                  # IDs usually add no predictive value
@@ -256,10 +257,9 @@ If a coefficient is positive, the predictor increases the log-odds of the positi
 prob_log <- predict(log_mod, newdata = test_data, type = "response")        # predicted probability of the positive class
 
 threshold <- 0.50                                                            # start here; lower it if the positive class is rare
-pred_log <- if_else(prob_log >= threshold, positive_class,                   # convert probabilities into class labels
-                    setdiff(levels(factor(train_data[[target_var]])), positive_class)[1])
+pred_log <- if_else(prob_log >= threshold, positive_class, negative_class)   # convert probabilities into class labels using explicit class names
 
-pred_log <- factor(pred_log, levels = levels(factor(train_data[[target_var]])))
+pred_log <- factor(pred_log, levels = c(negative_class, positive_class))     # fix the class order so the confusion matrix stays readable
 actual_y <- factor(test_data[[target_var]], levels = levels(pred_log))       # align levels before building the confusion matrix
 
 cm_log <- table(Actual = actual_y, Predicted = pred_log)
@@ -273,8 +273,7 @@ sum(diag(cm_log)) / sum(cm_log)                                              # o
 ```{r threshold-scan}
 threshold_tbl <- tibble(threshold = seq(0.05, 0.95, by = 0.05)) |>
   mutate(
-    pred = map(threshold, ~ if_else(prob_log >= .x, positive_class,
-                                    setdiff(levels(factor(train_data[[target_var]])), positive_class)[1])),
+    pred = map(threshold, ~ if_else(prob_log >= .x, positive_class, negative_class)),
     accuracy = map_dbl(pred, ~ mean(factor(.x, levels = levels(actual_y)) == actual_y))
   )
 
@@ -289,11 +288,14 @@ If the positive class is rare and you care more about catching positives than ab
 # 7. Random forest comparison
 
 ```{r random-forest}
+rf_formula <- as.formula("[REPLACE_TARGET] ~ [REPLACE_PREDICTORS]")         # define the formula once so you can inspect or reuse it easily
+rf_predictor_count <- length(attr(terms(rf_formula), "term.labels"))        # count the predictors named in the formula, not raw data columns
+
 rf_mod <- randomForest(
-  formula = as.formula("[REPLACE_TARGET] ~ [REPLACE_PREDICTORS]"),          # use the same response and a reasonable predictor set
+  formula = rf_formula,                                                      # use the same response and a reasonable predictor set
   data = train_data,
   ntree = 500,                                                               # many trees gives a more stable forest
-  mtry = max(1, floor(sqrt(ncol(train_data) - 1))),                          # common default for classification
+  mtry = max(1, floor(sqrt(rf_predictor_count))),                            # use the number of predictors in the formula for the mtry default
   importance = TRUE
 )
 
