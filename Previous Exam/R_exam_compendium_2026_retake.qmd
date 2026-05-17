@@ -37,7 +37,7 @@ This file is meant to be the **one big safety net** for BAN404. It is written fo
    - "Find optimal K / lambda / threshold" → use CV or LOOCV.
 
 3. **Pick the correct evaluation metric**  
-   - Continuous `y` → usually **MSE**, sometimes **R²**.  
+   - Continuous `y` → usually **MSE**, sometimes **R-squared**.  
    - Binary/categorical `y` → usually **confusion matrix + accuracy**, sometimes threshold discussion.  
    - Unsupervised → **variance explained**, **scree plot**, or **elbow plot**.
 
@@ -69,7 +69,7 @@ This file is meant to be the **one big safety net** for BAN404. It is written fo
 | `X[-i, ]` or `for(i in 1:n)` | LOOCV | `lambda`, `K`, threshold | CV MSE / CV accuracy | 2024, 2025 |
 | `sample(..., replace = TRUE)` | Bootstrap or bagging | `B` sometimes | CI / SE / accuracy / MSE | 2021, 2023, 2025 |
 | `order(d)[1:K]` | KNN / local regression | `K` | LOOCV MSE / accuracy | 2024 |
-| `s(x)` or `smooth.spline(...)` | GAM / smoothing spline | degrees of freedom / smoothness | MSE / R² | 2021, 2022, 2025 |
+| `s(x)` or `smooth.spline(...)` | GAM / smoothing spline | degrees of freedom / smoothness | MSE / R-squared | 2021, 2022, 2025 |
 | `glm(..., family = binomial)` | Logistic regression | threshold | confusion matrix / accuracy | 2021–2025 |
 | `tree(...)` | Regression/classification tree | tree size / pruning | MSE or accuracy | 2022, 2023, 2024 |
 | `randomForest(...)` | Random forest / bagging approximation | `mtry`, `ntree` | MSE / accuracy / variable importance | 2022–2025 |
@@ -262,8 +262,8 @@ y_test <- test$y                                    # True test response for eva
 |---|---|---|---|
 | MSE | continuous `y` | average squared prediction error | OLS, ridge, lasso, GAM, trees |
 | RMSE | continuous `y` | square root of MSE, same units as `y` | optional readable supplement |
-| R² | continuous `y` | share of variation explained | 2025 Task 1e |
-| Adjusted R² | OLS model fit comparison | penalizes too many predictors | optional explanatory answer |
+| R-squared | continuous `y` | share of variation explained | 2025 Task 1e |
+| Adjusted R-squared | OLS model fit comparison | penalizes too many predictors | optional explanatory answer |
 
 ```{r}
 # Compute test MSE.  # This is the most common BAN404 regression metric.
@@ -273,7 +273,7 @@ mse_test <- mean((y_test - y_pred)^2)  # Squaring punishes large errors more tha
 rmse_test <- sqrt(mse_test)  # Easier to interpret than MSE, though less emphasized in BAN404.
 
 # Compute R-squared from fitted values.  # This is useful when the exam directly asks for explained variation.
-r2 <- 1 - sum((y_test - y_pred)^2) / sum((y_test - mean(y_test))^2)  # Standard out-of-sample R² formula.
+r2 <- 1 - sum((y_test - y_pred)^2) / sum((y_test - mean(y_test))^2)  # Standard out-of-sample R-squared formula.
 ```
 
 ## Classification metrics

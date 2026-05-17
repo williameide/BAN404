@@ -29,7 +29,7 @@ Create a full R exam compendium that is so explicit, over-commented, and BAN404-
 
 ## BAN404 context you must use
 Use these recurring BAN404 patterns as the backbone of the cheatsheet:
-- 2025 Task 1: ridge objective function, demeaning, OLS comparison, LOOCV for lambda, bootstrap variance and CI, GAM and R².
+- 2025 Task 1: ridge objective function, demeaning, OLS comparison, LOOCV for lambda, bootstrap variance and CI, GAM and R-squared.
 - 2025 Task 2: insurance claim classification, binary target creation, leakage removal, train/test split, logistic regression, threshold choice, random forest, boosted tree.
 - 2024 Task 1: KNN/local regression function, LOOCV for K, fitted curve plotting, multi-predictor distance, backfitting theory.
 - 2024 Task 2: airline satisfaction with one explanatory perspective and one operational prediction perspective.
@@ -107,7 +107,7 @@ Include safe templates for:
 ### In the metric map
 Include what the metric means, when to use it, and a short interpretation sentence template.
 Cover:
-- MSE, RMSE, R², adjusted R²
+- MSE, RMSE, R-squared, adjusted R-squared
 - confusion matrix, accuracy, error rate, sensitivity, specificity, threshold logic
 - variance explained, scree plots, elbow plots
 

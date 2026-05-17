@@ -101,8 +101,8 @@ Use this exact high-level structure:
 For regression:
 - MSE
 - RMSE
-- R²
-- adjusted R²
+- R-squared
+- adjusted R-squared
 
 For classification:
 - confusion matrix
