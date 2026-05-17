@@ -14,28 +14,34 @@ This file explains *why* specific code patterns appear in exams and *how* to inf
 ## 1) When do I use `loo(X, y)` vs `loo(la, X, y)`?
 
 ### ✅ Conceptual rule
-LOOCV estimates **test error of a model**.
-- If the model has **no tuning parameter**, LOOCV depends only on the data → `loo(X, y)`.
-- If the model has **a tuning parameter**, LOOCV depends on that parameter → `loo(la, X, y)`.
+
+LOOCV estimates **test error of a model**. - If the model has **no tuning parameter**, LOOCV depends only on the data → `loo(X, y)`. - If the model has **a tuning parameter**, LOOCV depends on that parameter → `loo(la, X, y)`.
 
 ### ✅ Why λ changes the function signature
+
 Ridge/Lasso are **families of models**, one for each λ. The whole point of LOOCV is to **choose the best λ**, so LOOCV must accept λ as input.
 
 **Example (from 2025 exam):**
-```r
+
+``` r
 loo <- function(la, X, y) { ... }
 ```
+
 Then you must call:
-```r
+
+``` r
 loo(la, X, y)
 ```
 
 If the function is defined as:
-```r
+
+``` r
 loo <- function(X, y) { ... }
 ```
+
 Then you call:
-```r
+
+``` r
 loo(X, y)
 ```
 
@@ -44,47 +50,42 @@ loo(X, y)
 ## 2) How to infer code from theory (the decision pipeline)
 
 ### Step 1 — What is the **goal**?
-- **Prediction** → estimate test error
-- **Inference** → estimate uncertainty (SE/CI)
+
+-   **Prediction** → estimate test error
+-   **Inference** → estimate uncertainty (SE/CI)
 
 ### Step 2 — Is it supervised or unsupervised?
-- **Supervised**: X and y (regression/classification)
-- **Unsupervised**: X only (clustering, PCA)
+
+-   **Supervised**: X and y (regression/classification)
+-   **Unsupervised**: X only (clustering, PCA)
 
 ### Step 3 — Does the model have tuning parameters?
+
 If yes, you must **tune** them using CV/LOOCV.
 
-Common tuning parameters:
-- Ridge/Lasso → λ
-- KNN → K
-- Trees → depth / mincut / pruning size
-- SVM → C / γ
-- Boosting → number of trees / depth / shrinkage
+Common tuning parameters: - Ridge/Lasso → λ - KNN → K - Trees → depth / mincut / pruning size - SVM → C / γ - Boosting → number of trees / depth / shrinkage
 
 ------------------------------------------------------------------------
 
 ## 3) When do I split into training/test?
 
 ### ✅ Use train/test split when:
-- Dataset is large enough
-- You need a final, unbiased estimate of generalization error
+
+-   Dataset is large enough
+-   You need a final, unbiased estimate of generalization error
 
 ### ✅ Use CV/LOOCV when:
-- Dataset is small
-- You need to **select** model or hyperparameter
 
-Exam clue words:
-- “Evaluate prediction performance” → train/test or CV
-- “Choose λ / K / depth” → CV/LOOCV
+-   Dataset is small
+-   You need to **select** model or hyperparameter
+
+Exam clue words: - “Evaluate prediction performance” → train/test or CV - “Choose λ / K / depth” → CV/LOOCV
 
 ------------------------------------------------------------------------
 
 ## 4) Why do we store `mean`, `median`, `testMSE`, etc.?
 
-These are **summary statistics** for:
-- **Data understanding** → mean/median
-- **Model evaluation** → testMSE, accuracy
-- **Model comparison** → which is smaller/larger
+These are **summary statistics** for: - **Data understanding** → mean/median - **Model evaluation** → testMSE, accuracy - **Model comparison** → which is smaller/larger
 
 You store them when you need to **compare or justify**.
 
@@ -93,15 +94,17 @@ You store them when you need to **compare or justify**.
 ## 5) How to detect what the code is trying to do
 
 ### If you see…
-- `sample(..., replace=TRUE)` → Bootstrap / Bagging
-- `for(i in 1:K)` and `folds==i` → K‑fold CV
-- `X[-i, ]` → LOOCV
-- `sum((y - X%*%b)^2) + la*sum(b^2)` → Ridge
-- `sum(abs(b))` → Lasso
+
+-   `sample(..., replace=TRUE)` → Bootstrap / Bagging
+-   `for(i in 1:K)` and `folds==i` → K‑fold CV
+-   `X[-i, ]` → LOOCV
+-   `sum((y - X%*%b)^2) + la*sum(b^2)` → Ridge
+-   `sum(abs(b))` → Lasso
 
 ### Ask:
-- “Is this estimating **error** or **uncertainty**?”
-- “Is this choosing a **hyperparameter**?”
+
+-   “Is this estimating **error** or **uncertainty**?”
+-   “Is this choosing a **hyperparameter**?”
 
 That tells you what the next step should be.
 
@@ -111,9 +114,42 @@ That tells you what the next step should be.
 
 **If the model has a tuning parameter, LOOCV must accept it.**
 
-So:
-- Ridge/Lasso → `loo(la, X, y)`
-- KNN → `loo(K, X, y)` (or loop over K)
-- Trees → `loo(mincut, X, y)`
+So: - Ridge/Lasso → `loo(la, X, y)` - KNN → `loo(K, X, y)` (or loop over K) - Trees → `loo(mincut, X, y)`
 
 If there is no tuning parameter → `loo(X, y)`.
+
+### **The Exam Cheat Sheet: Bootstrap Generalities (2025 1.d)**
+
+**Generality 1: Bootstrapping a Regression Coefficient (Like in the 2021 Exam)** In Task 1d, we only resampled a single column (`y`). But what if the exam asks you to bootstrap the standard error of a *slope coefficient* in a linear model? You must resample **entire rows of the dataset** together so X and Y stay linked.
+
+```{r bootsrap_general1}
+# Universal Skeleton for Bootstrapping a DataFrame
+B <- 1000
+coef_boot <- numeric(B)
+n <- nrow(my_data)
+
+for(b in 1:B) {
+  # 1. Resample ROW INDICES with replacement
+  idx <- sample(1:n, size = n, replace = TRUE)
+  
+  # 2. Create the fake dataset by slicing those rows
+  fake_data <- my_data[idx, ]
+  
+  # 3. Fit the model on the fake data
+  fake_model <- lm(y ~ x, data = fake_data)
+  
+  # 4. Save the statistic (e.g., the slope coefficient, which is position 2)
+  coef_boot[b] <- coef(fake_model)[2]
+}
+```
+
+**Generality 2: The "Normal Approximation" vs "Percentile" CI** We used the Percentile CI (`quantile(...)`), which is robust. Sometimes the exam asks you to compare it to the **Normal Approximation CI**. The Normal Approximation assumes the bootstrap distribution is a perfect bell curve:
+
+```{r}
+# Standard Error is just the standard deviation of your bootstrap estimates
+boot_se <- sd(vboot) 
+
+# Normal CI = Mean +/- (1.96 * Standard Error)
+normal_ci_lower <- mean(vboot) - 1.96 * boot_se
+normal_ci_upper <- mean(vboot) + 1.96 * boot_se
+```
