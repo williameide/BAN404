@@ -1387,8 +1387,8 @@ quantile(boot_rate_2023, c(0.025, 0.975))                # Bootstrap confidence 
 
 # Appendix A — Maximum-output ChatGPT prompt
 
-See `/home/runner/work/BAN404/BAN404/prompts/master_prompt_chatgpt_max.md`.
+See `../prompts/master_prompt_chatgpt_max.md`.
 
 # Appendix B — Maximum-output Claude prompt
 
-See `/home/runner/work/BAN404/BAN404/prompts/master_prompt_claude_max.md`.
+See `../prompts/master_prompt_claude_max.md`.
