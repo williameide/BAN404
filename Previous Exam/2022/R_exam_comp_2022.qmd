@@ -1,0 +1,428 @@
+---
+title: "BAN404 R Exam Compendium - 2022"
+format: html
+execute:
+  echo: true
+  warning: false
+  message: false
+  eval: false
+  error: true
+---
+
+## Setup and libraries
+
+```{r}
+#| eval: true
+
+library(tidyverse)
+library(ISLR)
+library(Ecdat)
+library(tree)
+library(gam)
+library(randomForest)
+
+# Load OJ and Computers datasets for exam tasks.
+data(OJ)
+data(Computers)
+```
+
+## Task 1a
+
+**Question:** Remove `LoyalCH`, recode categorical variables if needed, remove unusable variables, and create 50/50 train-test split with `set.seed(8655)`.
+
+**How to recognize this method on the exam (The Detective Work):**
+- This is preprocessing and leakage control.
+- `LoyalCH` is explicitly unavailable at prediction time.
+- Duplicate or redundant store fields should be checked.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+oj_data <- OJ %>%
+  select(-LoyalCH, -StoreID) %>%
+  mutate(across(where(is.character), as.factor))
+
+# Convert low-cardinality numeric variables to factor where meaningful.
+oj_data <- oj_data %>%
+  mutate(across(where(is.numeric), ~ if (n_distinct(.x) <= 5) as.factor(.x) else .x))
+
+set.seed(8655)
+idx <- sample(seq_len(nrow(oj_data)), size = floor(nrow(oj_data) / 2))
+train <- oj_data[idx, ]
+test <- oj_data[-idx, ]
+
+glimpse(train)
+```
+
+**AAA-Grade Written Answer:** I removed `LoyalCH` because the exam states it is not available when predicting. I also removed `StoreID` because `STORE` already captures store identity. Data were split 50/50 with the required seed for reproducible evaluation.
+
+## Task 1b
+
+**Question:** Use descriptive statistics to detect promising predictors for `Purchase`, present key tables/graphs, and comment.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Binary outcome with mixed predictors suggests boxplots, bar plots, and grouped means.
+- Goal is feature screening before logistic/tree modeling.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Example descriptive plots.
+train %>% ggplot(aes(x = STORE, fill = Purchase)) + geom_bar(position = "fill")
+train %>% ggplot(aes(x = Purchase, y = PriceDiff)) + geom_boxplot()
+
+# Grouped summaries for discount variables.
+train %>%
+  group_by(Purchase) %>%
+  summarise(
+    mean_pct_disc_ch = mean(PctDiscCH, na.rm = TRUE),
+    mean_pct_disc_mm = mean(PctDiscMM, na.rm = TRUE)
+  )
+```
+
+**AAA-Grade Written Answer:** `PriceDiff`, `STORE`, and discount variables show clear associations with brand choice. These are therefore strong candidates for predictive classification models.
+
+## Task 1c
+
+**Question:** Fit logistic regression of `Purchase` on promising variables, evaluate with test accuracy and confusion matrix, and use threshold 0.5.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Binary response and probability threshold imply logistic regression.
+- Must report class performance, not only one scalar metric.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+logit1 <- glm(Purchase ~ PriceDiff + STORE, data = train, family = binomial())
+summary(logit1)
+
+prob_logit <- predict(logit1, newdata = test, type = "response")
+pred_logit <- if_else(prob_logit > 0.5, "MM", "CH") %>% factor(levels = levels(test$Purchase))
+
+cm_logit <- table(actual = test$Purchase, predicted = pred_logit)
+cm_logit
+sum(diag(cm_logit)) / sum(cm_logit)
+prop.table(cm_logit, margin = 1)
+```
+
+**AAA-Grade Written Answer:** The logistic model with `PriceDiff` and `STORE` gives meaningful predictive power and interpretable signs. Negative effect of `PriceDiff` is expected because higher CH relative price reduces CH purchase probability.
+
+## Task 1d
+
+**Question:** Fit classification tree with all variables retained from 1a, plot and interpret one branch, and evaluate with threshold 0.5.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Tree request plus branch interpretation means explicit decision-rule explanation is required.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+tree1 <- tree(Purchase ~ ., data = train)
+plot(tree1)
+text(tree1, pretty = 0)
+
+prob_tree <- predict(tree1, newdata = test)
+pred_tree <- if_else(prob_tree[, "MM"] > 0.5, "MM", "CH") %>% factor(levels = levels(test$Purchase))
+
+cm_tree <- table(actual = test$Purchase, predicted = pred_tree)
+cm_tree
+sum(diag(cm_tree)) / sum(cm_tree)
+prop.table(cm_tree, margin = 1)
+```
+
+**AAA-Grade Written Answer:** The tree provides transparent if-then purchase logic and often predicts MM better than CH for some branches. Its interpretability is high, though performance can be similar to or slightly below tuned logistic regression.
+
+## Task 1e
+
+**Question:** Use cross-validation to find threshold that maximizes accuracy and evaluate tree with best threshold.
+
+**How to recognize this method on the exam (The Detective Work):**
+- This is threshold tuning, not model-refitting.
+- Use inner split or validation split on training data, then test once.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+set.seed(4598)
+idx2 <- sample(seq_len(nrow(train)), size = floor(nrow(train) / 2))
+train2 <- train[idx2, ]
+val2 <- train[-idx2, ]
+
+tree2 <- tree(Purchase ~ ., data = train2)
+prob_val <- predict(tree2, newdata = val2)[, "MM"]
+
+th_grid <- seq(0.1, 0.9, by = 0.05)
+acc_tbl <- map_dfr(th_grid, function(th) {
+  pred <- if_else(prob_val > th, "MM", "CH") %>% factor(levels = levels(val2$Purchase))
+  cm <- table(val2$Purchase, pred)
+  tibble(threshold = th, accuracy = sum(diag(cm)) / sum(cm))
+})
+
+th_opt <- acc_tbl %>% slice_max(accuracy, n = 1) %>% pull(threshold)
+
+prob_test <- predict(tree1, newdata = test)[, "MM"]
+pred_test_opt <- if_else(prob_test > th_opt, "MM", "CH") %>% factor(levels = levels(test$Purchase))
+cm_test_opt <- table(test$Purchase, pred_test_opt)
+
+acc_tbl
+th_opt
+sum(diag(cm_test_opt)) / sum(cm_test_opt)
+```
+
+**AAA-Grade Written Answer:** Cross-validated threshold tuning aligns class decisions with empirical accuracy rather than default 0.5. In this exam data, gains can be modest depending on class balance and calibration.
+
+## Task 1f
+
+**Question:** Repeat analysis with `LoyalCH` now assumed available and conclude if it contributes for logistic and tree models.
+
+**How to recognize this method on the exam (The Detective Work):**
+- This is a controlled ablation comparison.
+- Keep same evaluation process and compare confusion metrics.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+oj_with_loyal <- OJ %>%
+  select(-StoreID) %>%
+  mutate(across(where(is.character), as.factor))
+
+set.seed(8655)
+idx_loyal <- sample(seq_len(nrow(oj_with_loyal)), size = floor(nrow(oj_with_loyal) / 2))
+train_loyal <- oj_with_loyal[idx_loyal, ]
+test_loyal <- oj_with_loyal[-idx_loyal, ]
+
+logit_loyal <- glm(Purchase ~ ., data = train_loyal, family = binomial())
+pred_logit_loyal <- if_else(predict(logit_loyal, newdata = test_loyal, type = "response") > 0.5, "MM", "CH") %>%
+  factor(levels = levels(test_loyal$Purchase))
+acc_logit_loyal <- mean(pred_logit_loyal == test_loyal$Purchase)
+
+tree_loyal <- tree(Purchase ~ ., data = train_loyal)
+pred_tree_loyal <- if_else(predict(tree_loyal, newdata = test_loyal)[, "MM"] > 0.5, "MM", "CH") %>%
+  factor(levels = levels(test_loyal$Purchase))
+acc_tree_loyal <- mean(pred_tree_loyal == test_loyal$Purchase)
+
+tibble(model = c("logit with LoyalCH", "tree with LoyalCH"), accuracy = c(acc_logit_loyal, acc_tree_loyal))
+```
+
+**AAA-Grade Written Answer:** Including `LoyalCH` usually improves both logistic and tree predictions materially because loyalty is directly informative for brand choice. The improvement confirms it is a high-value predictor when available.
+
+## Task 2a
+
+**Question:** Recode factors and remove unusable variables for `Computers`, split 50/50 with `set.seed(4598)`.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Continuous target regression setup with mixed predictors.
+- Low-cardinality fields like `cd`, `multi`, `premium`, `screen` should be factors.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+comp <- Computers %>%
+  mutate(
+    screen = as.factor(screen),
+    cd = as.factor(cd),
+    multi = as.factor(multi),
+    premium = as.factor(premium)
+  )
+
+set.seed(4598)
+idxc <- sample(seq_len(nrow(comp)), size = floor(nrow(comp) / 2))
+train_c <- comp[idxc, ]
+test_c <- comp[-idxc, ]
+
+glimpse(train_c)
+```
+
+**AAA-Grade Written Answer:** Categorical hardware-option fields were encoded as factors, and the data were split reproducibly with the requested seed. This prepares a valid baseline for all subsequent regression and tree models.
+
+## Task 2b
+
+**Question:** Use descriptive statistics to find promising predictors and comment.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Numeric target with many predictors suggests scatterplots and grouped boxplots.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Global plot matrix style view.
+pairs(train_c %>% select(price, speed, hd, ram, ads, trend) %>% sample_n(500))
+
+# Factor-wise price comparisons.
+train_c %>% ggplot(aes(x = premium, y = price)) + geom_boxplot()
+train_c %>% ggplot(aes(x = screen, y = price)) + geom_boxplot()
+```
+
+**AAA-Grade Written Answer:** Speed, RAM, hard-disk size, and trend variables are clearly associated with price, and categorical options such as premium status and screen size show substantial shifts in price level.
+
+## Task 2c
+
+**Question:** Fit linear regression with all explanatory variables, interpret coefficients, and evaluate predictions.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Baseline full OLS model with test MSE for continuous prediction quality.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+lm_full <- lm(price ~ ., data = train_c)
+summary(lm_full)
+
+pred_lm_full <- predict(lm_full, newdata = test_c)
+mse_lm_full <- mean((test_c$price - pred_lm_full)^2)
+mse_lm_full
+```
+
+**AAA-Grade Written Answer:** The full OLS model provides strong explanatory power and interpretable marginal effects. Test MSE gives a direct and appropriate prediction-performance measure for this continuous outcome.
+
+## Task 2d
+
+**Question:** Check whether regressing `log(price)` improves predictions versus direct-price model.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Log transformation can stabilize variance and linearize multiplicative effects.
+- Predictions must be back-transformed to original price scale for fair MSE comparison.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+train_c2 <- train_c %>% mutate(log_price = log(price))
+test_c2 <- test_c %>% mutate(log_price = log(price))
+
+lm_log <- lm(log_price ~ . - price, data = train_c2)
+pred_log_back <- exp(predict(lm_log, newdata = test_c2))
+mse_lm_log <- mean((test_c2$price - pred_log_back)^2)
+
+mse_lm_log
+```
+
+**AAA-Grade Written Answer:** If log transformation captures nonlinearity and heteroskedasticity better, the back-transformed model can improve test MSE. In this exam, improvement was not guaranteed and must be judged empirically.
+
+## Task 2e
+
+**Question:** Fit a GAM, plot results, evaluate predictions, and discuss whether all variables should be nonlinear.
+
+**How to recognize this method on the exam (The Detective Work):**
+- GAM request means smooth terms for selected numeric predictors.
+- Not every variable benefits from a smooth; some are effectively linear.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+gam_full <- gam(
+  price ~ s(speed) + s(hd) + s(ram) + screen + cd + multi + premium + s(ads) + s(trend),
+  data = train_c
+)
+
+par(mfrow = c(3, 3))
+plot(gam_full)
+
+pred_gam <- predict(gam_full, newdata = test_c)
+mse_gam <- mean((test_c$price - pred_gam)^2)
+mse_gam
+```
+
+**AAA-Grade Written Answer:** GAM often yields lower test MSE by capturing smooth nonlinear effects in hardware and time variables. If a smooth appears near-linear, constraining that predictor to linear form can improve interpretability with little performance cost.
+
+## Task 2f
+
+**Question:** Briefly explain backfitting and when GAM can be fitted with OLS.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Conceptual algorithm explanation is required.
+- OLS link appears when smooth functions are represented in linear basis expansions.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Demonstration: spline basis turns nonlinear term into linear regression on basis columns.
+library(splines)
+basis_speed <- bs(train_c$speed, df = 4)
+ols_basis <- lm(train_c$price ~ basis_speed)
+summary(ols_basis)
+```
+
+**AAA-Grade Written Answer:** Backfitting iteratively updates each additive component against residuals from the other components until convergence. GAM can be estimated with OLS when each smooth is expressed via basis functions, turning the model into linear regression in transformed predictors.
+
+## Task 2g
+
+**Question:** Use bagged trees to predict price, evaluate, compute and interpret variable importance, and explain its logic.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Bagging is random forest with `mtry` equal to number of predictors in regression case.
+- Importance for regression is commonly decrease in node impurity.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+p <- ncol(train_c) - 1
+bag_model <- randomForest(price ~ ., data = train_c, mtry = p, ntree = 100)
+
+pred_bag <- predict(bag_model, newdata = test_c)
+mse_bag <- mean((test_c$price - pred_bag)^2)
+mse_bag
+
+varImpPlot(bag_model)
+importance(bag_model)
+```
+
+**AAA-Grade Written Answer:** Bagging typically improves prediction substantially by averaging many bootstrap trees, reducing model variance. Importance reflects average contribution to impurity reduction across trees and highlights which predictors drive predictive splits.
+
+## Task 2h
+
+**Question:** Give a brief explanation of bagging.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Pure concept question about ensemble strategy and variance reduction.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Simple bootstrap-aggregation demonstration with means.
+set.seed(1)
+vec <- train_c$price
+boot_means <- replicate(200, mean(sample(vec, size = length(vec), replace = TRUE)))
+mean(boot_means)
+sd(boot_means)
+```
+
+**AAA-Grade Written Answer:** Bagging repeatedly fits the same base learner on bootstrap samples and averages predictions. This aggregation reduces variance and usually improves stability and test performance over a single tree.
+
+# 💡 Generalizable Tips and Tricks (2022 Exam)
+
+| Tip | Why it matters | Reusable snippet |
+|---|---|---|
+| Remove unavailable predictors | Prevents leakage and unrealistic performance | `select(-LoyalCH)` |
+| Tune threshold separately from model | Improves class decisions without changing fit | `seq(0.1, 0.9, by = 0.05)` |
+| Evaluate both classes | Overall accuracy can hide class-specific errors | `prop.table(table(actual, pred), margin = 1)` |
+| Back-transform log models before MSE | Keeps prediction error on business scale | `exp(predict(log_model, newdata=test))` |
+| Use GAM selectively | Not all numeric effects need smooth terms | `gam(y ~ s(x1) + x2 + factor_var)` |
+| Bagging equals RF with full mtry | Easy way to implement tree averaging | `randomForest(y ~ ., mtry = p)` |

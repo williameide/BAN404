@@ -1,0 +1,431 @@
+---
+title: "BAN404 R Exam Compendium - 2021"
+format: html
+execute:
+  echo: true
+  warning: false
+  message: false
+  eval: false
+  error: true
+---
+
+## Setup and libraries
+
+```{r}
+#| eval: true
+
+library(tidyverse)
+library(ISLR)
+library(boot)
+library(insuranceData)
+library(gam)
+library(gbm)
+
+# Load exam datasets.
+data(Smarket)
+data(dataCar)
+```
+
+## Task 1a
+
+**Question:** Use bootstrap to create a histogram of the sampling distribution for volatility of S&P returns (`Today`), with `set.seed(1)` and 1000 replicates.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Volatility is sample standard deviation.
+- Sampling distribution request plus bootstrap replicates implies resampling with replacement.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+set.seed(1)
+ret <- Smarket$Today
+
+# Statistic function for bootstrap: sample standard deviation.
+stdev_fun <- function(x, index) {
+  sd(x[index])
+}
+
+boot_stdev <- boot(ret, statistic = stdev_fun, R = 1000)
+
+# Histogram of bootstrap distribution.
+hist(boot_stdev$t, breaks = 40, main = "Bootstrap distribution of volatility", xlab = "Bootstrapped SD")
+```
+
+**AAA-Grade Written Answer:** The bootstrap distribution approximates how sample volatility varies across repeated samples from the same underlying process. The histogram is centered near the observed volatility and provides uncertainty information without strong parametric assumptions.
+
+## Task 1b
+
+**Question:** Compute a 95% confidence interval from bootstrap assuming normality.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Normal-approximation interval uses estimate plus/minus 1.96 times standard error.
+- Bootstrap output provides both estimate and bootstrap SE.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+orig <- boot_stdev$t0
+se_boot <- sd(boot_stdev$t)
+ci_norm <- c(orig - 1.96 * se_boot, orig + 1.96 * se_boot)
+
+ci_norm
+boot.ci(boot_stdev, type = "norm")
+```
+
+**AAA-Grade Written Answer:** The normal bootstrap interval is computed from the bootstrap-estimated standard error and gives a symmetric 95% uncertainty band around the observed volatility estimate.
+
+## Task 1c
+
+**Question:** Compute a 95% confidence interval from bootstrap percentiles without normality assumption.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Percentile CI takes 2.5th and 97.5th quantiles of bootstrap replicates directly.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+ci_perc <- quantile(boot_stdev$t, probs = c(0.025, 0.975))
+ci_perc
+boot.ci(boot_stdev, type = "perc")
+```
+
+**AAA-Grade Written Answer:** The percentile interval is fully nonparametric and uses the empirical quantiles of bootstrap volatility estimates. It is therefore robust to deviations from normality.
+
+## Task 1d
+
+**Question:** Regress `Today^2` on `Lag1^2` and interpret coefficient for `Lag1^2`.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Squared returns are a volatility proxy.
+- Positive slope indicates volatility persistence or autocorrelation in volatility proxy.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+vol_reg <- lm(I(Today^2) ~ I(Lag1^2), data = Smarket)
+summary(vol_reg)
+```
+
+**AAA-Grade Written Answer:** The positive coefficient on `Lag1^2` indicates that higher volatility yesterday tends to be followed by higher volatility today, consistent with volatility clustering in financial returns.
+
+## Task 1e
+
+**Question:** Compute bootstrapped standard error of `Lag1^2` coefficient from 1d and compare with regression output standard error.
+
+**How to recognize this method on the exam (The Detective Work):**
+- We now bootstrap a regression coefficient, not a standard deviation.
+- Compare bootstrap SE to model-based SE from OLS summary.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+coef_fun <- function(df, index) {
+  lm(I(Today^2) ~ I(Lag1^2), data = df[index, ])$coefficients[2]
+}
+
+set.seed(1)
+boot_coef <- boot(Smarket, statistic = coef_fun, R = 1000)
+
+se_boot_coef <- sd(boot_coef$t)
+se_lm_coef <- summary(vol_reg)$coefficients[2, 2]
+
+c(bootstrap_se = se_boot_coef, lm_se = se_lm_coef)
+```
+
+**AAA-Grade Written Answer:** The bootstrap SE can differ meaningfully from the model-based SE because it relies on resampling rather than asymptotic formula assumptions. In this exam, bootstrap SE is often larger, indicating more uncertainty than the OLS formula suggests.
+
+## Task 2a
+
+**Question:** Keep observations with `clm != 0`, remove `X_OBSTAT_`, and use this dataset for all Task 2 work.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Task states conditional modeling given at least one claim.
+- This is a strict data-subsetting instruction.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+xdata <- dataCar %>%
+  filter(clm != 0) %>%
+  select(-X_OBSTAT_)
+
+glimpse(xdata)
+```
+
+**AAA-Grade Written Answer:** I restricted the sample to policies with at least one claim and removed `X_OBSTAT_` exactly as instructed. All Task 2 modeling then targets claim amount conditional on claim occurrence.
+
+## Task 2b
+
+**Question:** Use descriptive statistics, help description, and common sense to remove unhelpful variables, motivate choices, and ensure right formats.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Remove redundant information and encode categorical levels correctly.
+- Variables with category semantics should become factors.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+xdata2 <- xdata %>%
+  select(-clm) %>%
+  mutate(
+    veh_age = as.factor(veh_age),
+    agecat = as.factor(agecat)
+  )
+
+sapply(xdata2, class)
+```
+
+**AAA-Grade Written Answer:** `clm` was removed because claim occurrence information is represented through claim-count structure in this subset context. Category-coded fields were recast to factors to avoid false numeric interpretation.
+
+## Task 2c
+
+**Question:** Use a feasible but precise CV method to evaluate full linear model, all one-predictor models, and intercept-only model for `claimcst0`.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Many model comparisons suggest K-fold CV for computational feasibility.
+- Test MSE is natural metric for continuous response.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+set.seed(123)
+K <- 5
+n <- nrow(xdata2)
+fold_id <- sample(rep(1:K, length.out = n))
+
+predictor_names <- setdiff(names(xdata2), "claimcst0")
+res <- tibble()
+
+for (k in 1:K) {
+  training <- xdata2[fold_id != k, ]
+  test <- xdata2[fold_id == k, ]
+
+  # Full model.
+  full_fit <- lm(claimcst0 ~ ., data = training)
+  full_mse <- mean((test$claimcst0 - predict(full_fit, newdata = test))^2)
+  res <- bind_rows(res, tibble(model = "full", fold = k, mse = full_mse))
+
+  # One-predictor models.
+  for (v in predictor_names) {
+    fit1 <- lm(as.formula(paste("claimcst0 ~", v)), data = training)
+    mse1 <- mean((test$claimcst0 - predict(fit1, newdata = test))^2)
+    res <- bind_rows(res, tibble(model = paste0("one_", v), fold = k, mse = mse1))
+  }
+
+  # Intercept-only model.
+  naive_pred <- mean(training$claimcst0)
+  naive_mse <- mean((test$claimcst0 - naive_pred)^2)
+  res <- bind_rows(res, tibble(model = "intercept_only", fold = k, mse = naive_mse))
+}
+
+res %>% group_by(model) %>% summarise(cv_mse = mean(mse)) %>% arrange(cv_mse)
+```
+
+**AAA-Grade Written Answer:** Five-fold CV provides a good accuracy-computation balance compared with LOOCV in this large sample. The full linear model generally gives the best or near-best CV test MSE among the compared linear baselines.
+
+## Task 2d
+
+**Question:** Fit GAM with smoothing splines for numeric variables, include categorical variables, plot results, and comment.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Explicit request for GAM with smoothing terms and plots.
+- We inspect whether relationships are nonlinear.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+gam1 <- gam(
+  claimcst0 ~ s(veh_value, df = 4) + s(exposure, df = 4) + s(numclaims, df = 4) +
+    veh_body + veh_age + gender + area + agecat,
+  data = xdata
+)
+
+par(mfrow = c(2, 2))
+plot(gam1, terms = c("s(veh_value)", "s(exposure)", "s(numclaims)"))
+```
+
+**AAA-Grade Written Answer:** The GAM plot reveals where linearity is inadequate, typically showing nonlinear structure for some numeric predictors while others are close to linear. This guides a parsimonious GAM in the next step.
+
+## Task 2e
+
+**Question:** Specify an appropriate GAM based on 2d and compute test MSE.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Use evidence from smooth plots to simplify terms that look linear.
+- Evaluate with same CV logic for comparability.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+set.seed(123)
+K <- 5
+n <- nrow(xdata)
+fold_id <- sample(rep(1:K, length.out = n))
+
+gam_mse <- c()
+for (k in 1:K) {
+  tr <- xdata[fold_id != k, ]
+  te <- xdata[fold_id == k, ]
+
+  gam2 <- gam(
+    claimcst0 ~ s(veh_value, df = 4) + s(exposure, df = 4) + numclaims +
+      veh_body + veh_age + gender + area + agecat,
+    data = tr
+  )
+
+  pred <- predict(gam2, newdata = te)
+  gam_mse[k] <- mean((te$claimcst0 - pred)^2)
+}
+
+mean(gam_mse)
+```
+
+**AAA-Grade Written Answer:** A partially linear GAM, informed by the smooth diagnostics, often slightly improves test MSE over full linear regression while preserving interpretability.
+
+## Task 3a
+
+**Question:** From original `dataCar`, remove `X_OBSTAT_`, `numclaims`, `claimcst0`; compute and interpret cross-tables and descriptive statistics by `clm`; identify promising predictors and one drawback of pairwise comparisons.
+
+**How to recognize this method on the exam (The Detective Work):**
+- This is exploratory classification profiling.
+- Pairwise summaries can miss interaction effects.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+x3 <- dataCar %>%
+  select(-X_OBSTAT_, -numclaims, -claimcst0)
+
+# Cross-tables for categorical predictors.
+prop.table(table(x3$veh_body, x3$clm), margin = 1)
+prop.table(table(x3$agecat, x3$clm), margin = 1)
+prop.table(table(x3$gender, x3$clm), margin = 1)
+
+# Numeric summaries by class.
+x3 %>%
+  group_by(clm) %>%
+  summarise(
+    mean_veh_value = mean(veh_value, na.rm = TRUE),
+    sd_veh_value = sd(veh_value, na.rm = TRUE),
+    mean_exposure = mean(exposure, na.rm = TRUE),
+    sd_exposure = sd(exposure, na.rm = TRUE)
+  )
+```
+
+**AAA-Grade Written Answer:** Promising predictors include `veh_body`, `agecat`, `veh_value`, and `exposure` because class-conditional differences are visible. A key drawback is that pairwise analysis ignores multivariable interaction and confounding patterns.
+
+## Task 3b
+
+**Question:** Based on 3a, fit logistic regression with all or subset predictors to predict `clm` and interpret coefficients.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Binary claim outcome and coefficient interpretation imply logistic odds framework.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+logit3 <- glm(clm ~ veh_body + agecat + veh_value + exposure, data = x3, family = binomial())
+summary(logit3)
+exp(coef(logit3)[c("veh_value", "exposure")])
+```
+
+**AAA-Grade Written Answer:** Positive coefficients for `veh_value` and `exposure` imply higher odds of claim as these variables increase, conditional on other predictors. Category coefficients are interpreted relative to reference groups.
+
+## Task 3c
+
+**Question:** Modify model if sensible, evaluate with validation split (50/50, `set.seed(1234)`), choose threshold under higher false-negative cost, and compute confusion matrix.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Cost-sensitive framing requires lower threshold than 0.5.
+- Must justify threshold by trade-off between false negatives and false positives.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+set.seed(1234)
+idx3 <- sample(seq_len(nrow(x3)), size = floor(nrow(x3) / 2))
+train3 <- x3[idx3, ]
+test3 <- x3[-idx3, ]
+
+logit3_fit <- glm(clm ~ veh_body + agecat + veh_value + exposure, data = train3, family = binomial())
+prob3 <- predict(logit3_fit, newdata = test3, type = "response")
+
+# Lower threshold to reduce false negatives when missing claims is costly.
+th <- 0.07
+pred3 <- if_else(prob3 > th, 1, 0)
+cm3 <- table(actual = test3$clm, predicted = pred3)
+cm3
+prop.table(cm3, margin = 1)
+```
+
+**AAA-Grade Written Answer:** Using a low threshold increases claim detection (sensitivity), which is appropriate when false negatives are more costly than false positives. The confusion matrix quantifies this trade-off directly.
+
+## Task 3d
+
+**Question:** Use boosted trees to predict `clm` and evaluate with same approach as 3c.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Same split and threshold should be kept for fair method comparison.
+- Binary outcome requires `distribution = "bernoulli"`.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+gbm1 <- gbm(
+  clm ~ veh_body + agecat + veh_value + exposure,
+  data = train3,
+  distribution = "bernoulli",
+  n.trees = 100,
+  interaction.depth = 2,
+  shrinkage = 0.05,
+  n.minobsinnode = 20,
+  verbose = FALSE
+)
+
+prob_gbm <- predict(gbm1, newdata = test3, n.trees = 100, type = "response")
+pred_gbm <- if_else(prob_gbm > th, 1, 0)
+cm_gbm <- table(actual = test3$clm, predicted = pred_gbm)
+cm_gbm
+prop.table(cm_gbm, margin = 1)
+```
+
+**AAA-Grade Written Answer:** Boosted trees typically improve claim detection compared with logistic baseline under the same threshold policy because boosting captures nonlinear structure and interaction effects more flexibly.
+
+# 💡 Generalizable Tips and Tricks (2021 Exam)
+
+| Tip | Why it matters | Reusable snippet |
+|---|---|---|
+| Bootstrap both estimate and coefficient uncertainty | Exam tasks often test both levels | `boot(data, statistic = fn, R = 1000)` |
+| Use percentile and normal CIs together | Shows methodological understanding | `quantile(boot_obj$t, c(0.025, 0.975))` |
+| Keep CV feasible in larger datasets | K-fold often practical while still precise | `fold_id <- sample(rep(1:K, length.out=n))` |
+| Let GAM plots guide model simplification | Prevents unnecessary smooth complexity | `plot(gam_fit)` |
+| Align threshold with decision cost | Low threshold when false negatives are expensive | `pred <- prob > 0.07` |
+| Compare methods under same split | Fair comparison needs identical data partitions | `set.seed(1234); idx <- sample(seq_len(nrow(df)), floor(nrow(df)/2))` |
