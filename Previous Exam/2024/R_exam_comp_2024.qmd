@@ -62,7 +62,7 @@ f <- function(x0, x, y, K = 3) {
   reg <- lm(yl ~ xl, data = xydata)
 
   # Step 5: predict y at x0 using local line.
-  ypred <- predict(reg, newdata = data.frame(xl = x0, yl = 1))
+  ypred <- predict(reg, newdata = data.frame(xl = x0))
   return(ypred)
 }
 ```

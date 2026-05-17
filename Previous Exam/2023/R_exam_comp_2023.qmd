@@ -350,13 +350,13 @@ B <- 1000
 
 # Bootstrap sample proportions.
 set.seed(1)
-p_boot <- replicate(B, mean(sample(y, size = length(y), replace = TRUE) == 1))
+p_boot <- replicate(B, mean(sample(y, size = length(y), replace = TRUE)))
 
 # Percentile interval.
 ci_boot <- quantile(p_boot, probs = c(0.025, 0.975))
 
 # Standard normal approximation interval.
-phat <- mean(y == 1)
+phat <- mean(y)
 n <- length(y)
 ci_norm <- c(
   phat - 1.96 * sqrt(phat * (1 - phat) / n),

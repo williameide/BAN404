@@ -255,7 +255,7 @@ res %>% group_by(model) %>% summarise(cv_mse = mean(mse)) %>% arrange(cv_mse)
 gam1 <- gam(
   claimcst0 ~ s(veh_value, df = 4) + s(exposure, df = 4) + s(numclaims, df = 4) +
     veh_body + veh_age + gender + area + agecat,
-  data = xdata
+  data = xdata2
 )
 
 par(mfrow = c(2, 2))
@@ -279,13 +279,13 @@ plot(gam1, terms = c("s(veh_value)", "s(exposure)", "s(numclaims)"))
 
 set.seed(123)
 K <- 5
-n <- nrow(xdata)
+n <- nrow(xdata2)
 fold_id <- sample(rep(1:K, length.out = n))
 
 gam_mse <- c()
 for (k in 1:K) {
-  tr <- xdata[fold_id != k, ]
-  te <- xdata[fold_id == k, ]
+  tr <- xdata2[fold_id != k, ]
+  te <- xdata2[fold_id == k, ]
 
   gam2 <- gam(
     claimcst0 ~ s(veh_value, df = 4) + s(exposure, df = 4) + numclaims +
