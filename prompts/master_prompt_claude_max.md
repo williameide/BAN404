@@ -95,7 +95,7 @@ Include safe templates for:
 - normal csv import
 - semicolon csv import
 - decimal comma import
-- skip rows if the table does not start at the top
+- skip rows if the header is not on the first row
 - NA handling
 - factor conversion
 - ID removal

@@ -1031,6 +1031,8 @@ This section builds the generic method playbooks into **fuller, more exam-shaped
 | `Churn.csv` | `2023/Churn.csv` | 2023 mixed regression + classification practice | OLS, LASSO, tree, random forest, logistic, bootstrap |
 | `OJ` | package dataset via `ISLR` / `ISLR2` | 2022 classification practice | logistic, classification tree, threshold CV |
 
+All file paths in this section are **relative to this compendium file inside `Previous Exam/`**. So `2025/data_task1.csv` means the file `/Previous Exam/2025/data_task1.csv` in the repository layout.
+
 ## Example 1 — 2025 Task 1 style: `data_task1.csv`
 
 ### Why this is a high-priority example
@@ -1315,7 +1317,7 @@ acc_churn_2023 <- sum(diag(cm_churn_2023)) / sum(cm_churn_2023)  # Classificatio
 # Optional: bootstrap the churn rate itself.  # This shows when bootstrap is used for uncertainty around a proportion, not model tuning.
 set.seed(1)                                               # Reproducible resampling.
 B_churn_2023 <- 1000                                      # Number of bootstrap samples.
-churn_numeric_2023 <- as.numeric(churn_2023$churn) - 1            # Factors are 1-indexed internally, so subtracting 1 converts a 0/1 factor into numeric 0/1.
+churn_numeric_2023 <- as.numeric(as.character(churn_2023$churn) == "1")  # Convert explicitly to 0/1 by asking whether the stored churn label equals 1.
 boot_rate_2023 <- replicate(
   B_churn_2023,                                           # Repeat the resampling many times.
   mean(sample(churn_numeric_2023, size = length(churn_numeric_2023), replace = TRUE))  # Bootstrap sample proportion of churners.
