@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Self-study preparation file">
+<meta name="dcterms.date" content="2026-01-01">
+
+<title>BAN404 R Exam Compendium</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="R_exam_comp_2023_files/libs/clipboard/clipboard.min.js"></script>
+<script src="R_exam_comp_2023_files/libs/quarto-html/quarto.js"></script>
+<script src="R_exam_comp_2023_files/libs/quarto-html/popper.min.js"></script>
+<script src="R_exam_comp_2023_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="R_exam_comp_2023_files/libs/quarto-html/anchor.min.js"></script>
+<link href="R_exam_comp_2023_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="R_exam_comp_2023_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="R_exam_comp_2023_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="R_exam_comp_2023_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="R_exam_comp_2023_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#setup-and-libraries" id="toc-setup-and-libraries" class="nav-link active" data-scroll-target="#setup-and-libraries"><span class="header-section-number">0.1</span> Setup and libraries</a></li>
+  <li><a href="#task-1a" id="toc-task-1a" class="nav-link" data-scroll-target="#task-1a"><span class="header-section-number">0.2</span> Task 1a</a></li>
+  <li><a href="#task-1b" id="toc-task-1b" class="nav-link" data-scroll-target="#task-1b"><span class="header-section-number">0.3</span> Task 1b</a></li>
+  <li><a href="#task-1c" id="toc-task-1c" class="nav-link" data-scroll-target="#task-1c"><span class="header-section-number">0.4</span> Task 1c</a></li>
+  <li><a href="#task-1d" id="toc-task-1d" class="nav-link" data-scroll-target="#task-1d"><span class="header-section-number">0.5</span> Task 1d</a></li>
+  <li><a href="#task-1e" id="toc-task-1e" class="nav-link" data-scroll-target="#task-1e"><span class="header-section-number">0.6</span> Task 1e</a></li>
+  <li><a href="#task-1f" id="toc-task-1f" class="nav-link" data-scroll-target="#task-1f"><span class="header-section-number">0.7</span> Task 1f</a></li>
+  <li><a href="#task-1g" id="toc-task-1g" class="nav-link" data-scroll-target="#task-1g"><span class="header-section-number">0.8</span> Task 1g</a></li>
+  <li><a href="#task-1h" id="toc-task-1h" class="nav-link" data-scroll-target="#task-1h"><span class="header-section-number">0.9</span> Task 1h</a></li>
+  <li><a href="#task-1i" id="toc-task-1i" class="nav-link" data-scroll-target="#task-1i"><span class="header-section-number">0.10</span> Task 1i</a></li>
+  <li><a href="#task-1j" id="toc-task-1j" class="nav-link" data-scroll-target="#task-1j"><span class="header-section-number">0.11</span> Task 1j</a></li>
+  <li><a href="#task-2a" id="toc-task-2a" class="nav-link" data-scroll-target="#task-2a"><span class="header-section-number">0.12</span> Task 2a</a></li>
+  <li><a href="#task-2b" id="toc-task-2b" class="nav-link" data-scroll-target="#task-2b"><span class="header-section-number">0.13</span> Task 2b</a></li>
+  <li><a href="#task-2c" id="toc-task-2c" class="nav-link" data-scroll-target="#task-2c"><span class="header-section-number">0.14</span> Task 2c</a></li>
+  <li><a href="#task-2d" id="toc-task-2d" class="nav-link" data-scroll-target="#task-2d"><span class="header-section-number">0.15</span> Task 2d</a></li>
+  <li><a href="#task-2e" id="toc-task-2e" class="nav-link" data-scroll-target="#task-2e"><span class="header-section-number">0.16</span> Task 2e</a></li>
+  <li><a href="#task-2f" id="toc-task-2f" class="nav-link" data-scroll-target="#task-2f"><span class="header-section-number">0.17</span> Task 2f</a></li>
+  <li><a href="#generalizable-tips-and-tricks-2023-exam" id="toc-generalizable-tips-and-tricks-2023-exam" class="nav-link" data-scroll-target="#generalizable-tips-and-tricks-2023-exam"><span class="header-section-number">1</span> 💡 Generalizable Tips and Tricks (2023 Exam)</a></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="R_exam_comp_2023.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">BAN404 R Exam Compendium</h1>
+<p class="subtitle lead">Comprehensive solution guide — 2023 school exam</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Self-study preparation file </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">January 1, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="setup-and-libraries" class="level2" data-number="0.1">
+<h2 data-number="0.1" class="anchored" data-anchor-id="setup-and-libraries"><span class="header-section-number">0.1</span> Setup and libraries</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(glmnet)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tree)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(randomForest)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Read exam data.</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>churn_raw <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"Churn.csv"</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Basic preprocessing used in both tasks.</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>churn_data <span class="ot">&lt;-</span> churn_raw <span class="sc">%&gt;%</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>id) <span class="sc">%&gt;%</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">is_tv_subscriber =</span> <span class="fu">as.factor</span>(is_tv_subscriber),</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">is_movie_package_subscriber =</span> <span class="fu">as.factor</span>(is_movie_package_subscriber),</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">churn =</span> <span class="fu">as.factor</span>(churn)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Shared split seed from exam.</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">86554354</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>idx <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(churn_data)), <span class="at">size =</span> <span class="fu">floor</span>(<span class="fu">nrow</span>(churn_data) <span class="sc">/</span> <span class="dv">2</span>))</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>train <span class="ot">&lt;-</span> churn_data[idx, ]</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> churn_data[<span class="sc">-</span>idx, ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="task-1a" class="level2" data-number="0.2">
+<h2 data-number="0.2" class="anchored" data-anchor-id="task-1a"><span class="header-section-number">0.2</span> Task 1a</h2>
+<p><strong>Question:</strong> Recode variables as needed, remove unreasonable variables, motivate choices, and split data 50/50 with <code>set.seed(86554354)</code>.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - This is data-design and leakage-control work before modeling. - ID variables are not predictive features. - Binary indicators should be factors for classification settings.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>xdata <span class="ot">&lt;-</span> churn_raw <span class="sc">%&gt;%</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>id) <span class="sc">%&gt;%</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">is_tv_subscriber =</span> <span class="fu">as.factor</span>(is_tv_subscriber),</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">is_movie_package_subscriber =</span> <span class="fu">as.factor</span>(is_movie_package_subscriber),</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">churn =</span> <span class="fu">as.factor</span>(churn)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">86554354</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>ind <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(xdata)), <span class="at">size =</span> <span class="fu">floor</span>(<span class="fu">nrow</span>(xdata) <span class="sc">/</span> <span class="dv">2</span>))</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>train <span class="ot">&lt;-</span> xdata[ind, ]</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> xdata[<span class="sc">-</span>ind, ]</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 35,946
+Columns: 10
+$ is_tv_subscriber            &lt;fct&gt; 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, …
+$ is_movie_package_subscriber &lt;fct&gt; 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, …
+$ subscription_age            &lt;dbl&gt; 1.53, 3.00, 3.75, 0.75, 0.08, 3.16, 1.31, …
+$ bill_avg                    &lt;dbl&gt; 23, 21, 16, 29, 6, 17, 26, 13, 22, 30, 21,…
+$ remaining_contract          &lt;dbl&gt; 0.00, 0.00, 0.00, 0.00, 1.16, 0.00, 0.00, …
+$ service_failure_count       &lt;dbl&gt; 0, 0, 0, 0, 1, 3, 1, 0, 0, 0, 1, 0, 0, 0, …
+$ download_avg                &lt;dbl&gt; 14.2, 20.2, 2.6, 32.2, 59.8, 23.9, 99.6, 0…
+$ upload_avg                  &lt;dbl&gt; 2.0, 1.9, 0.3, 2.1, 3.6, 1.0, 5.0, 0.0, 4.…
+$ download_over_limit         &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, …
+$ churn                       &lt;fct&gt; 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, …</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> I removed <code>id</code> because it is an identifier with no stable predictive mechanism. I recoded binary subscription variables and <code>churn</code> as factors to preserve categorical meaning. The fixed 50/50 split ensures reproducibility and unbiased out-of-sample evaluation.</p>
+</section>
+<section id="task-1b" class="level2" data-number="0.3">
+<h2 data-number="0.3" class="anchored" data-anchor-id="task-1b"><span class="header-section-number">0.3</span> Task 1b</h2>
+<p><strong>Question:</strong> Use descriptive methods to find useful predictors for <code>bill_avg</code>, explain methods, show key tables and graphs, and comment.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Continuous target with mixed predictors requires grouped summaries and boxplots. - We want association screening, not final causal proof.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Group means by churn status to support quick pattern detection.</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(churn) <span class="sc">%&gt;%</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_bill =</span> <span class="fu">mean</span>(bill_avg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_download =</span> <span class="fu">mean</span>(download_avg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_upload =</span> <span class="fu">mean</span>(upload_avg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_remaining_contract =</span> <span class="fu">mean</span>(remaining_contract, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 5
+  churn mean_bill mean_download mean_upload mean_remaining_contract
+  &lt;fct&gt;     &lt;dbl&gt;         &lt;dbl&gt;       &lt;dbl&gt;                   &lt;dbl&gt;
+1 0          19.6          65.9        6.16                  1.01  
+2 1          18.7          26.8        2.77                  0.0941</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example descriptive plot for a strong numeric predictor.</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> remaining_contract, <span class="at">y =</span> bill_avg)) <span class="sc">+</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.2</span>) <span class="sc">+</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Bill average versus remaining contract"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="R_exam_comp_2023_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Descriptive statistics indicate that <code>remaining_contract</code>, usage intensity variables, and service indicators have visible association with <code>bill_avg</code>. These variables are therefore promising inputs for predictive regression models.</p>
+</section>
+<section id="task-1c" class="level2" data-number="0.4">
+<h2 data-number="0.4" class="anchored" data-anchor-id="task-1c"><span class="header-section-number">0.4</span> Task 1c</h2>
+<p><strong>Question:</strong> Produce best OLS predictions of <code>bill_avg</code> and evaluate them with justified metric.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Continuous response implies regression and MSE-based evaluation. - Best-practice is to compare full and reduced models on test MSE.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>ols_full <span class="ot">&lt;-</span> <span class="fu">lm</span>(bill_avg <span class="sc">~</span> ., <span class="at">data =</span> train)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>pred_full <span class="ot">&lt;-</span> <span class="fu">predict</span>(ols_full, <span class="at">newdata =</span> test)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>mse_full <span class="ot">&lt;-</span> <span class="fu">mean</span>((test<span class="sc">$</span>bill_avg <span class="sc">-</span> pred_full)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Example reduced model to test if weak predictors hurt performance.</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>ols_reduced <span class="ot">&lt;-</span> <span class="fu">lm</span>(bill_avg <span class="sc">~</span> . <span class="sc">-</span> download_avg <span class="sc">-</span> upload_avg, <span class="at">data =</span> train)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>pred_reduced <span class="ot">&lt;-</span> <span class="fu">predict</span>(ols_reduced, <span class="at">newdata =</span> test)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>mse_reduced <span class="ot">&lt;-</span> <span class="fu">mean</span>((test<span class="sc">$</span>bill_avg <span class="sc">-</span> pred_reduced)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">model =</span> <span class="fu">c</span>(<span class="st">"OLS full"</span>, <span class="st">"OLS reduced"</span>), <span class="at">test_mse =</span> <span class="fu">c</span>(mse_full, mse_reduced))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  model       test_mse
+  &lt;chr&gt;          &lt;dbl&gt;
+1 OLS full        118.
+2 OLS reduced     147.</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> OLS with all available predictors gives a strong baseline and usually outperforms the reduced version in this exam dataset. Test MSE is appropriate because the objective is numerical prediction quality.</p>
+</section>
+<section id="task-1d" class="level2" data-number="0.5">
+<h2 data-number="0.5" class="anchored" data-anchor-id="task-1d"><span class="header-section-number">0.5</span> Task 1d</h2>
+<p><strong>Question:</strong> Fit LASSO with all variables, tune parameters, justify standardization, and compare coefficients with OLS.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - LASSO request means <code>alpha = 1</code> in glmnet. - Different variable scales require standardization. - Factor predictors must be encoded as model matrix columns.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Build design matrices using model.matrix so factors become dummies.</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>X_train <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(bill_avg <span class="sc">~</span> ., <span class="at">data =</span> train)[, <span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>y_train <span class="ot">&lt;-</span> train<span class="sc">$</span>bill_avg</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>X_test <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(bill_avg <span class="sc">~</span> ., <span class="at">data =</span> test)[, <span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Cross-validated lambda for LASSO.</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>cv_lasso <span class="ot">&lt;-</span> <span class="fu">cv.glmnet</span>(X_train, y_train, <span class="at">alpha =</span> <span class="dv">1</span>, <span class="at">standardize =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>lasso_fit <span class="ot">&lt;-</span> <span class="fu">glmnet</span>(X_train, y_train, <span class="at">alpha =</span> <span class="dv">1</span>, <span class="at">lambda =</span> cv_lasso<span class="sc">$</span>lambda.min, <span class="at">standardize =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Coefficient comparison with OLS.</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>coef_lasso <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">coef</span>(lasso_fit))</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>coef_ols <span class="ot">&lt;-</span> <span class="fu">coef</span>(ols_full)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(coef_lasso)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                                     s0
+(Intercept)                  19.3027748
+is_tv_subscriber1            -4.0616796
+is_movie_package_subscriber1 -0.5256682
+subscription_age              0.2915709
+remaining_contract           -2.6531250
+service_failure_count         0.9089595</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(coef_ols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 (Intercept)            is_tv_subscriber1 
+                  19.2791912                   -4.0940593 
+is_movie_package_subscriber1             subscription_age 
+                  -0.5531372                    0.3021676 
+          remaining_contract        service_failure_count 
+                  -2.6588840                    0.9270030 </code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Standardization is appropriate because predictors are on very different scales, and LASSO penalties are scale-sensitive. In this dataset, LASSO coefficients are close to OLS with only mild shrinkage, indicating limited gain from strong sparsity.</p>
+</section>
+<section id="task-1e" class="level2" data-number="0.6">
+<h2 data-number="0.6" class="anchored" data-anchor-id="task-1e"><span class="header-section-number">0.6</span> Task 1e</h2>
+<p><strong>Question:</strong> Predict <code>bill_avg</code> with model from 1d and evaluate.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - This is direct out-of-sample evaluation of tuned LASSO. - Metric should stay consistent with Task 1c.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>pred_lasso <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">predict</span>(lasso_fit, <span class="at">newx =</span> X_test))</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>mse_lasso <span class="ot">&lt;-</span> <span class="fu">mean</span>((test<span class="sc">$</span>bill_avg <span class="sc">-</span> pred_lasso)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>mse_lasso</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 117.8655</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The LASSO test MSE is typically very close to the OLS full-model MSE in this exam, so regularization gives little practical improvement for <code>bill_avg</code> prediction.</p>
+</section>
+<section id="task-1f" class="level2" data-number="0.7">
+<h2 data-number="0.7" class="anchored" data-anchor-id="task-1f"><span class="header-section-number">0.7</span> Task 1f</h2>
+<p><strong>Question:</strong> Fit and interpret a regression tree for <code>bill_avg</code>.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Tree request with interpretation means show split rules and terminal node values. - Regression tree is used because target is continuous.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>tree_reg <span class="ot">&lt;-</span> <span class="fu">tree</span>(bill_avg <span class="sc">~</span> ., <span class="at">data =</span> train)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(tree_reg)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(tree_reg, <span class="at">pretty =</span> <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="R_exam_comp_2023_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(tree_reg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Regression tree:
+tree(formula = bill_avg ~ ., data = train)
+Variables actually used in tree construction:
+[1] "download_avg"        "download_over_limit" "upload_avg"         
+[4] "subscription_age"    "is_tv_subscriber"   
+Number of terminal nodes:  8 
+Residual mean deviance:  128.6 = 4623000 / 35940 
+Distribution of residuals:
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+-208.6000   -6.0400   -0.3603    0.0000    3.6400  346.6000 </code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The regression tree identifies high- and low-bill customer segments through split rules, often emphasizing usage and contract variables. Terminal node means provide direct, business-interpretable bill predictions.</p>
+</section>
+<section id="task-1g" class="level2" data-number="0.8">
+<h2 data-number="0.8" class="anchored" data-anchor-id="task-1g"><span class="header-section-number">0.8</span> Task 1g</h2>
+<p><strong>Question:</strong> Predict <code>bill_avg</code> with tree from 1f and evaluate.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Same target and metric as prior regression tasks.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>pred_tree <span class="ot">&lt;-</span> <span class="fu">predict</span>(tree_reg, <span class="at">newdata =</span> test)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>mse_tree <span class="ot">&lt;-</span> <span class="fu">mean</span>((test<span class="sc">$</span>bill_avg <span class="sc">-</span> pred_tree)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>mse_tree</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 120.2793</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The regression tree provides competitive performance but is often slightly weaker than OLS for this dataset unless strong nonlinear effects dominate.</p>
+</section>
+<section id="task-1h" class="level2" data-number="0.9">
+<h2 data-number="0.9" class="anchored" data-anchor-id="task-1h"><span class="header-section-number">0.9</span> Task 1h</h2>
+<p><strong>Question:</strong> Fit random forest for <code>bill_avg</code>, plot variable importance, interpret, and explain measure.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Ensemble request with importance implies random forest regression. - For regression RF, importance often uses decrease in RSS node impurity.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>rf_reg <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(bill_avg <span class="sc">~</span> ., <span class="at">data =</span> train, <span class="at">ntree =</span> <span class="dv">50</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>pred_rf_reg <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_reg, <span class="at">newdata =</span> test)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>mse_rf_reg <span class="ot">&lt;-</span> <span class="fu">mean</span>((test<span class="sc">$</span>bill_avg <span class="sc">-</span> pred_rf_reg)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>mse_rf_reg</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 97.26014</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">varImpPlot</span>(rf_reg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="R_exam_comp_2023_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">importance</span>(rf_reg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                            IncNodePurity
+is_tv_subscriber                315197.83
+is_movie_package_subscriber      70217.07
+subscription_age                816735.68
+remaining_contract              423375.96
+service_failure_count           175159.53
+download_avg                   1645055.16
+upload_avg                     1053682.29
+download_over_limit             335401.55
+churn                           132866.14</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Random forest usually improves prediction by averaging many decorrelated trees, reducing variance relative to one tree. Importance values summarize average impurity reduction attributable to each predictor.</p>
+</section>
+<section id="task-1i" class="level2" data-number="0.10">
+<h2 data-number="0.10" class="anchored" data-anchor-id="task-1i"><span class="header-section-number">0.10</span> Task 1i</h2>
+<p><strong>Question:</strong> Use random forest model from 1h to predict <code>bill_avg</code> and evaluate.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - This confirms performance from ensemble model in explicit evaluation step.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Reuse predictions and report MSE clearly.</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">model =</span> <span class="st">"Random forest"</span>, <span class="at">test_mse =</span> mse_rf_reg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 2
+  model         test_mse
+  &lt;chr&gt;            &lt;dbl&gt;
+1 Random forest     97.3</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The random forest generally gives the lowest test MSE among models in Task 1, indicating it captures nonlinearities and interactions effectively.</p>
+</section>
+<section id="task-1j" class="level2" data-number="0.11">
+<h2 data-number="0.11" class="anchored" data-anchor-id="task-1j"><span class="header-section-number">0.11</span> Task 1j</h2>
+<p><strong>Question:</strong> Based on 1a to 1i, what features characterize customers with high versus low average bills?</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - This is synthesis from descriptive stats and model outputs. - Use signs from linear models and split logic from trees.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Coefficient-based directional evidence.</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>tidy_coefs <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(ols_full)</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(tidy_coefs)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 5
+  term                         estimate std.error statistic   p.value
+  &lt;chr&gt;                           &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+1 (Intercept)                    19.3      0.243      79.4  0        
+2 is_tv_subscriber1              -4.09     0.172     -23.8  3.74e-124
+3 is_movie_package_subscriber1   -0.553    0.144      -3.83 1.29e-  4
+4 subscription_age                0.302    0.0309      9.79 1.33e- 22
+5 remaining_contract             -2.66     0.128     -20.8  3.69e- 95
+6 service_failure_count           0.927    0.0752     12.3  7.46e- 35</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Segment means for practical summary.</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">bill_group =</span> <span class="fu">if_else</span>(bill_avg <span class="sc">&gt;=</span> <span class="fu">median</span>(bill_avg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="st">"high"</span>, <span class="st">"low"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(bill_group) <span class="sc">%&gt;%</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_download =</span> <span class="fu">mean</span>(download_avg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_upload =</span> <span class="fu">mean</span>(upload_avg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_remaining_contract =</span> <span class="fu">mean</span>(remaining_contract, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 4
+  bill_group mean_download mean_upload mean_remaining_contract
+  &lt;chr&gt;              &lt;dbl&gt;       &lt;dbl&gt;                   &lt;dbl&gt;
+1 high                52.2        5.23                   0.404
+2 low                 35.4        3.24                   0.607</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> High-bill customers generally show heavier usage patterns and distinct contract/subscription profiles, while low-bill customers show lower usage intensity and lower service load. The exact pattern is consistent across OLS and tree-based summaries.</p>
+</section>
+<section id="task-2a" class="level2" data-number="0.12">
+<h2 data-number="0.12" class="anchored" data-anchor-id="task-2a"><span class="header-section-number">0.12</span> Task 2a</h2>
+<p><strong>Question:</strong> Ensure right formats, remove unhelpful variables with motivation, and use descriptive statistics to find promising churn predictors.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Binary outcome requires careful factor encoding. - You must justify feature relevance and possible leakage.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Reconfirm formats for churn classification.</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>churn_cls <span class="ot">&lt;-</span> churn_raw <span class="sc">%&gt;%</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>id) <span class="sc">%&gt;%</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">is_tv_subscriber =</span> <span class="fu">as.factor</span>(is_tv_subscriber),</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">is_movie_package_subscriber =</span> <span class="fu">as.factor</span>(is_movie_package_subscriber),</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">churn =</span> <span class="fu">as.factor</span>(churn)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Group summaries by churn class.</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>churn_cls <span class="sc">%&gt;%</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(churn) <span class="sc">%&gt;%</span></span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">tv_rate =</span> <span class="fu">mean</span>(<span class="fu">as.numeric</span>(<span class="fu">as.character</span>(is_tv_subscriber))),</span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">movie_rate =</span> <span class="fu">mean</span>(<span class="fu">as.numeric</span>(<span class="fu">as.character</span>(is_movie_package_subscriber))),</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_remaining_contract =</span> <span class="fu">mean</span>(remaining_contract, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_download_over_limit =</span> <span class="fu">mean</span>(download_over_limit, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 5
+  churn tv_rate movie_rate mean_remaining_contract mean_download_over_limit
+  &lt;fct&gt;   &lt;dbl&gt;      &lt;dbl&gt;                   &lt;dbl&gt;                    &lt;dbl&gt;
+1 0       0.959      0.497                  1.01                     0.0320
+2 1       0.701      0.205                  0.0930                   0.349 </code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Promising churn predictors include contract horizon, service failures, over-limit behavior, and subscription package indicators. Format corrections ensure logistic and tree models treat categorical predictors correctly.</p>
+</section>
+<section id="task-2b" class="level2" data-number="0.13">
+<h2 data-number="0.13" class="anchored" data-anchor-id="task-2b"><span class="header-section-number">0.13</span> Task 2b</h2>
+<p><strong>Question:</strong> Using the first 50 original churn observations, bootstrap a 95% confidence interval for churn probability and compare with normal approximation.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Parameter is Bernoulli probability p. - Bootstrap percentile interval and Wald approximation should be compared.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># First 50 original values.</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">as.character</span>(churn_cls<span class="sc">$</span>churn[<span class="dv">1</span><span class="sc">:</span><span class="dv">50</span>]))</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>B <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrap sample proportions.</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>p_boot <span class="ot">&lt;-</span> <span class="fu">replicate</span>(B, <span class="fu">mean</span>(<span class="fu">sample</span>(y, <span class="at">size =</span> <span class="fu">length</span>(y), <span class="at">replace =</span> <span class="cn">TRUE</span>)))</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Percentile interval.</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>ci_boot <span class="ot">&lt;-</span> <span class="fu">quantile</span>(p_boot, <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Standard normal approximation interval.</span></span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>phat <span class="ot">&lt;-</span> <span class="fu">mean</span>(y)</span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">length</span>(y)</span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>ci_norm <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>  phat <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> <span class="fu">sqrt</span>(phat <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> phat) <span class="sc">/</span> n),</span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a>  phat <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> <span class="fu">sqrt</span>(phat <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> phat) <span class="sc">/</span> n)</span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a>ci_boot</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> 2.5% 97.5% 
+  0.7   0.9 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>ci_norm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.6891257 0.9108743</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The bootstrap and normal-approximation intervals are usually very close in this task, indicating the normal approximation works reasonably well for this sample size and estimated churn fraction.</p>
+</section>
+<section id="task-2c" class="level2" data-number="0.14">
+<h2 data-number="0.14" class="anchored" data-anchor-id="task-2c"><span class="header-section-number">0.14</span> Task 2c</h2>
+<p><strong>Question:</strong> Fit logistic regression with all variables for churn, interpret coefficients for TV and movie package subscription, and discuss signs.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Binary target with coefficient interpretation in odds scale. - Requested variables should be translated from log-odds to odds ratios.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>logit_all <span class="ot">&lt;-</span> <span class="fu">glm</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> train, <span class="at">family =</span> <span class="fu">binomial</span>())</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(logit_all)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = churn ~ ., family = binomial(), data = train)
+
+Coefficients:
+                               Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)                   4.2095394  0.0749009  56.201  &lt; 2e-16 ***
+is_tv_subscriber1            -1.7537624  0.0635379 -27.602  &lt; 2e-16 ***
+is_movie_package_subscriber1 -0.0627211  0.0359874  -1.743   0.0814 .  
+subscription_age             -0.2456083  0.0083489 -29.418  &lt; 2e-16 ***
+bill_avg                     -0.0012218  0.0014336  -0.852   0.3941    
+remaining_contract           -3.1429619  0.0362499 -86.703  &lt; 2e-16 ***
+service_failure_count         0.1633170  0.0218661   7.469 8.08e-14 ***
+download_avg                 -0.0117162  0.0004211 -27.824  &lt; 2e-16 ***
+upload_avg                   -0.0001346  0.0018273  -0.074   0.9413    
+download_over_limit           0.3555683  0.0340536  10.441  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 49407  on 35945  degrees of freedom
+Residual deviance: 24848  on 35936  degrees of freedom
+AIC: 24868
+
+Number of Fisher Scoring iterations: 6</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert key effects to odds ratios.</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Suffix "1" indicates the level coded as 1 (subscriber/present) versus reference level 0.</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="fu">exp</span>(<span class="fu">coef</span>(logit_all)[<span class="fu">c</span>(<span class="st">"is_tv_subscriber1"</span>, <span class="st">"is_movie_package_subscriber1"</span>)])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           is_tv_subscriber1 is_movie_package_subscriber1 
+                   0.1731214                    0.9392054 </code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> A negative TV-subscriber coefficient implies lower churn odds for TV subscribers, holding other variables fixed. The movie-package effect is weaker but often also negative. Most signs are directionally plausible given customer commitment and contract context.</p>
+</section>
+<section id="task-2d" class="level2" data-number="0.15">
+<h2 data-number="0.15" class="anchored" data-anchor-id="task-2d"><span class="header-section-number">0.15</span> Task 2d</h2>
+<p><strong>Question:</strong> Predict churn with logistic model from 2c, evaluate appropriately, and test whether removing variables improves predictions.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Classification evaluation should include confusion matrix and class-wise rates. - Reduced model check tests robustness against non-significant predictors.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Full model predictions.</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>prob_full <span class="ot">&lt;-</span> <span class="fu">predict</span>(logit_all, <span class="at">newdata =</span> test, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>pred_full <span class="ot">&lt;-</span> <span class="fu">if_else</span>(prob_full <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="st">"1"</span>, <span class="st">"0"</span>) <span class="sc">%&gt;%</span> <span class="fu">factor</span>(<span class="at">levels =</span> <span class="fu">levels</span>(test<span class="sc">$</span>churn))</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>cm_full <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">actual =</span> test<span class="sc">$</span>churn, <span class="at">predicted =</span> pred_full)</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>cm_full</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      predicted
+actual     0     1
+     0 12911  2910
+     1  1663 18463</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Reduced model without weak terms from marking guidance.</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>logit_red <span class="ot">&lt;-</span> <span class="fu">glm</span>(churn <span class="sc">~</span> . <span class="sc">-</span> bill_avg <span class="sc">-</span> upload_avg, <span class="at">data =</span> train, <span class="at">family =</span> <span class="fu">binomial</span>())</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>prob_red <span class="ot">&lt;-</span> <span class="fu">predict</span>(logit_red, <span class="at">newdata =</span> test, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>pred_red <span class="ot">&lt;-</span> <span class="fu">if_else</span>(prob_red <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="st">"1"</span>, <span class="st">"0"</span>) <span class="sc">%&gt;%</span> <span class="fu">factor</span>(<span class="at">levels =</span> <span class="fu">levels</span>(test<span class="sc">$</span>churn))</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>cm_red <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">actual =</span> test<span class="sc">$</span>churn, <span class="at">predicted =</span> pred_red)</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>cm_red</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      predicted
+actual     0     1
+     0 12913  2908
+     1  1666 18460</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Logistic predictions are strong with threshold 0.5 in this dataset. Removing weak variables usually changes confusion-matrix performance only marginally, so the gain from simplification is limited.</p>
+</section>
+<section id="task-2e" class="level2" data-number="0.16">
+<h2 data-number="0.16" class="anchored" data-anchor-id="task-2e"><span class="header-section-number">0.16</span> Task 2e</h2>
+<p><strong>Question:</strong> Use random forest to predict churn and evaluate.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Ensemble trees are a standard performance upgrade check after logistic baseline.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>rf_cls <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(churn <span class="sc">~</span> ., <span class="at">data =</span> train, <span class="at">ntree =</span> <span class="dv">50</span>)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>pred_rf_cls <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_cls, <span class="at">newdata =</span> test)</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>cm_rf_cls <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">actual =</span> test<span class="sc">$</span>churn, <span class="at">predicted =</span> pred_rf_cls)</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>cm_rf_cls</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      predicted
+actual     0     1
+     0 14962   859
+     1  1275 18851</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">diag</span>(cm_rf_cls)) <span class="sc">/</span> <span class="fu">sum</span>(cm_rf_cls)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.9406348</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Random forest typically improves churn classification noticeably, especially for the majority class and often for the minority class as well, by capturing interaction and nonlinear structure.</p>
+</section>
+<section id="task-2f" class="level2" data-number="0.17">
+<h2 data-number="0.17" class="anchored" data-anchor-id="task-2f"><span class="header-section-number">0.17</span> Task 2f</h2>
+<p><strong>Question:</strong> Based on 2a to 2e, describe typical features of customers who churn.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Integrate descriptive differences with model signs and feature importance.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Support narrative with grouped means.</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">churn_num =</span> <span class="fu">as.numeric</span>(<span class="fu">as.character</span>(churn))) <span class="sc">%&gt;%</span></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(churn) <span class="sc">%&gt;%</span></span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_subscription_age =</span> <span class="fu">mean</span>(subscription_age, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_remaining_contract =</span> <span class="fu">mean</span>(remaining_contract, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_service_failures =</span> <span class="fu">mean</span>(service_failure_count, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_over_limit =</span> <span class="fu">mean</span>(download_over_limit, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 5
+  churn mean_subscription_age mean_remaining_contract mean_service_failures
+  &lt;fct&gt;                 &lt;dbl&gt;                   &lt;dbl&gt;                 &lt;dbl&gt;
+1 0                      2.74                  1.01                   0.263
+2 1                      2.22                  0.0941                 0.290
+# ℹ 1 more variable: mean_over_limit &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Typical churners tend to have shorter relationship horizon, lower remaining contract commitment, higher service friction, and behavior indicating usage-limit tension. These patterns are consistent across logistic and random-forest analyses.</p>
+</section>
+<section id="generalizable-tips-and-tricks-2023-exam" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> 💡 Generalizable Tips and Tricks (2023 Exam)</h1>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tip</th>
+<th>Why it matters</th>
+<th>Reusable snippet</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Remove IDs early</td>
+<td>Prevents noise and false signal from identifier columns</td>
+<td><code>df &lt;- df %&gt;% select(-id)</code></td>
+</tr>
+<tr class="even">
+<td>Keep metric consistent</td>
+<td>Fair model comparison needs same test metric</td>
+<td><code>mean((y_true - y_pred)^2)</code></td>
+</tr>
+<tr class="odd">
+<td>Encode factors before GLM/RF</td>
+<td>Correct handling of categorical predictors</td>
+<td><code>mutate(across(c(var1,var2), as.factor))</code></td>
+</tr>
+<tr class="even">
+<td>Use model.matrix for glmnet</td>
+<td>LASSO needs numeric matrix with dummy coding</td>
+<td><code>X &lt;- model.matrix(y ~ ., data=df)[,-1]</code></td>
+</tr>
+<tr class="odd">
+<td>Compare full vs reduced logistic</td>
+<td>Tests whether simplification improves generalization</td>
+<td><code>glm(churn ~ . - weak_var1 - weak_var2, family=binomial())</code></td>
+</tr>
+<tr class="even">
+<td>Always show confusion matrix</td>
+<td>Accuracy alone can hide class imbalance behavior</td>
+<td><code>table(actual, predicted)</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

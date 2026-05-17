@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Self-study preparation file">
+<meta name="dcterms.date" content="2026-01-01">
+
+<title>BAN404 R Exam Compendium</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="R_exam_comp_2024_files/libs/clipboard/clipboard.min.js"></script>
+<script src="R_exam_comp_2024_files/libs/quarto-html/quarto.js"></script>
+<script src="R_exam_comp_2024_files/libs/quarto-html/popper.min.js"></script>
+<script src="R_exam_comp_2024_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="R_exam_comp_2024_files/libs/quarto-html/anchor.min.js"></script>
+<link href="R_exam_comp_2024_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="R_exam_comp_2024_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="R_exam_comp_2024_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="R_exam_comp_2024_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="R_exam_comp_2024_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#setup-and-libraries" id="toc-setup-and-libraries" class="nav-link active" data-scroll-target="#setup-and-libraries"><span class="header-section-number">0.1</span> Setup and libraries</a></li>
+  <li><a href="#task-1a" id="toc-task-1a" class="nav-link" data-scroll-target="#task-1a"><span class="header-section-number">0.2</span> Task 1a</a></li>
+  <li><a href="#task-1b" id="toc-task-1b" class="nav-link" data-scroll-target="#task-1b"><span class="header-section-number">0.3</span> Task 1b</a></li>
+  <li><a href="#task-1c" id="toc-task-1c" class="nav-link" data-scroll-target="#task-1c"><span class="header-section-number">0.4</span> Task 1c</a></li>
+  <li><a href="#task-1d" id="toc-task-1d" class="nav-link" data-scroll-target="#task-1d"><span class="header-section-number">0.5</span> Task 1d</a></li>
+  <li><a href="#task-1e" id="toc-task-1e" class="nav-link" data-scroll-target="#task-1e"><span class="header-section-number">0.6</span> Task 1e</a></li>
+  <li><a href="#task-2a" id="toc-task-2a" class="nav-link" data-scroll-target="#task-2a"><span class="header-section-number">0.7</span> Task 2a</a></li>
+  <li><a href="#task-2b" id="toc-task-2b" class="nav-link" data-scroll-target="#task-2b"><span class="header-section-number">0.8</span> Task 2b</a></li>
+  <li><a href="#task-2c" id="toc-task-2c" class="nav-link" data-scroll-target="#task-2c"><span class="header-section-number">0.9</span> Task 2c</a></li>
+  <li><a href="#task-2d" id="toc-task-2d" class="nav-link" data-scroll-target="#task-2d"><span class="header-section-number">0.10</span> Task 2d</a></li>
+  <li><a href="#task-2e" id="toc-task-2e" class="nav-link" data-scroll-target="#task-2e"><span class="header-section-number">0.11</span> Task 2e</a></li>
+  <li><a href="#task-2f" id="toc-task-2f" class="nav-link" data-scroll-target="#task-2f"><span class="header-section-number">0.12</span> Task 2f</a></li>
+  <li><a href="#task-2g" id="toc-task-2g" class="nav-link" data-scroll-target="#task-2g"><span class="header-section-number">0.13</span> Task 2g</a></li>
+  <li><a href="#task-2h" id="toc-task-2h" class="nav-link" data-scroll-target="#task-2h"><span class="header-section-number">0.14</span> Task 2h</a></li>
+  <li><a href="#task-2i" id="toc-task-2i" class="nav-link" data-scroll-target="#task-2i"><span class="header-section-number">0.15</span> Task 2i</a></li>
+  <li><a href="#task-2j" id="toc-task-2j" class="nav-link" data-scroll-target="#task-2j"><span class="header-section-number">0.16</span> Task 2j</a></li>
+  <li><a href="#task-2k" id="toc-task-2k" class="nav-link" data-scroll-target="#task-2k"><span class="header-section-number">0.17</span> Task 2k</a></li>
+  <li><a href="#task-2l" id="toc-task-2l" class="nav-link" data-scroll-target="#task-2l"><span class="header-section-number">0.18</span> Task 2l</a></li>
+  <li><a href="#generalizable-tips-and-tricks-2024-exam" id="toc-generalizable-tips-and-tricks-2024-exam" class="nav-link" data-scroll-target="#generalizable-tips-and-tricks-2024-exam"><span class="header-section-number">1</span> 💡 Generalizable Tips and Tricks (2024 Exam)</a></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="R_exam_comp_2024.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">BAN404 R Exam Compendium</h1>
+<p class="subtitle lead">Comprehensive solution guide — 2024 school exam</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Self-study preparation file </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">January 1, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="setup-and-libraries" class="level2" data-number="0.1">
+<h2 data-number="0.1" class="anchored" data-anchor-id="setup-and-libraries"><span class="header-section-number">0.1</span> Setup and libraries</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load packages used across the 2024 exam tasks.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)      <span class="co"># Data import, wrangling, plotting</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tree)           <span class="co"># Classification trees</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(randomForest)   <span class="co"># Random forest and bagging</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Read data once so all later chunks can use the same object names.</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>airline <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"airline.csv"</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep a reproducible train/test split for predictive tasks.</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(airline)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>ind <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq_len</span>(n), <span class="at">size =</span> <span class="fu">floor</span>(n <span class="sc">/</span> <span class="dv">2</span>))</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>training <span class="ot">&lt;-</span> airline[ind, ]</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> airline[<span class="sc">-</span>ind, ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="task-1a" class="level2" data-number="0.2">
+<h2 data-number="0.2" class="anchored" data-anchor-id="task-1a"><span class="header-section-number">0.2</span> Task 1a</h2>
+<p><strong>Question:</strong> Explain what the following R-function is doing.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - The code computes distance from one target value to all observed x-values. - It chooses the K nearest points using ordered distances. - It fits a local linear regression on only those K points. - That means this is a local nearest-neighbor smoother with linear fit, not global OLS.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Original function from exam.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, x, y, <span class="at">K =</span> <span class="dv">3</span>) {</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 1: distance from each training x to the query point x0.</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="fu">abs</span>(x <span class="sc">-</span> x0)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 2: index positions of K smallest distances.</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  o <span class="ot">&lt;-</span> <span class="fu">order</span>(d)[<span class="dv">1</span><span class="sc">:</span>K]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 3: subset K nearest x and matching y values.</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  xl <span class="ot">&lt;-</span> x[o]</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  yl <span class="ot">&lt;-</span> y[o]</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 4: fit local linear regression on those K neighbors.</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  xydata <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">xl =</span> xl, <span class="at">yl =</span> yl)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(yl <span class="sc">~</span> xl, <span class="at">data =</span> xydata)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 5: predict y at x0 using local line.</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  ypred <span class="ot">&lt;-</span> <span class="fu">predict</span>(reg, <span class="at">newdata =</span> <span class="fu">data.frame</span>(<span class="at">xl =</span> x0))</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(ypred)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> This function performs local prediction by finding the K nearest x-values to a target x0, fitting a local linear model on those points, and predicting y at x0. The method resembles KNN because of nearest neighbors, but differs because it predicts with a local regression line rather than a local average.</p>
+</section>
+<section id="task-1b" class="level2" data-number="0.3">
+<h2 data-number="0.3" class="anchored" data-anchor-id="task-1b"><span class="header-section-number">0.3</span> Task 1b</h2>
+<p><strong>Question:</strong> Consider the small dataset and use leave-one-out cross-validation to determine the optimal K in function f.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - The phrase leave-one-out cross-validation means train on n minus 1 and test on the left-out point. - You repeat once per observation, then average squared errors. - You compare this error across candidate K values.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Enter the exact small dataset from the exam.</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">5.26</span>, <span class="fl">9.13</span>, <span class="fl">11.17</span>, <span class="fl">15.64</span>, <span class="fl">25.32</span>, <span class="fl">25.55</span>, <span class="fl">41.39</span>, <span class="fl">48.17</span>, <span class="fl">58.65</span>, <span class="fl">68.24</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># LOOCV helper returning test MSE for one selected K.</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>loo_local <span class="ot">&lt;-</span> <span class="cf">function</span>(K, x, y) {</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">length</span>(x)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  ypred <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># For each i, leave one point out, fit on remaining points, predict left-out point.</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(n)) {</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    ypred[i] <span class="ot">&lt;-</span> <span class="fu">f</span>(<span class="at">x0 =</span> x[i], <span class="at">x =</span> x[<span class="sc">-</span>i], <span class="at">y =</span> y[<span class="sc">-</span>i], <span class="at">K =</span> K)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Mean squared prediction error across all held-out points.</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>((y <span class="sc">-</span> ypred)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate K from 2 to 9 for stable local models.</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>K_grid <span class="ot">&lt;-</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">9</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>cv_mse <span class="ot">&lt;-</span> <span class="fu">map_dbl</span>(K_grid, <span class="sc">~</span> <span class="fu">loo_local</span>(.x, x, y))</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>K_opt <span class="ot">&lt;-</span> K_grid[<span class="fu">which.min</span>(cv_mse)]</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Show the selected K and diagnostics table.</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">K =</span> K_grid, <span class="at">loo_mse =</span> cv_mse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 2
+      K loo_mse
+  &lt;int&gt;   &lt;dbl&gt;
+1     2   12.1 
+2     3   10.4 
+3     4    8.31
+4     5    7.87
+5     6   12.6 
+6     7   17.6 
+7     8   24.9 
+8     9   33.2 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>K_opt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 5</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> LOOCV evaluates each candidate K by repeatedly leaving out one observation, fitting on the rest, and predicting the omitted point. The K with the lowest mean LOOCV squared error is selected as optimal. For this dataset, the optimal value is K close to 5, which balances smoothness and flexibility.</p>
+</section>
+<section id="task-1c" class="level2" data-number="0.4">
+<h2 data-number="0.4" class="anchored" data-anchor-id="task-1c"><span class="header-section-number">0.4</span> Task 1c</h2>
+<p><strong>Question:</strong> Plot y against x and add a line with predictions based on the optimal K.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Once K is selected, you fit predictions along observed x-values. - Then visualize actual points and fitted curve together.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use selected K from LOOCV step.</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>K_opt <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict for each observed x using all data.</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>ypred <span class="ot">&lt;-</span> <span class="fu">map_dbl</span>(x, <span class="sc">~</span> <span class="fu">f</span>(<span class="at">x0 =</span> .x, <span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">K =</span> K_opt))</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot observed points and fitted local line.</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">ypred =</span> ypred) <span class="sc">%&gt;%</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> ypred), <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Local regression fit with optimal K"</span>, <span class="at">y =</span> <span class="st">"y"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="R_exam_comp_2024_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The fitted red line follows the nonlinear pattern in the points while remaining smoother than a one-neighbor fit. This confirms that the LOOCV-selected K captures structure without overfitting.</p>
+</section>
+<section id="task-1d" class="level2" data-number="0.5">
+<h2 data-number="0.5" class="anchored" data-anchor-id="task-1d"><span class="header-section-number">0.5</span> Task 1d</h2>
+<p><strong>Question:</strong> In f there is one predictor. Explain how d can be modified to allow more than one predictor.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Distance in one dimension uses absolute difference. - For several predictors, replace with multivariate distance. - Euclidean distance is the standard default choice.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example: local model with two predictors by Euclidean distance.</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>f_2d <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, X, y, <span class="at">K =</span> <span class="dv">3</span>) {</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Compute Euclidean distance from every row of X to query point x0.</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="fu">sqrt</span>((X[, <span class="dv">1</span>] <span class="sc">-</span> x0[<span class="dv">1</span>])<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> (X[, <span class="dv">2</span>] <span class="sc">-</span> x0[<span class="dv">2</span>])<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Keep K nearest rows.</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  o <span class="ot">&lt;-</span> <span class="fu">order</span>(d)[<span class="dv">1</span><span class="sc">:</span>K]</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  X_local <span class="ot">&lt;-</span> X[o, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  y_local <span class="ot">&lt;-</span> y[o]</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fit local linear model using both predictors.</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  local_df <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">x1 =</span> X_local[, <span class="dv">1</span>], <span class="at">x2 =</span> X_local[, <span class="dv">2</span>], <span class="at">y =</span> y_local)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> x1 <span class="sc">+</span> x2, <span class="at">data =</span> local_df)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Predict at x0.</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(reg, <span class="at">newdata =</span> <span class="fu">tibble</span>(<span class="at">x1 =</span> x0[<span class="dv">1</span>], <span class="at">x2 =</span> x0[<span class="dv">2</span>]))</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> To extend f to multiple predictors, distance must be computed in p-dimensional space. A standard choice is Euclidean distance, where each predictor contributes through squared deviations from the query point. Then the same neighbor-selection and local regression logic is applied.</p>
+</section>
+<section id="task-1e" class="level2" data-number="0.6">
+<h2 data-number="0.6" class="anchored" data-anchor-id="task-1e"><span class="header-section-number">0.6</span> Task 1e</h2>
+<p><strong>Question:</strong> Explain how you would implement backfitting for this method.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Backfitting is used for additive multi-predictor models. - You cycle over predictors, each time fitting one component to current residuals. - Iterate until updates are small.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Skeleton for two-predictor backfitting with local smoother f.</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># This is implementation-style pseudocode in executable R form.</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>backfit_two_predictors <span class="ot">&lt;-</span> <span class="cf">function</span>(x1, x2, y, <span class="at">K =</span> <span class="dv">5</span>, <span class="at">max_iter =</span> <span class="dv">30</span>, <span class="at">tol =</span> <span class="fl">1e-4</span>) {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">length</span>(y)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Initialize additive components at zero.</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  g1 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, n)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  g2 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, n)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (iter <span class="cf">in</span> <span class="fu">seq_len</span>(max_iter)) {</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    old_g1 <span class="ot">&lt;-</span> g1</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    old_g2 <span class="ot">&lt;-</span> g2</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Update component for x1 using residual not explained by x2.</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    r1 <span class="ot">&lt;-</span> y <span class="sc">-</span> g2</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    g1 <span class="ot">&lt;-</span> <span class="fu">map_dbl</span>(<span class="fu">seq_len</span>(n), <span class="sc">~</span> <span class="fu">f</span>(<span class="at">x0 =</span> x1[.x], <span class="at">x =</span> x1, <span class="at">y =</span> r1, <span class="at">K =</span> K))</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Update component for x2 using residual not explained by x1.</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    r2 <span class="ot">&lt;-</span> y <span class="sc">-</span> g1</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    g2 <span class="ot">&lt;-</span> <span class="fu">map_dbl</span>(<span class="fu">seq_len</span>(n), <span class="sc">~</span> <span class="fu">f</span>(<span class="at">x0 =</span> x2[.x], <span class="at">x =</span> x2, <span class="at">y =</span> r2, <span class="at">K =</span> K))</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Stop if both component updates are tiny.</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">max</span>(<span class="fu">abs</span>(g1 <span class="sc">-</span> old_g1), <span class="fu">abs</span>(g2 <span class="sc">-</span> old_g2)) <span class="sc">&lt;</span> tol) {</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>      <span class="cf">break</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">g1 =</span> g1, <span class="at">g2 =</span> g2, <span class="at">fitted =</span> g1 <span class="sc">+</span> g2)</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Backfitting estimates additive effects iteratively. First fit one predictor effect while holding other effects fixed, then switch predictors and repeat. Convergence occurs when updates are negligible. This creates a flexible additive model without forcing one global linear equation.</p>
+</section>
+<section id="task-2a" class="level2" data-number="0.7">
+<h2 data-number="0.7" class="anchored" data-anchor-id="task-2a"><span class="header-section-number">0.7</span> Task 2a</h2>
+<p><strong>Question:</strong> If necessary, recode categorical variables as factors. Motivate your choices.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - String variables must become factors for classification models. - Discrete coded survey fields with few levels often should also be factors. - Continuous measurements like age or delays should remain numeric.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start from raw airline data.</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>airline <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"airline.csv"</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert text columns to factor directly.</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>airline <span class="ot">&lt;-</span> airline <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.character), as.factor))</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert low-cardinality integer-coded columns to factor.</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co"># We use a cutoff of 7 unique values to capture survey scales and binary/ordinal categories.</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>factor_level_cutoff <span class="ot">&lt;-</span> <span class="dv">7</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>airline <span class="ot">&lt;-</span> airline <span class="sc">%&gt;%</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="cf">if</span> (<span class="fu">n_distinct</span>(.x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">&lt;=</span> factor_level_cutoff) <span class="fu">as.factor</span>(.x) <span class="cf">else</span> .x))</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Check resulting classes.</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(airline)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 129,880
+Columns: 23
+$ satisfaction               &lt;fct&gt; satisfied, satisfied, satisfied, satisfied,…
+$ Gender                     &lt;fct&gt; Female, Male, Female, Female, Female, Male,…
+$ Customer_Type              &lt;fct&gt; Loyal Customer, Loyal Customer, Loyal Custo…
+$ Age                        &lt;dbl&gt; 65, 47, 15, 60, 70, 30, 66, 10, 56, 22, 58,…
+$ Type_of_Travel             &lt;fct&gt; Personal Travel, Personal Travel, Personal …
+$ Class                      &lt;fct&gt; Eco, Business, Eco, Eco, Eco, Eco, Eco, Eco…
+$ Flight_Distance            &lt;dbl&gt; 265, 2464, 2138, 623, 354, 1894, 227, 1812,…
+$ Seat_comfort               &lt;fct&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+$ DA_time_convenient         &lt;fct&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1…
+$ Food_and_drink             &lt;fct&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+$ Gate_location              &lt;fct&gt; 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 1, 1…
+$ Inflight_wifi_service      &lt;fct&gt; 2, 0, 2, 3, 4, 2, 2, 2, 5, 2, 3, 2, 5, 4, 5…
+$ Inflight_entertainment     &lt;fct&gt; 4, 2, 0, 4, 3, 0, 5, 0, 3, 0, 3, 0, 0, 0, 2…
+$ Online_support             &lt;fct&gt; 2, 2, 2, 3, 4, 2, 5, 2, 5, 2, 3, 2, 5, 4, 1…
+$ Ease_of_Online_booking     &lt;fct&gt; 3, 3, 2, 1, 2, 2, 5, 2, 4, 2, 3, 2, 5, 4, 5…
+$ On_board_service           &lt;fct&gt; 3, 4, 3, 1, 2, 5, 5, 3, 4, 2, 3, 3, 1, 3, 5…
+$ Leg_room_service           &lt;fct&gt; 0, 4, 3, 0, 0, 4, 0, 3, 0, 4, 0, 2, 3, 5, 0…
+$ Baggage_handling           &lt;fct&gt; 3, 4, 4, 1, 2, 5, 5, 4, 1, 5, 1, 5, 2, 2, 5…
+$ Checkin_service            &lt;fct&gt; 5, 2, 4, 4, 4, 5, 5, 5, 5, 3, 2, 2, 2, 3, 2…
+$ Cleanliness                &lt;fct&gt; 3, 3, 4, 1, 2, 4, 5, 4, 4, 4, 3, 5, 4, 2, 5…
+$ Online_boarding            &lt;fct&gt; 2, 2, 2, 3, 5, 2, 3, 2, 4, 2, 5, 2, 5, 4, 2…
+$ Departure_Delay_in_Minutes &lt;dbl&gt; 0, 310, 0, 0, 0, 0, 17, 0, 0, 30, 47, 0, 0,…
+$ Arrival_Delay_in_Minutes   &lt;dbl&gt; 0, 305, 0, 0, 0, 0, 15, 0, 0, 26, 48, 0, 0,…</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Categorical variables were encoded as factors so models estimate category-specific effects correctly. Variables that reflect continuous quantities, such as age and delays in minutes, were kept numeric to preserve metric information.</p>
+</section>
+<section id="task-2b" class="level2" data-number="0.8">
+<h2 data-number="0.8" class="anchored" data-anchor-id="task-2b"><span class="header-section-number">0.8</span> Task 2b</h2>
+<p><strong>Question:</strong> In tasks (a) to (g) the question is why customers are dissatisfied. Motivate choice of all, training, or test data.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - This is a methodological design question, not a coding-only task. - You must justify data partitioning based on objective: explanation versus prediction.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep split for consistency with later operational prediction tasks.</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(airline)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>ind <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq_len</span>(n), <span class="at">size =</span> <span class="fu">floor</span>(n <span class="sc">/</span> <span class="dv">2</span>))</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>training <span class="ot">&lt;-</span> airline[ind, ]</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> airline[<span class="sc">-</span>ind, ]</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Quick class balance check in training set for transparency.</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">prop.table</span>(<span class="fu">table</span>(training<span class="sc">$</span>satisfaction))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+dissatisfied    satisfied 
+    0.450154     0.549846 </code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> A defensible strategy is to use training data for explanatory analysis in (a) to (g), preserving test data for later operational prediction tasks. This avoids data leakage across task goals and gives fairer out-of-sample comparison later.</p>
+</section>
+<section id="task-2c" class="level2" data-number="0.9">
+<h2 data-number="0.9" class="anchored" data-anchor-id="task-2c"><span class="header-section-number">0.9</span> Task 2c</h2>
+<p><strong>Question:</strong> Use descriptive statistics to find variables associated with satisfaction, describe methods, show examples of code, and summarize findings.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Mixed predictors require both tables and plots. - For factors, compare conditional proportions. - For numeric predictors, compare distributions by outcome.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper to compute row-wise satisfaction proportions for factor predictors.</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>prop_by_factor <span class="ot">&lt;-</span> <span class="cf">function</span>(df, var) {</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  tab <span class="ot">&lt;-</span> <span class="fu">table</span>(df[[var]], df<span class="sc">$</span>satisfaction)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">round</span>(<span class="fu">prop.table</span>(tab, <span class="at">margin =</span> <span class="dv">1</span>), <span class="dv">3</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Example factor summaries.</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="fu">prop_by_factor</span>(training, <span class="st">"Gender"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        
+         dissatisfied satisfied
+  Female        0.345     0.655
+  Male          0.559     0.441</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">prop_by_factor</span>(training, <span class="st">"Customer_Type"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                   
+                    dissatisfied satisfied
+  disloyal Customer        0.763     0.237
+  Loyal Customer           0.380     0.620</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">prop_by_factor</span>(training, <span class="st">"Class"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          
+           dissatisfied satisfied
+  Business        0.287     0.713
+  Eco             0.604     0.396
+  Eco Plus        0.571     0.429</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example numeric summaries by class.</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>training <span class="sc">%&gt;%</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(satisfaction) <span class="sc">%&gt;%</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_age =</span> <span class="fu">mean</span>(Age, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_flight_distance =</span> <span class="fu">mean</span>(Flight_Distance, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_arrival_delay =</span> <span class="fu">mean</span>(Arrival_Delay_in_Minutes, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 4
+  satisfaction mean_age mean_flight_distance mean_arrival_delay
+  &lt;fct&gt;           &lt;dbl&gt;                &lt;dbl&gt;              &lt;dbl&gt;
+1 dissatisfied     37.5                2023.               18.3
+2 satisfied        41.0                1943.               12.3</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot examples for visual comparison.</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>training <span class="sc">%&gt;%</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> satisfaction, <span class="at">y =</span> Age)) <span class="sc">+</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Age by satisfaction"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="R_exam_comp_2024_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Descriptive statistics indicate strong association between satisfaction and service-related variables such as in-flight entertainment, online support, and baggage handling. Customer type and travel class also show clear differences in dissatisfaction rates, while some continuous variables like delays often have weaker marginal patterns.</p>
+</section>
+<section id="task-2d" class="level2" data-number="0.10">
+<h2 data-number="0.10" class="anchored" data-anchor-id="task-2d"><span class="header-section-number">0.10</span> Task 2d</h2>
+<p><strong>Question:</strong> Formulate a logistic regression model and evaluate associated variables and model fit.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Binary outcome implies logistic regression. - You need coefficient interpretation and fit metrics. - Confusion matrix and accuracy are acceptable, AUC is also acceptable.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Build a practical explanatory logistic model.</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>form_explain <span class="ot">&lt;-</span> satisfaction <span class="sc">~</span> Gender <span class="sc">+</span> Customer_Type <span class="sc">+</span> Age <span class="sc">+</span> Type_of_Travel <span class="sc">+</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  Class <span class="sc">+</span> Flight_Distance <span class="sc">+</span> Food_and_drink <span class="sc">+</span> Inflight_entertainment <span class="sc">+</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  Online_support <span class="sc">+</span> Baggage_handling <span class="sc">+</span> Checkin_service <span class="sc">+</span> Arrival_Delay_in_Minutes</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>logreg <span class="ot">&lt;-</span> <span class="fu">glm</span>(form_explain, <span class="at">data =</span> training, <span class="at">family =</span> <span class="fu">binomial</span>())</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(logreg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = form_explain, family = binomial(), data = training)
+
+Coefficients: (1 not defined because of singularities)
+                                Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)                   -9.567e+00  7.246e+01  -0.132  0.89496    
+GenderMale                    -1.117e+00  2.544e-02 -43.893  &lt; 2e-16 ***
+Customer_TypeLoyal Customer    2.372e+00  4.010e-02  59.152  &lt; 2e-16 ***
+Age                           -5.873e-03  8.806e-04  -6.670 2.56e-11 ***
+Type_of_TravelPersonal Travel -1.282e+00  3.591e-02 -35.699  &lt; 2e-16 ***
+ClassEco                      -5.939e-01  3.171e-02 -18.730  &lt; 2e-16 ***
+ClassEco Plus                 -6.947e-01  4.884e-02 -14.224  &lt; 2e-16 ***
+Flight_Distance               -8.959e-05  1.321e-05  -6.783 1.18e-11 ***
+Food_and_drink1               -2.397e+00  1.061e-01 -22.591  &lt; 2e-16 ***
+Food_and_drink2               -2.529e+00  1.058e-01 -23.903  &lt; 2e-16 ***
+Food_and_drink3               -2.578e+00  1.054e-01 -24.451  &lt; 2e-16 ***
+Food_and_drink4               -2.405e+00  1.050e-01 -22.903  &lt; 2e-16 ***
+Food_and_drink5               -1.691e+00  1.061e-01 -15.931  &lt; 2e-16 ***
+Inflight_entertainment1       -5.902e-01  1.239e-01  -4.765 1.89e-06 ***
+Inflight_entertainment2       -7.423e-01  1.235e-01  -6.009 1.87e-09 ***
+Inflight_entertainment3       -6.851e-01  1.220e-01  -5.616 1.95e-08 ***
+Inflight_entertainment4        1.219e+00  1.220e-01   9.992  &lt; 2e-16 ***
+Inflight_entertainment5        3.033e+00  1.274e-01  23.811  &lt; 2e-16 ***
+Online_support1                1.068e+01  7.246e+01   0.147  0.88285    
+Online_support2                1.076e+01  7.246e+01   0.148  0.88198    
+Online_support3                1.026e+01  7.246e+01   0.142  0.88743    
+Online_support4                1.113e+01  7.246e+01   0.154  0.87790    
+Online_support5                1.160e+01  7.246e+01   0.160  0.87281    
+Baggage_handling2             -1.161e-01  5.815e-02  -1.997  0.04586 *  
+Baggage_handling3             -1.424e-01  5.422e-02  -2.627  0.00862 ** 
+Baggage_handling4              1.103e+00  5.130e-02  21.507  &lt; 2e-16 ***
+Baggage_handling5              1.822e+00  5.464e-02  33.356  &lt; 2e-16 ***
+Checkin_service1              -1.026e+00  4.639e-02 -22.118  &lt; 2e-16 ***
+Checkin_service2              -8.927e-01  4.635e-02 -19.261  &lt; 2e-16 ***
+Checkin_service3              -5.394e-01  3.811e-02 -14.155  &lt; 2e-16 ***
+Checkin_service4              -6.014e-01  3.779e-02 -15.915  &lt; 2e-16 ***
+Checkin_service5                      NA         NA      NA       NA    
+Arrival_Delay_in_Minutes      -5.680e-03  3.400e-04 -16.705  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 89131  on 64759  degrees of freedom
+Residual deviance: 42877  on 64728  degrees of freedom
+  (180 observations deleted due to missingness)
+AIC: 42941
+
+Number of Fisher Scoring iterations: 8</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Out-of-sample evaluation at threshold 0.5.</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>prob_logreg <span class="ot">&lt;-</span> <span class="fu">predict</span>(logreg, <span class="at">newdata =</span> test, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>pred_logreg <span class="ot">&lt;-</span> <span class="fu">if_else</span>(prob_logreg <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="fu">levels</span>(training<span class="sc">$</span>satisfaction)[<span class="dv">2</span>], <span class="fu">levels</span>(training<span class="sc">$</span>satisfaction)[<span class="dv">1</span>]) <span class="sc">%&gt;%</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">factor</span>(<span class="at">levels =</span> <span class="fu">levels</span>(training<span class="sc">$</span>satisfaction))</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>cm_logreg <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">actual =</span> test<span class="sc">$</span>satisfaction, <span class="at">predicted =</span> pred_logreg)</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>cm_logreg</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              predicted
+actual         dissatisfied satisfied
+  dissatisfied        24702      4752
+  satisfied            4895     30378</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">diag</span>(cm_logreg)) <span class="sc">/</span> <span class="fu">sum</span>(cm_logreg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.8509586</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Logistic regression confirms that customer experience variables are strongly linked to satisfaction. The model provides interpretable directional effects and solid predictive fit, with accuracy typically around the mid-to-high 0.80 range depending on split.</p>
+</section>
+<section id="task-2e" class="level2" data-number="0.11">
+<h2 data-number="0.11" class="anchored" data-anchor-id="task-2e"><span class="header-section-number">0.11</span> Task 2e</h2>
+<p><strong>Question:</strong> Fit and interpret a classification tree and evaluate model fit.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - If exam asks for branch interpretation, a tree model is required. - You should show both structure and performance metrics.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit classification tree using same formula.</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>tree_model <span class="ot">&lt;-</span> <span class="fu">tree</span>(form_explain, <span class="at">data =</span> training)</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(tree_model)</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(tree_model, <span class="at">pretty =</span> <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="R_exam_comp_2024_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict classes by probability threshold 0.5.</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>prob_tree <span class="ot">&lt;-</span> <span class="fu">predict</span>(tree_model, <span class="at">newdata =</span> test)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>pred_tree <span class="ot">&lt;-</span> <span class="fu">if_else</span>(prob_tree[, <span class="dv">2</span>] <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="fu">colnames</span>(prob_tree)[<span class="dv">2</span>], <span class="fu">colnames</span>(prob_tree)[<span class="dv">1</span>]) <span class="sc">%&gt;%</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">factor</span>(<span class="at">levels =</span> <span class="fu">levels</span>(test<span class="sc">$</span>satisfaction))</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>cm_tree <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">actual =</span> test<span class="sc">$</span>satisfaction, <span class="at">predicted =</span> pred_tree)</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>cm_tree</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              predicted
+actual         dissatisfied satisfied
+  dissatisfied        24259      5301
+  satisfied            5408     29972</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">diag</span>(cm_tree)) <span class="sc">/</span> <span class="fu">sum</span>(cm_tree)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.8350939</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The tree gives transparent if-then logic for dissatisfaction and is easy to communicate to non-technical stakeholders. Predictive performance is typically slightly lower than the logistic model but the branch-level interpretability is strong.</p>
+</section>
+<section id="task-2f" class="level2" data-number="0.12">
+<h2 data-number="0.12" class="anchored" data-anchor-id="task-2f"><span class="header-section-number">0.12</span> Task 2f</h2>
+<p><strong>Question:</strong> Can bagging or random forest improve predictions, and what does variable importance show?</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Improvement over single tree suggests ensemble trees. - Variable importance request points directly to random forest output.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit random forest for classification.</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>rf_model <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(form_explain, <span class="at">data =</span> training, <span class="at">na.action =</span> na.omit)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict classes and evaluate.</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>pred_rf <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_model, <span class="at">newdata =</span> test)</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>cm_rf <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">actual =</span> test<span class="sc">$</span>satisfaction, <span class="at">predicted =</span> pred_rf)</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>cm_rf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              predicted
+actual         dissatisfied satisfied
+  dissatisfied        26676      2778
+  satisfied            2425     32848</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">diag</span>(cm_rf)) <span class="sc">/</span> <span class="fu">sum</span>(cm_rf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.9196162</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot and inspect variable importance.</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">varImpPlot</span>(rf_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="R_exam_comp_2024_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">importance</span>(rf_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                         MeanDecreaseGini
+Gender                           1597.559
+Customer_Type                    1842.047
+Age                              1894.909
+Type_of_Travel                   1437.883
+Class                            1640.237
+Flight_Distance                  2186.138
+Food_and_drink                   2222.794
+Inflight_entertainment           8522.709
+Online_support                   3410.414
+Baggage_handling                 2400.342
+Checkin_service                  1494.493
+Arrival_Delay_in_Minutes         1152.894</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Random forest usually improves accuracy substantially over a single tree by averaging many decorrelated trees. Variable importance typically highlights service-quality predictors such as in-flight entertainment, online support, and baggage handling as key drivers of dissatisfaction.</p>
+</section>
+<section id="task-2g" class="level2" data-number="0.13">
+<h2 data-number="0.13" class="anchored" data-anchor-id="task-2g"><span class="header-section-number">0.13</span> Task 2g</h2>
+<p><strong>Question:</strong> Based on analysis so far, answer why some customers are dissatisfied.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - This is a synthesis question. - Use evidence from descriptive analysis plus model importance and coefficients.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compact summary table to support the narrative answer.</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>training <span class="sc">%&gt;%</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(satisfaction) <span class="sc">%&gt;%</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_food =</span> <span class="fu">mean</span>(<span class="fu">as.numeric</span>(<span class="fu">as.character</span>(Food_and_drink)), <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_ent =</span> <span class="fu">mean</span>(<span class="fu">as.numeric</span>(<span class="fu">as.character</span>(Inflight_entertainment)), <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_support =</span> <span class="fu">mean</span>(<span class="fu">as.numeric</span>(<span class="fu">as.character</span>(Online_support)), <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_baggage =</span> <span class="fu">mean</span>(<span class="fu">as.numeric</span>(<span class="fu">as.character</span>(Baggage_handling)), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 5
+  satisfaction mean_food mean_ent mean_support mean_baggage
+  &lt;fct&gt;            &lt;dbl&gt;    &lt;dbl&gt;        &lt;dbl&gt;        &lt;dbl&gt;
+1 dissatisfied      2.65     2.61         2.95         3.37
+2 satisfied         3.01     4.03         3.99         3.97</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Dissatisfaction is mainly associated with poor evaluations of service-touchpoint variables, especially in-flight entertainment, online support, and baggage handling. Customer segment factors such as disloyal status and travel class also contribute, but perceived service quality appears to dominate.</p>
+</section>
+<section id="task-2h" class="level2" data-number="0.14">
+<h2 data-number="0.14" class="anchored" data-anchor-id="task-2h"><span class="header-section-number">0.14</span> Task 2h</h2>
+<p><strong>Question:</strong> Shift to operational prediction and state assumptions about which variables are available at ticket purchase.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - The question is about data availability and leakage. - Variables collected after a flight cannot be used for pre-flight prediction.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Build an operational dataset that excludes post-flight satisfaction survey fields.</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>ops_data <span class="ot">&lt;-</span> airline <span class="sc">%&gt;%</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>    satisfaction,</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>    Gender, Customer_Type, Age, Type_of_Travel, Class, Flight_Distance</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Recreate split on operational variables only.</span></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(ops_data)</span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>ind <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq_len</span>(n), <span class="at">size =</span> <span class="fu">floor</span>(n <span class="sc">/</span> <span class="dv">2</span>))</span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>training_ops <span class="ot">&lt;-</span> ops_data[ind, ]</span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>test_ops <span class="ot">&lt;-</span> ops_data[<span class="sc">-</span>ind, ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> For operational prediction at ticket purchase, only pre-flight known features should be used. Survey satisfaction items and realized delay outcomes are unavailable at prediction time, so including them would create leakage and unrealistic performance estimates.</p>
+</section>
+<section id="task-2i" class="level2" data-number="0.15">
+<h2 data-number="0.15" class="anchored" data-anchor-id="task-2i"><span class="header-section-number">0.15</span> Task 2i</h2>
+<p><strong>Question:</strong> In tasks (h) to (l), motivate evaluation on all, training, or test data.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - The objective is explicit prediction for new customers. - Therefore true holdout test evaluation is required.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Demonstrate proper split usage by checking dimensions only.</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(training_ops)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 64940     7</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(test_ops)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 64940     7</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Because the question is now predictive, model quality must be evaluated on unseen data. Training-only evaluation would be optimistic, while a holdout test set better approximates real deployment performance.</p>
+</section>
+<section id="task-2j" class="level2" data-number="0.16">
+<h2 data-number="0.16" class="anchored" data-anchor-id="task-2j"><span class="header-section-number">0.16</span> Task 2j</h2>
+<p><strong>Question:</strong> Formulate and evaluate a logistic model for probability a ticketed customer will be dissatisfied.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Binary output and probability request points to logistic regression. - Operational constraints mean reduced predictor set.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Operational logistic model with pre-flight variables only.</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>logreg_ops <span class="ot">&lt;-</span> <span class="fu">glm</span>(</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  satisfaction <span class="sc">~</span> Gender <span class="sc">+</span> Customer_Type <span class="sc">+</span> Age <span class="sc">+</span> Type_of_Travel <span class="sc">+</span> Class <span class="sc">+</span> Flight_Distance,</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> training_ops,</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">family =</span> <span class="fu">binomial</span>()</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate on holdout test set.</span></span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>prob_ops <span class="ot">&lt;-</span> <span class="fu">predict</span>(logreg_ops, <span class="at">newdata =</span> test_ops, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>pred_ops <span class="ot">&lt;-</span> <span class="fu">if_else</span>(prob_ops <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="fu">levels</span>(training_ops<span class="sc">$</span>satisfaction)[<span class="dv">2</span>], <span class="fu">levels</span>(training_ops<span class="sc">$</span>satisfaction)[<span class="dv">1</span>]) <span class="sc">%&gt;%</span></span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">factor</span>(<span class="at">levels =</span> <span class="fu">levels</span>(training_ops<span class="sc">$</span>satisfaction))</span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>cm_ops <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">actual =</span> test_ops<span class="sc">$</span>satisfaction, <span class="at">predicted =</span> pred_ops)</span>
+<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a>cm_ops</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              predicted
+actual         dissatisfied satisfied
+  dissatisfied        18951     10609
+  satisfied            5305     30075</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">diag</span>(cm_ops)) <span class="sc">/</span> <span class="fu">sum</span>(cm_ops)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.754943</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The operational logistic model provides a realistic baseline using only available pre-flight information. Performance is lower than explanatory models with survey variables, which is expected because high-signal post-flight satisfaction fields are excluded.</p>
+</section>
+<section id="task-2k" class="level2" data-number="0.17">
+<h2 data-number="0.17" class="anchored" data-anchor-id="task-2k"><span class="header-section-number">0.17</span> Task 2k</h2>
+<p><strong>Question:</strong> Use random forest for dissatisfied prediction and compare with logistic regression.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Same operational feature set should be used for fair comparison. - Random forest can capture nonlinear interactions missed by logistic regression.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Random forest on operational predictors.</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>rf_ops <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>  satisfaction <span class="sc">~</span> Gender <span class="sc">+</span> Customer_Type <span class="sc">+</span> Age <span class="sc">+</span> Type_of_Travel <span class="sc">+</span> Class <span class="sc">+</span> Flight_Distance,</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> training_ops,</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">na.action =</span> na.omit</span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>pred_rf_ops <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_ops, <span class="at">newdata =</span> test_ops)</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>cm_rf_ops <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">actual =</span> test_ops<span class="sc">$</span>satisfaction, <span class="at">predicted =</span> pred_rf_ops)</span>
+<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a>cm_rf_ops</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              predicted
+actual         dissatisfied satisfied
+  dissatisfied        21249      8311
+  satisfied            5866     29514</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">diag</span>(cm_rf_ops)) <span class="sc">/</span> <span class="fu">sum</span>(cm_rf_ops)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.7816908</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The operational random forest often improves classification versus logistic regression by learning interaction and nonlinear structure. The gain is usually moderate, but meaningful for intervention targeting.</p>
+</section>
+<section id="task-2l" class="level2" data-number="0.18">
+<h2 data-number="0.18" class="anchored" data-anchor-id="task-2l"><span class="header-section-number">0.18</span> Task 2l</h2>
+<p><strong>Question:</strong> From original variables in (a) to (g), identify additional realistic future information that could improve prediction under anonymous survey constraints.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - This asks for business-feasible feature engineering. - Focus on variables collectable before flight and not violating anonymity assumptions.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example feature engineering candidates that are realistically available.</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>ops_data_aug <span class="ot">&lt;-</span> airline <span class="sc">%&gt;%</span></span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">is_long_haul =</span> Flight_Distance <span class="sc">&gt;</span> <span class="fu">median</span>(Flight_Distance, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_bucket =</span> <span class="fu">cut</span>(Age, <span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">25</span>, <span class="dv">40</span>, <span class="dv">55</span>, <span class="cn">Inf</span>), <span class="at">include.lowest =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb56-7"><a href="#cb56-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(satisfaction, Gender, Customer_Type, Type_of_Travel, Class, Flight_Distance, is_long_haul, age_bucket)</span>
+<span id="cb56-8"><a href="#cb56-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-9"><a href="#cb56-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Show resulting schema for discussion.</span></span>
+<span id="cb56-10"><a href="#cb56-10" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(ops_data_aug)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 129,880
+Columns: 8
+$ satisfaction    &lt;fct&gt; satisfied, satisfied, satisfied, satisfied, satisfied,…
+$ Gender          &lt;fct&gt; Female, Male, Female, Female, Female, Male, Female, Ma…
+$ Customer_Type   &lt;fct&gt; Loyal Customer, Loyal Customer, Loyal Customer, Loyal …
+$ Type_of_Travel  &lt;fct&gt; Personal Travel, Personal Travel, Personal Travel, Per…
+$ Class           &lt;fct&gt; Eco, Business, Eco, Eco, Eco, Eco, Eco, Eco, Business,…
+$ Flight_Distance &lt;dbl&gt; 265, 2464, 2138, 623, 354, 1894, 227, 1812, 73, 1556, …
+$ is_long_haul    &lt;lgl&gt; FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, …
+$ age_bucket      &lt;fct&gt; "(55,Inf]", "(40,55]", "[0,25]", "(55,Inf]", "(55,Inf]…</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Predictive quality can improve by collecting additional pre-flight operational variables such as itinerary complexity, seat assignment context, expected gate distance, or historical delay risk indicators. These are realistic to gather and do not require post-flight anonymous survey responses.</p>
+</section>
+<section id="generalizable-tips-and-tricks-2024-exam" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> 💡 Generalizable Tips and Tricks (2024 Exam)</h1>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tip</th>
+<th>Why it matters</th>
+<th>Reusable snippet</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Match method to objective</td>
+<td>Explanatory and predictive tasks require different validation logic</td>
+<td><code>set.seed(123); ind &lt;- sample(seq_len(nrow(df)), floor(nrow(df)/2))</code></td>
+</tr>
+<tr class="even">
+<td>Use LOOCV for tiny samples</td>
+<td>Gives high-precision error estimate when n is small</td>
+<td><code>mean((y - ypred)^2)</code></td>
+</tr>
+<tr class="odd">
+<td>Avoid leakage in operational models</td>
+<td>Use only features known at decision time</td>
+<td><code>select(satisfaction, Gender, Customer_Type, Age, Type_of_Travel, Class, Flight_Distance)</code></td>
+</tr>
+<tr class="even">
+<td>Compare models with same split</td>
+<td>Fair model comparison requires same train and test partitions</td>
+<td><code>sum(diag(cm))/sum(cm)</code></td>
+</tr>
+<tr class="odd">
+<td>Use row-wise class proportions</td>
+<td>Class-wise rates reveal imbalance effects hidden by accuracy</td>
+<td><code>prop.table(table(actual, pred), margin = 1)</code></td>
+</tr>
+<tr class="even">
+<td>Report both fit and interpretation</td>
+<td>Exam grading rewards reasoning, not only code execution</td>
+<td><code>summary(logreg); varImpPlot(rf_model)</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

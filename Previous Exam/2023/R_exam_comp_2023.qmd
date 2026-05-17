@@ -1,0 +1,492 @@
+---
+title: "BAN404 R Exam Compendium"
+subtitle: "Comprehensive solution guide — 2023 school exam"
+author: "Self-study preparation file"
+date: "2026"
+format:
+  html:
+    toc: true
+    toc-depth: 4
+    number-sections: true
+    theme: flatly
+    highlight-style: kate
+  pdf:
+    toc: true
+    number-sections: true
+execute:
+  echo: true
+  warning: false
+  message: false
+  eval: false
+  error: true
+---
+
+## Setup and libraries
+
+```{r}
+#| eval: true
+
+library(tidyverse)
+library(glmnet)
+library(tree)
+library(randomForest)
+
+# Read exam data.
+churn_raw <- read_csv("Churn.csv", show_col_types = FALSE)
+
+# Basic preprocessing used in both tasks.
+churn_data <- churn_raw %>%
+  select(-id) %>%
+  mutate(
+    is_tv_subscriber = as.factor(is_tv_subscriber),
+    is_movie_package_subscriber = as.factor(is_movie_package_subscriber),
+    churn = as.factor(churn)
+  )
+
+# Shared split seed from exam.
+set.seed(86554354)
+idx <- sample(seq_len(nrow(churn_data)), size = floor(nrow(churn_data) / 2))
+train <- churn_data[idx, ]
+test <- churn_data[-idx, ]
+```
+
+## Task 1a
+
+**Question:** Recode variables as needed, remove unreasonable variables, motivate choices, and split data 50/50 with `set.seed(86554354)`.
+
+**How to recognize this method on the exam (The Detective Work):**
+- This is data-design and leakage-control work before modeling.
+- ID variables are not predictive features.
+- Binary indicators should be factors for classification settings.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+xdata <- churn_raw %>%
+  select(-id) %>%
+  mutate(
+    is_tv_subscriber = as.factor(is_tv_subscriber),
+    is_movie_package_subscriber = as.factor(is_movie_package_subscriber),
+    churn = as.factor(churn)
+  )
+
+set.seed(86554354)
+ind <- sample(seq_len(nrow(xdata)), size = floor(nrow(xdata) / 2))
+train <- xdata[ind, ]
+test <- xdata[-ind, ]
+
+glimpse(train)
+```
+
+**AAA-Grade Written Answer:** I removed `id` because it is an identifier with no stable predictive mechanism. I recoded binary subscription variables and `churn` as factors to preserve categorical meaning. The fixed 50/50 split ensures reproducibility and unbiased out-of-sample evaluation.
+
+## Task 1b
+
+**Question:** Use descriptive methods to find useful predictors for `bill_avg`, explain methods, show key tables and graphs, and comment.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Continuous target with mixed predictors requires grouped summaries and boxplots.
+- We want association screening, not final causal proof.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Group means by churn status to support quick pattern detection.
+train %>%
+  group_by(churn) %>%
+  summarise(
+    mean_bill = mean(bill_avg, na.rm = TRUE),
+    mean_download = mean(download_avg, na.rm = TRUE),
+    mean_upload = mean(upload_avg, na.rm = TRUE),
+    mean_remaining_contract = mean(remaining_contract, na.rm = TRUE)
+  )
+
+# Example descriptive plot for a strong numeric predictor.
+train %>%
+  ggplot(aes(x = remaining_contract, y = bill_avg)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Bill average versus remaining contract")
+```
+
+**AAA-Grade Written Answer:** Descriptive statistics indicate that `remaining_contract`, usage intensity variables, and service indicators have visible association with `bill_avg`. These variables are therefore promising inputs for predictive regression models.
+
+## Task 1c
+
+**Question:** Produce best OLS predictions of `bill_avg` and evaluate them with justified metric.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Continuous response implies regression and MSE-based evaluation.
+- Best-practice is to compare full and reduced models on test MSE.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+ols_full <- lm(bill_avg ~ ., data = train)
+pred_full <- predict(ols_full, newdata = test)
+mse_full <- mean((test$bill_avg - pred_full)^2)
+
+# Example reduced model to test if weak predictors hurt performance.
+ols_reduced <- lm(bill_avg ~ . - download_avg - upload_avg, data = train)
+pred_reduced <- predict(ols_reduced, newdata = test)
+mse_reduced <- mean((test$bill_avg - pred_reduced)^2)
+
+tibble(model = c("OLS full", "OLS reduced"), test_mse = c(mse_full, mse_reduced))
+```
+
+**AAA-Grade Written Answer:** OLS with all available predictors gives a strong baseline and usually outperforms the reduced version in this exam dataset. Test MSE is appropriate because the objective is numerical prediction quality.
+
+## Task 1d
+
+**Question:** Fit LASSO with all variables, tune parameters, justify standardization, and compare coefficients with OLS.
+
+**How to recognize this method on the exam (The Detective Work):**
+- LASSO request means `alpha = 1` in glmnet.
+- Different variable scales require standardization.
+- Factor predictors must be encoded as model matrix columns.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Build design matrices using model.matrix so factors become dummies.
+X_train <- model.matrix(bill_avg ~ ., data = train)[, -1]
+y_train <- train$bill_avg
+X_test <- model.matrix(bill_avg ~ ., data = test)[, -1]
+
+# Cross-validated lambda for LASSO.
+cv_lasso <- cv.glmnet(X_train, y_train, alpha = 1, standardize = TRUE)
+lasso_fit <- glmnet(X_train, y_train, alpha = 1, lambda = cv_lasso$lambda.min, standardize = TRUE)
+
+# Coefficient comparison with OLS.
+coef_lasso <- as.matrix(coef(lasso_fit))
+coef_ols <- coef(ols_full)
+head(coef_lasso)
+head(coef_ols)
+```
+
+**AAA-Grade Written Answer:** Standardization is appropriate because predictors are on very different scales, and LASSO penalties are scale-sensitive. In this dataset, LASSO coefficients are close to OLS with only mild shrinkage, indicating limited gain from strong sparsity.
+
+## Task 1e
+
+**Question:** Predict `bill_avg` with model from 1d and evaluate.
+
+**How to recognize this method on the exam (The Detective Work):**
+- This is direct out-of-sample evaluation of tuned LASSO.
+- Metric should stay consistent with Task 1c.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+pred_lasso <- as.numeric(predict(lasso_fit, newx = X_test))
+mse_lasso <- mean((test$bill_avg - pred_lasso)^2)
+
+mse_lasso
+```
+
+**AAA-Grade Written Answer:** The LASSO test MSE is typically very close to the OLS full-model MSE in this exam, so regularization gives little practical improvement for `bill_avg` prediction.
+
+## Task 1f
+
+**Question:** Fit and interpret a regression tree for `bill_avg`.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Tree request with interpretation means show split rules and terminal node values.
+- Regression tree is used because target is continuous.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+tree_reg <- tree(bill_avg ~ ., data = train)
+plot(tree_reg)
+text(tree_reg, pretty = 0)
+summary(tree_reg)
+```
+
+**AAA-Grade Written Answer:** The regression tree identifies high- and low-bill customer segments through split rules, often emphasizing usage and contract variables. Terminal node means provide direct, business-interpretable bill predictions.
+
+## Task 1g
+
+**Question:** Predict `bill_avg` with tree from 1f and evaluate.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Same target and metric as prior regression tasks.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+pred_tree <- predict(tree_reg, newdata = test)
+mse_tree <- mean((test$bill_avg - pred_tree)^2)
+
+mse_tree
+```
+
+**AAA-Grade Written Answer:** The regression tree provides competitive performance but is often slightly weaker than OLS for this dataset unless strong nonlinear effects dominate.
+
+## Task 1h
+
+**Question:** Fit random forest for `bill_avg`, plot variable importance, interpret, and explain measure.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Ensemble request with importance implies random forest regression.
+- For regression RF, importance often uses decrease in RSS node impurity.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+rf_reg <- randomForest(bill_avg ~ ., data = train, ntree = 50)
+pred_rf_reg <- predict(rf_reg, newdata = test)
+mse_rf_reg <- mean((test$bill_avg - pred_rf_reg)^2)
+
+mse_rf_reg
+varImpPlot(rf_reg)
+importance(rf_reg)
+```
+
+**AAA-Grade Written Answer:** Random forest usually improves prediction by averaging many decorrelated trees, reducing variance relative to one tree. Importance values summarize average impurity reduction attributable to each predictor.
+
+## Task 1i
+
+**Question:** Use random forest model from 1h to predict `bill_avg` and evaluate.
+
+**How to recognize this method on the exam (The Detective Work):**
+- This confirms performance from ensemble model in explicit evaluation step.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Reuse predictions and report MSE clearly.
+tibble(model = "Random forest", test_mse = mse_rf_reg)
+```
+
+**AAA-Grade Written Answer:** The random forest generally gives the lowest test MSE among models in Task 1, indicating it captures nonlinearities and interactions effectively.
+
+## Task 1j
+
+**Question:** Based on 1a to 1i, what features characterize customers with high versus low average bills?
+
+**How to recognize this method on the exam (The Detective Work):**
+- This is synthesis from descriptive stats and model outputs.
+- Use signs from linear models and split logic from trees.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Coefficient-based directional evidence.
+tidy_coefs <- broom::tidy(ols_full)
+head(tidy_coefs)
+
+# Segment means for practical summary.
+train %>%
+  mutate(bill_group = if_else(bill_avg >= median(bill_avg, na.rm = TRUE), "high", "low")) %>%
+  group_by(bill_group) %>%
+  summarise(
+    mean_download = mean(download_avg, na.rm = TRUE),
+    mean_upload = mean(upload_avg, na.rm = TRUE),
+    mean_remaining_contract = mean(remaining_contract, na.rm = TRUE)
+  )
+```
+
+**AAA-Grade Written Answer:** High-bill customers generally show heavier usage patterns and distinct contract/subscription profiles, while low-bill customers show lower usage intensity and lower service load. The exact pattern is consistent across OLS and tree-based summaries.
+
+## Task 2a
+
+**Question:** Ensure right formats, remove unhelpful variables with motivation, and use descriptive statistics to find promising churn predictors.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Binary outcome requires careful factor encoding.
+- You must justify feature relevance and possible leakage.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Reconfirm formats for churn classification.
+churn_cls <- churn_raw %>%
+  select(-id) %>%
+  mutate(
+    is_tv_subscriber = as.factor(is_tv_subscriber),
+    is_movie_package_subscriber = as.factor(is_movie_package_subscriber),
+    churn = as.factor(churn)
+  )
+
+# Group summaries by churn class.
+churn_cls %>%
+  group_by(churn) %>%
+  summarise(
+    tv_rate = mean(as.numeric(as.character(is_tv_subscriber))),
+    movie_rate = mean(as.numeric(as.character(is_movie_package_subscriber))),
+    mean_remaining_contract = mean(remaining_contract, na.rm = TRUE),
+    mean_download_over_limit = mean(download_over_limit, na.rm = TRUE)
+  )
+```
+
+**AAA-Grade Written Answer:** Promising churn predictors include contract horizon, service failures, over-limit behavior, and subscription package indicators. Format corrections ensure logistic and tree models treat categorical predictors correctly.
+
+## Task 2b
+
+**Question:** Using the first 50 original churn observations, bootstrap a 95% confidence interval for churn probability and compare with normal approximation.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Parameter is Bernoulli probability p.
+- Bootstrap percentile interval and Wald approximation should be compared.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# First 50 original values.
+y <- as.numeric(as.character(churn_cls$churn[1:50]))
+B <- 1000
+
+# Bootstrap sample proportions.
+set.seed(1)
+p_boot <- replicate(B, mean(sample(y, size = length(y), replace = TRUE)))
+
+# Percentile interval.
+ci_boot <- quantile(p_boot, probs = c(0.025, 0.975))
+
+# Standard normal approximation interval.
+phat <- mean(y)
+n <- length(y)
+ci_norm <- c(
+  phat - 1.96 * sqrt(phat * (1 - phat) / n),
+  phat + 1.96 * sqrt(phat * (1 - phat) / n)
+)
+
+ci_boot
+ci_norm
+```
+
+**AAA-Grade Written Answer:** The bootstrap and normal-approximation intervals are usually very close in this task, indicating the normal approximation works reasonably well for this sample size and estimated churn fraction.
+
+## Task 2c
+
+**Question:** Fit logistic regression with all variables for churn, interpret coefficients for TV and movie package subscription, and discuss signs.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Binary target with coefficient interpretation in odds scale.
+- Requested variables should be translated from log-odds to odds ratios.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+logit_all <- glm(churn ~ ., data = train, family = binomial())
+summary(logit_all)
+
+# Convert key effects to odds ratios.
+# Suffix "1" indicates the level coded as 1 (subscriber/present) versus reference level 0.
+exp(coef(logit_all)[c("is_tv_subscriber1", "is_movie_package_subscriber1")])
+```
+
+**AAA-Grade Written Answer:** A negative TV-subscriber coefficient implies lower churn odds for TV subscribers, holding other variables fixed. The movie-package effect is weaker but often also negative. Most signs are directionally plausible given customer commitment and contract context.
+
+## Task 2d
+
+**Question:** Predict churn with logistic model from 2c, evaluate appropriately, and test whether removing variables improves predictions.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Classification evaluation should include confusion matrix and class-wise rates.
+- Reduced model check tests robustness against non-significant predictors.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Full model predictions.
+prob_full <- predict(logit_all, newdata = test, type = "response")
+pred_full <- if_else(prob_full > 0.5, "1", "0") %>% factor(levels = levels(test$churn))
+cm_full <- table(actual = test$churn, predicted = pred_full)
+cm_full
+
+# Reduced model without weak terms from marking guidance.
+logit_red <- glm(churn ~ . - bill_avg - upload_avg, data = train, family = binomial())
+prob_red <- predict(logit_red, newdata = test, type = "response")
+pred_red <- if_else(prob_red > 0.5, "1", "0") %>% factor(levels = levels(test$churn))
+cm_red <- table(actual = test$churn, predicted = pred_red)
+cm_red
+```
+
+**AAA-Grade Written Answer:** Logistic predictions are strong with threshold 0.5 in this dataset. Removing weak variables usually changes confusion-matrix performance only marginally, so the gain from simplification is limited.
+
+## Task 2e
+
+**Question:** Use random forest to predict churn and evaluate.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Ensemble trees are a standard performance upgrade check after logistic baseline.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+rf_cls <- randomForest(churn ~ ., data = train, ntree = 50)
+pred_rf_cls <- predict(rf_cls, newdata = test)
+cm_rf_cls <- table(actual = test$churn, predicted = pred_rf_cls)
+cm_rf_cls
+sum(diag(cm_rf_cls)) / sum(cm_rf_cls)
+```
+
+**AAA-Grade Written Answer:** Random forest typically improves churn classification noticeably, especially for the majority class and often for the minority class as well, by capturing interaction and nonlinear structure.
+
+## Task 2f
+
+**Question:** Based on 2a to 2e, describe typical features of customers who churn.
+
+**How to recognize this method on the exam (The Detective Work):**
+- Integrate descriptive differences with model signs and feature importance.
+
+**Step-by-step code:**
+
+```{r}
+#| eval: true
+
+# Support narrative with grouped means.
+train %>%
+  mutate(churn_num = as.numeric(as.character(churn))) %>%
+  group_by(churn) %>%
+  summarise(
+    mean_subscription_age = mean(subscription_age, na.rm = TRUE),
+    mean_remaining_contract = mean(remaining_contract, na.rm = TRUE),
+    mean_service_failures = mean(service_failure_count, na.rm = TRUE),
+    mean_over_limit = mean(download_over_limit, na.rm = TRUE)
+  )
+```
+
+**AAA-Grade Written Answer:** Typical churners tend to have shorter relationship horizon, lower remaining contract commitment, higher service friction, and behavior indicating usage-limit tension. These patterns are consistent across logistic and random-forest analyses.
+
+# 💡 Generalizable Tips and Tricks (2023 Exam)
+
+| Tip | Why it matters | Reusable snippet |
+|---|---|---|
+| Remove IDs early | Prevents noise and false signal from identifier columns | `df <- df %>% select(-id)` |
+| Keep metric consistent | Fair model comparison needs same test metric | `mean((y_true - y_pred)^2)` |
+| Encode factors before GLM/RF | Correct handling of categorical predictors | `mutate(across(c(var1,var2), as.factor))` |
+| Use model.matrix for glmnet | LASSO needs numeric matrix with dummy coding | `X <- model.matrix(y ~ ., data=df)[,-1]` |
+| Compare full vs reduced logistic | Tests whether simplification improves generalization | `glm(churn ~ . - weak_var1 - weak_var2, family=binomial())` |
+| Always show confusion matrix | Accuracy alone can hide class imbalance behavior | `table(actual, predicted)` |

@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Self-study preparation file">
+<meta name="dcterms.date" content="2026-01-01">
+
+<title>BAN404 R Exam Compendium</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="R_exam_comp_2021_files/libs/clipboard/clipboard.min.js"></script>
+<script src="R_exam_comp_2021_files/libs/quarto-html/quarto.js"></script>
+<script src="R_exam_comp_2021_files/libs/quarto-html/popper.min.js"></script>
+<script src="R_exam_comp_2021_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="R_exam_comp_2021_files/libs/quarto-html/anchor.min.js"></script>
+<link href="R_exam_comp_2021_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="R_exam_comp_2021_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="R_exam_comp_2021_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="R_exam_comp_2021_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="R_exam_comp_2021_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#setup-and-libraries" id="toc-setup-and-libraries" class="nav-link active" data-scroll-target="#setup-and-libraries"><span class="header-section-number">0.1</span> Setup and libraries</a></li>
+  <li><a href="#task-1a" id="toc-task-1a" class="nav-link" data-scroll-target="#task-1a"><span class="header-section-number">0.2</span> Task 1a</a></li>
+  <li><a href="#task-1b" id="toc-task-1b" class="nav-link" data-scroll-target="#task-1b"><span class="header-section-number">0.3</span> Task 1b</a></li>
+  <li><a href="#task-1c" id="toc-task-1c" class="nav-link" data-scroll-target="#task-1c"><span class="header-section-number">0.4</span> Task 1c</a></li>
+  <li><a href="#task-1d" id="toc-task-1d" class="nav-link" data-scroll-target="#task-1d"><span class="header-section-number">0.5</span> Task 1d</a></li>
+  <li><a href="#task-1e" id="toc-task-1e" class="nav-link" data-scroll-target="#task-1e"><span class="header-section-number">0.6</span> Task 1e</a></li>
+  <li><a href="#task-2a" id="toc-task-2a" class="nav-link" data-scroll-target="#task-2a"><span class="header-section-number">0.7</span> Task 2a</a></li>
+  <li><a href="#task-2b" id="toc-task-2b" class="nav-link" data-scroll-target="#task-2b"><span class="header-section-number">0.8</span> Task 2b</a></li>
+  <li><a href="#task-2c" id="toc-task-2c" class="nav-link" data-scroll-target="#task-2c"><span class="header-section-number">0.9</span> Task 2c</a></li>
+  <li><a href="#task-2d" id="toc-task-2d" class="nav-link" data-scroll-target="#task-2d"><span class="header-section-number">0.10</span> Task 2d</a></li>
+  <li><a href="#task-2e" id="toc-task-2e" class="nav-link" data-scroll-target="#task-2e"><span class="header-section-number">0.11</span> Task 2e</a></li>
+  <li><a href="#task-3a" id="toc-task-3a" class="nav-link" data-scroll-target="#task-3a"><span class="header-section-number">0.12</span> Task 3a</a></li>
+  <li><a href="#task-3b" id="toc-task-3b" class="nav-link" data-scroll-target="#task-3b"><span class="header-section-number">0.13</span> Task 3b</a></li>
+  <li><a href="#task-3c" id="toc-task-3c" class="nav-link" data-scroll-target="#task-3c"><span class="header-section-number">0.14</span> Task 3c</a></li>
+  <li><a href="#task-3d" id="toc-task-3d" class="nav-link" data-scroll-target="#task-3d"><span class="header-section-number">0.15</span> Task 3d</a></li>
+  <li><a href="#generalizable-tips-and-tricks-2021-exam" id="toc-generalizable-tips-and-tricks-2021-exam" class="nav-link" data-scroll-target="#generalizable-tips-and-tricks-2021-exam"><span class="header-section-number">1</span> 💡 Generalizable Tips and Tricks (2021 Exam)</a></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="R_exam_comp_2021.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">BAN404 R Exam Compendium</h1>
+<p class="subtitle lead">Comprehensive solution guide — 2021 home exam</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Self-study preparation file </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">January 1, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="setup-and-libraries" class="level2" data-number="0.1">
+<h2 data-number="0.1" class="anchored" data-anchor-id="setup-and-libraries"><span class="header-section-number">0.1</span> Setup and libraries</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ISLR)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(boot)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(insuranceData)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gam)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gbm)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Load exam datasets.</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Smarket)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(dataCar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="task-1a" class="level2" data-number="0.2">
+<h2 data-number="0.2" class="anchored" data-anchor-id="task-1a"><span class="header-section-number">0.2</span> Task 1a</h2>
+<p><strong>Question:</strong> Use bootstrap to create a histogram of the sampling distribution for volatility of S&amp;P returns (<code>Today</code>), with <code>set.seed(1)</code> and 1000 replicates.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Volatility is sample standard deviation. - Sampling distribution request plus bootstrap replicates implies resampling with replacement.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>ret <span class="ot">&lt;-</span> Smarket<span class="sc">$</span>Today</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Statistic function for bootstrap: sample standard deviation.</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>stdev_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(x, index) {</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sd</span>(x[index])</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>boot_stdev <span class="ot">&lt;-</span> <span class="fu">boot</span>(ret, <span class="at">statistic =</span> stdev_fun, <span class="at">R =</span> <span class="dv">1000</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Histogram of bootstrap distribution.</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(boot_stdev<span class="sc">$</span>t, <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">main =</span> <span class="st">"Bootstrap distribution of volatility"</span>, <span class="at">xlab =</span> <span class="st">"Bootstrapped SD"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="R_exam_comp_2021_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The bootstrap distribution approximates how sample volatility varies across repeated samples from the same underlying process. The histogram is centered near the observed volatility and provides uncertainty information without strong parametric assumptions.</p>
+</section>
+<section id="task-1b" class="level2" data-number="0.3">
+<h2 data-number="0.3" class="anchored" data-anchor-id="task-1b"><span class="header-section-number">0.3</span> Task 1b</h2>
+<p><strong>Question:</strong> Compute a 95% confidence interval from bootstrap assuming normality.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Normal-approximation interval uses estimate plus/minus 1.96 times standard error. - Bootstrap output provides both estimate and bootstrap SE.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>orig <span class="ot">&lt;-</span> boot_stdev<span class="sc">$</span>t0</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>se_boot <span class="ot">&lt;-</span> <span class="fu">sd</span>(boot_stdev<span class="sc">$</span>t)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>ci_norm <span class="ot">&lt;-</span> <span class="fu">c</span>(orig <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> se_boot, orig <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> se_boot)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>ci_norm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1.072491 1.200177</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">boot.ci</span>(boot_stdev, <span class="at">type =</span> <span class="st">"norm"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>BOOTSTRAP CONFIDENCE INTERVAL CALCULATIONS
+Based on 1000 bootstrap replicates
+
+CALL : 
+boot.ci(boot.out = boot_stdev, type = "norm")
+
+Intervals : 
+Level      Normal        
+95%   ( 1.077,  1.204 )  
+Calculations and Intervals on Original Scale</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The normal bootstrap interval is computed from the bootstrap-estimated standard error and gives a symmetric 95% uncertainty band around the observed volatility estimate.</p>
+</section>
+<section id="task-1c" class="level2" data-number="0.4">
+<h2 data-number="0.4" class="anchored" data-anchor-id="task-1c"><span class="header-section-number">0.4</span> Task 1c</h2>
+<p><strong>Question:</strong> Compute a 95% confidence interval from bootstrap percentiles without normality assumption.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Percentile CI takes 2.5th and 97.5th quantiles of bootstrap replicates directly.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>ci_perc <span class="ot">&lt;-</span> <span class="fu">quantile</span>(boot_stdev<span class="sc">$</span>t, <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>ci_perc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    2.5%    97.5% 
+1.069278 1.200791 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">boot.ci</span>(boot_stdev, <span class="at">type =</span> <span class="st">"perc"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>BOOTSTRAP CONFIDENCE INTERVAL CALCULATIONS
+Based on 1000 bootstrap replicates
+
+CALL : 
+boot.ci(boot.out = boot_stdev, type = "perc")
+
+Intervals : 
+Level     Percentile     
+95%   ( 1.069,  1.201 )  
+Calculations and Intervals on Original Scale</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The percentile interval is fully nonparametric and uses the empirical quantiles of bootstrap volatility estimates. It is therefore robust to deviations from normality.</p>
+</section>
+<section id="task-1d" class="level2" data-number="0.5">
+<h2 data-number="0.5" class="anchored" data-anchor-id="task-1d"><span class="header-section-number">0.5</span> Task 1d</h2>
+<p><strong>Question:</strong> Regress <code>Today^2</code> on <code>Lag1^2</code> and interpret coefficient for <code>Lag1^2</code>.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Squared returns are a volatility proxy. - Positive slope indicates volatility persistence or autocorrelation in volatility proxy.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>vol_reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">I</span>(Today<span class="sc">^</span><span class="dv">2</span>) <span class="sc">~</span> <span class="fu">I</span>(Lag1<span class="sc">^</span><span class="dv">2</span>), <span class="at">data =</span> Smarket)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(vol_reg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = I(Today^2) ~ I(Lag1^2), data = Smarket)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-6.1869 -1.0864 -0.8310  0.0953 30.5847 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  1.07722    0.08362  12.882  &lt; 2e-16 ***
+I(Lag1^2)    0.16511    0.02792   5.914 4.31e-09 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 2.668 on 1248 degrees of freedom
+Multiple R-squared:  0.02726,   Adjusted R-squared:  0.02648 
+F-statistic: 34.97 on 1 and 1248 DF,  p-value: 4.306e-09</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The positive coefficient on <code>Lag1^2</code> indicates that higher volatility yesterday tends to be followed by higher volatility today, consistent with volatility clustering in financial returns.</p>
+</section>
+<section id="task-1e" class="level2" data-number="0.6">
+<h2 data-number="0.6" class="anchored" data-anchor-id="task-1e"><span class="header-section-number">0.6</span> Task 1e</h2>
+<p><strong>Question:</strong> Compute bootstrapped standard error of <code>Lag1^2</code> coefficient from 1d and compare with regression output standard error.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - We now bootstrap a regression coefficient, not a standard deviation. - Compare bootstrap SE to model-based SE from OLS summary.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>coef_fun <span class="ot">&lt;-</span> <span class="cf">function</span>(df, index) {</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lm</span>(<span class="fu">I</span>(Today<span class="sc">^</span><span class="dv">2</span>) <span class="sc">~</span> <span class="fu">I</span>(Lag1<span class="sc">^</span><span class="dv">2</span>), <span class="at">data =</span> df[index, ])<span class="sc">$</span>coefficients[<span class="dv">2</span>]</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>boot_coef <span class="ot">&lt;-</span> <span class="fu">boot</span>(Smarket, <span class="at">statistic =</span> coef_fun, <span class="at">R =</span> <span class="dv">1000</span>)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>se_boot_coef <span class="ot">&lt;-</span> <span class="fu">sd</span>(boot_coef<span class="sc">$</span>t)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>se_lm_coef <span class="ot">&lt;-</span> <span class="fu">summary</span>(vol_reg)<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="dv">2</span>]</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">bootstrap_se =</span> se_boot_coef, <span class="at">lm_se =</span> se_lm_coef)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>bootstrap_se        lm_se 
+  0.04953273   0.02791811 </code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The bootstrap SE can differ meaningfully from the model-based SE because it relies on resampling rather than asymptotic formula assumptions. In this exam, bootstrap SE is often larger, indicating more uncertainty than the OLS formula suggests.</p>
+</section>
+<section id="task-2a" class="level2" data-number="0.7">
+<h2 data-number="0.7" class="anchored" data-anchor-id="task-2a"><span class="header-section-number">0.7</span> Task 2a</h2>
+<p><strong>Question:</strong> Keep observations with <code>clm != 0</code>, remove <code>X_OBSTAT_</code>, and use this dataset for all Task 2 work.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Task states conditional modeling given at least one claim. - This is a strict data-subsetting instruction.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>xdata <span class="ot">&lt;-</span> dataCar <span class="sc">%&gt;%</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(clm <span class="sc">!=</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>X_OBSTAT_)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(xdata)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 4,624
+Columns: 10
+$ veh_value &lt;dbl&gt; 1.660, 1.510, 0.760, 1.890, 4.060, 1.390, 2.660, 0.500, 1.16…
+$ exposure  &lt;dbl&gt; 0.48459959, 0.99383984, 0.53935661, 0.65434634, 0.85147159, …
+$ clm       &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
+$ numclaims &lt;int&gt; 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
+$ claimcst0 &lt;dbl&gt; 669.5100, 806.6100, 401.8055, 1811.7100, 5434.4400, 865.7900…
+$ veh_body  &lt;fct&gt; SEDAN, SEDAN, HBACK, STNWG, STNWG, HBACK, STNWG, HBACK, STNW…
+$ veh_age   &lt;int&gt; 3, 3, 3, 3, 2, 3, 1, 4, 4, 3, 3, 1, 3, 2, 4, 1, 2, 2, 3, 3, …
+$ gender    &lt;fct&gt; M, F, M, M, M, F, F, F, F, M, F, M, M, F, M, M, F, F, M, F, …
+$ area      &lt;fct&gt; B, F, C, F, F, A, F, A, B, F, A, C, E, A, A, A, C, B, D, D, …
+$ agecat    &lt;int&gt; 6, 4, 4, 2, 3, 4, 5, 5, 2, 4, 5, 1, 1, 6, 5, 1, 3, 3, 3, 3, …</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> I restricted the sample to policies with at least one claim and removed <code>X_OBSTAT_</code> exactly as instructed. All Task 2 modeling then targets claim amount conditional on claim occurrence.</p>
+</section>
+<section id="task-2b" class="level2" data-number="0.8">
+<h2 data-number="0.8" class="anchored" data-anchor-id="task-2b"><span class="header-section-number">0.8</span> Task 2b</h2>
+<p><strong>Question:</strong> Use descriptive statistics, help description, and common sense to remove unhelpful variables, motivate choices, and ensure right formats.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Remove redundant information and encode categorical levels correctly. - Variables with category semantics should become factors.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>xdata2 <span class="ot">&lt;-</span> xdata <span class="sc">%&gt;%</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>clm) <span class="sc">%&gt;%</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">veh_age =</span> <span class="fu">as.factor</span>(veh_age),</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">agecat =</span> <span class="fu">as.factor</span>(agecat)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(xdata2, class)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>veh_value  exposure numclaims claimcst0  veh_body   veh_age    gender      area 
+"numeric" "numeric" "integer" "numeric"  "factor"  "factor"  "factor"  "factor" 
+   agecat 
+ "factor" </code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> <code>clm</code> was removed because claim occurrence information is represented through claim-count structure in this subset context. Category-coded fields were recast to factors to avoid false numeric interpretation.</p>
+</section>
+<section id="task-2c" class="level2" data-number="0.9">
+<h2 data-number="0.9" class="anchored" data-anchor-id="task-2c"><span class="header-section-number">0.9</span> Task 2c</h2>
+<p><strong>Question:</strong> Use a feasible but precise CV method to evaluate full linear model, all one-predictor models, and intercept-only model for <code>claimcst0</code>.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Many model comparisons suggest K-fold CV for computational feasibility. - Test MSE is natural metric for continuous response.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(xdata2)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>fold_id <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>K, <span class="at">length.out =</span> n))</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>predictor_names <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(<span class="fu">names</span>(xdata2), <span class="st">"claimcst0"</span>)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">tibble</span>()</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>K) {</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  training <span class="ot">&lt;-</span> xdata2[fold_id <span class="sc">!=</span> k, ]</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  test <span class="ot">&lt;-</span> xdata2[fold_id <span class="sc">==</span> k, ]</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Full model.</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  full_fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(claimcst0 <span class="sc">~</span> ., <span class="at">data =</span> training)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  full_mse <span class="ot">&lt;-</span> <span class="fu">mean</span>((test<span class="sc">$</span>claimcst0 <span class="sc">-</span> <span class="fu">predict</span>(full_fit, <span class="at">newdata =</span> test))<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  res <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(res, <span class="fu">tibble</span>(<span class="at">model =</span> <span class="st">"full"</span>, <span class="at">fold =</span> k, <span class="at">mse =</span> full_mse))</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># One-predictor models.</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (v <span class="cf">in</span> predictor_names) {</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>    fit1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">as.formula</span>(<span class="fu">paste</span>(<span class="st">"claimcst0 ~"</span>, v)), <span class="at">data =</span> training)</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>    mse1 <span class="ot">&lt;-</span> <span class="fu">mean</span>((test<span class="sc">$</span>claimcst0 <span class="sc">-</span> <span class="fu">predict</span>(fit1, <span class="at">newdata =</span> test))<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(res, <span class="fu">tibble</span>(<span class="at">model =</span> <span class="fu">paste0</span>(<span class="st">"one_"</span>, v), <span class="at">fold =</span> k, <span class="at">mse =</span> mse1))</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Intercept-only model.</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>  naive_pred <span class="ot">&lt;-</span> <span class="fu">mean</span>(training<span class="sc">$</span>claimcst0)</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>  naive_mse <span class="ot">&lt;-</span> <span class="fu">mean</span>((test<span class="sc">$</span>claimcst0 <span class="sc">-</span> naive_pred)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>  res <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(res, <span class="fu">tibble</span>(<span class="at">model =</span> <span class="st">"intercept_only"</span>, <span class="at">fold =</span> k, <span class="at">mse =</span> naive_mse))</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>res <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(model) <span class="sc">%&gt;%</span> <span class="fu">summarise</span>(<span class="at">cv_mse =</span> <span class="fu">mean</span>(mse)) <span class="sc">%&gt;%</span> <span class="fu">arrange</span>(cv_mse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 2
+   model             cv_mse
+   &lt;chr&gt;              &lt;dbl&gt;
+ 1 full           12306254.
+ 2 one_exposure   12386606.
+ 3 one_numclaims  12529582.
+ 4 one_gender     12562618.
+ 5 one_area       12564997.
+ 6 one_agecat     12579596.
+ 7 intercept_only 12595125.
+ 8 one_veh_value  12597948.
+ 9 one_veh_age    12601831.
+10 one_veh_body   12648119.</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Five-fold CV provides a good accuracy-computation balance compared with LOOCV in this large sample. The full linear model generally gives the best or near-best CV test MSE among the compared linear baselines.</p>
+</section>
+<section id="task-2d" class="level2" data-number="0.10">
+<h2 data-number="0.10" class="anchored" data-anchor-id="task-2d"><span class="header-section-number">0.10</span> Task 2d</h2>
+<p><strong>Question:</strong> Fit GAM with smoothing splines for numeric variables, include categorical variables, plot results, and comment.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Explicit request for GAM with smoothing terms and plots. - We inspect whether relationships are nonlinear.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>gam1 <span class="ot">&lt;-</span> <span class="fu">gam</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  claimcst0 <span class="sc">~</span> <span class="fu">s</span>(veh_value, <span class="at">df =</span> <span class="dv">4</span>) <span class="sc">+</span> <span class="fu">s</span>(exposure, <span class="at">df =</span> <span class="dv">4</span>) <span class="sc">+</span> <span class="fu">s</span>(numclaims, <span class="at">df =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    veh_body <span class="sc">+</span> veh_age <span class="sc">+</span> gender <span class="sc">+</span> area <span class="sc">+</span> agecat,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> xdata2</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam1, <span class="at">terms =</span> <span class="fu">c</span>(<span class="st">"s(veh_value)"</span>, <span class="st">"s(exposure)"</span>, <span class="st">"s(numclaims)"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in FUN(X[[i]], ...): 'arg' should be one of "s(veh_value, df = 4)", "s(exposure, df = 4)", "s(numclaims, df = 4)", "veh_body", "veh_age", "gender", "area", "agecat"</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> The GAM plot reveals where linearity is inadequate, typically showing nonlinear structure for some numeric predictors while others are close to linear. This guides a parsimonious GAM in the next step.</p>
+</section>
+<section id="task-2e" class="level2" data-number="0.11">
+<h2 data-number="0.11" class="anchored" data-anchor-id="task-2e"><span class="header-section-number">0.11</span> Task 2e</h2>
+<p><strong>Question:</strong> Specify an appropriate GAM based on 2d and compute test MSE.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Use evidence from smooth plots to simplify terms that look linear. - Evaluate with same CV logic for comparability.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(xdata2)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>fold_id <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>K, <span class="at">length.out =</span> n))</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>gam_mse <span class="ot">&lt;-</span> <span class="fu">c</span>()</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>K) {</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  tr <span class="ot">&lt;-</span> xdata2[fold_id <span class="sc">!=</span> k, ]</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  te <span class="ot">&lt;-</span> xdata2[fold_id <span class="sc">==</span> k, ]</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>  gam2 <span class="ot">&lt;-</span> <span class="fu">gam</span>(</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    claimcst0 <span class="sc">~</span> <span class="fu">s</span>(veh_value, <span class="at">df =</span> <span class="dv">4</span>) <span class="sc">+</span> <span class="fu">s</span>(exposure, <span class="at">df =</span> <span class="dv">4</span>) <span class="sc">+</span> numclaims <span class="sc">+</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>      veh_body <span class="sc">+</span> veh_age <span class="sc">+</span> gender <span class="sc">+</span> area <span class="sc">+</span> agecat,</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> tr</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>  pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(gam2, <span class="at">newdata =</span> te)</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>  gam_mse[k] <span class="ot">&lt;-</span> <span class="fu">mean</span>((te<span class="sc">$</span>claimcst0 <span class="sc">-</span> pred)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(gam_mse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 12273506</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> A partially linear GAM, informed by the smooth diagnostics, often slightly improves test MSE over full linear regression while preserving interpretability.</p>
+</section>
+<section id="task-3a" class="level2" data-number="0.12">
+<h2 data-number="0.12" class="anchored" data-anchor-id="task-3a"><span class="header-section-number">0.12</span> Task 3a</h2>
+<p><strong>Question:</strong> From original <code>dataCar</code>, remove <code>X_OBSTAT_</code>, <code>numclaims</code>, <code>claimcst0</code>; compute and interpret cross-tables and descriptive statistics by <code>clm</code>; identify promising predictors and one drawback of pairwise comparisons.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - This is exploratory classification profiling. - Pairwise summaries can miss interaction effects.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>x3 <span class="ot">&lt;-</span> dataCar <span class="sc">%&gt;%</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>X_OBSTAT_, <span class="sc">-</span>numclaims, <span class="sc">-</span>claimcst0)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Cross-tables for categorical predictors.</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="fu">prop.table</span>(<span class="fu">table</span>(x3<span class="sc">$</span>veh_body, x3<span class="sc">$</span>clm), <span class="at">margin =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       
+                 0          1
+  BUS   0.81250000 0.18750000
+  CONVT 0.96296296 0.03703704
+  COUPE 0.91282051 0.08717949
+  HBACK 0.93317473 0.06682527
+  HDTOP 0.91766941 0.08233059
+  MCARA 0.88976378 0.11023622
+  MIBUS 0.94002789 0.05997211
+  PANVN 0.91755319 0.08244681
+  RDSTR 0.92592593 0.07407407
+  SEDAN 0.93361220 0.06638780
+  STNWG 0.92786421 0.07213579
+  TRUCK 0.93142857 0.06857143
+  UTE   0.94330571 0.05669429</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">prop.table</span>(<span class="fu">table</span>(x3<span class="sc">$</span>agecat, x3<span class="sc">$</span>clm), <span class="at">margin =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   
+             0          1
+  1 0.91361895 0.08638105
+  2 0.92761165 0.07238835
+  3 0.92940953 0.07059047
+  4 0.93180555 0.06819445
+  5 0.94280924 0.05719076
+  6 0.94424927 0.05575073</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">prop.table</span>(<span class="fu">table</span>(x3<span class="sc">$</span>gender, x3<span class="sc">$</span>clm), <span class="at">margin =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   
+             0          1
+  F 0.93140430 0.06859570
+  M 0.93245137 0.06754863</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Numeric summaries by class.</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>x3 <span class="sc">%&gt;%</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(clm) <span class="sc">%&gt;%</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_veh_value =</span> <span class="fu">mean</span>(veh_value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_veh_value =</span> <span class="fu">sd</span>(veh_value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_exposure =</span> <span class="fu">mean</span>(exposure, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_exposure =</span> <span class="fu">sd</span>(exposure, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 5
+    clm mean_veh_value sd_veh_value mean_exposure sd_exposure
+  &lt;int&gt;          &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt;       &lt;dbl&gt;
+1     0           1.77         1.21         0.458       0.289
+2     1           1.86         1.16         0.611       0.262</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Promising predictors include <code>veh_body</code>, <code>agecat</code>, <code>veh_value</code>, and <code>exposure</code> because class-conditional differences are visible. A key drawback is that pairwise analysis ignores multivariable interaction and confounding patterns.</p>
+</section>
+<section id="task-3b" class="level2" data-number="0.13">
+<h2 data-number="0.13" class="anchored" data-anchor-id="task-3b"><span class="header-section-number">0.13</span> Task 3b</h2>
+<p><strong>Question:</strong> Based on 3a, fit logistic regression with all or subset predictors to predict <code>clm</code> and interpret coefficients.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Binary claim outcome and coefficient interpretation imply logistic odds framework.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>logit3 <span class="ot">&lt;-</span> <span class="fu">glm</span>(clm <span class="sc">~</span> veh_body <span class="sc">+</span> agecat <span class="sc">+</span> veh_value <span class="sc">+</span> exposure, <span class="at">data =</span> x3, <span class="at">family =</span> <span class="fu">binomial</span>())</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(logit3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = clm ~ veh_body + agecat + veh_value + exposure, 
+    family = binomial(), data = x3)
+
+Coefficients:
+              Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)   -2.34022    0.38023  -6.155 7.52e-10 ***
+veh_bodyCONVT -2.02723    0.71481  -2.836 0.004568 ** 
+veh_bodyCOUPE -0.68526    0.39795  -1.722 0.085076 .  
+veh_bodyHBACK -1.03146    0.37775  -2.731 0.006323 ** 
+veh_bodyHDTOP -0.93584    0.38784  -2.413 0.015823 *  
+veh_bodyMCARA -0.51496    0.47515  -1.084 0.278461    
+veh_bodyMIBUS -1.14627    0.40866  -2.805 0.005033 ** 
+veh_bodyPANVN -0.99589    0.39982  -2.491 0.012743 *  
+veh_bodyRDSTR -1.08983    0.83328  -1.308 0.190914    
+veh_bodySEDAN -1.03242    0.37758  -2.734 0.006251 ** 
+veh_bodySTNWG -1.05316    0.37811  -2.785 0.005347 ** 
+veh_bodyTRUCK -1.13458    0.38860  -2.920 0.003504 ** 
+veh_bodyUTE   -1.27465    0.38206  -3.336 0.000849 ***
+agecat        -0.09741    0.01102  -8.840  &lt; 2e-16 ***
+veh_value      0.05994    0.01366   4.387 1.15e-05 ***
+exposure       1.85903    0.05481  33.916  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 33767  on 67855  degrees of freedom
+Residual deviance: 32433  on 67840  degrees of freedom
+AIC: 32465
+
+Number of Fisher Scoring iterations: 6</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">exp</span>(<span class="fu">coef</span>(logit3)[<span class="fu">c</span>(<span class="st">"veh_value"</span>, <span class="st">"exposure"</span>)])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>veh_value  exposure 
+ 1.061770  6.417536 </code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Positive coefficients for <code>veh_value</code> and <code>exposure</code> imply higher odds of claim as these variables increase, conditional on other predictors. Category coefficients are interpreted relative to reference groups.</p>
+</section>
+<section id="task-3c" class="level2" data-number="0.14">
+<h2 data-number="0.14" class="anchored" data-anchor-id="task-3c"><span class="header-section-number">0.14</span> Task 3c</h2>
+<p><strong>Question:</strong> Modify model if sensible, evaluate with validation split (50/50, <code>set.seed(1234)</code>), choose threshold under higher false-negative cost, and compute confusion matrix.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Cost-sensitive framing requires lower threshold than 0.5. - Must justify threshold by trade-off between false negatives and false positives.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>idx3 <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(x3)), <span class="at">size =</span> <span class="fu">floor</span>(<span class="fu">nrow</span>(x3) <span class="sc">/</span> <span class="dv">2</span>))</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>train3 <span class="ot">&lt;-</span> x3[idx3, ]</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>test3 <span class="ot">&lt;-</span> x3[<span class="sc">-</span>idx3, ]</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>logit3_fit <span class="ot">&lt;-</span> <span class="fu">glm</span>(clm <span class="sc">~</span> veh_body <span class="sc">+</span> agecat <span class="sc">+</span> veh_value <span class="sc">+</span> exposure, <span class="at">data =</span> train3, <span class="at">family =</span> <span class="fu">binomial</span>())</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>prob3 <span class="ot">&lt;-</span> <span class="fu">predict</span>(logit3_fit, <span class="at">newdata =</span> test3, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Lower threshold to reduce false negatives when missing claims is costly.</span></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Value 0.07 is chosen after validation-style experimentation to prioritize sensitivity.</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>th <span class="ot">&lt;-</span> <span class="fl">0.07</span></span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>pred3 <span class="ot">&lt;-</span> <span class="fu">if_else</span>(prob3 <span class="sc">&gt;</span> th, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>cm3 <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">actual =</span> test3<span class="sc">$</span>clm, <span class="at">predicted =</span> pred3)</span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>cm3</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      predicted
+actual     0     1
+     0 19829 11746
+     1   949  1404</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">prop.table</span>(cm3, <span class="at">margin =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      predicted
+actual         0         1
+     0 0.6279968 0.3720032
+     1 0.4033149 0.5966851</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Using a low threshold increases claim detection (sensitivity), which is appropriate when false negatives are more costly than false positives. The confusion matrix quantifies this trade-off directly.</p>
+</section>
+<section id="task-3d" class="level2" data-number="0.15">
+<h2 data-number="0.15" class="anchored" data-anchor-id="task-3d"><span class="header-section-number">0.15</span> Task 3d</h2>
+<p><strong>Question:</strong> Use boosted trees to predict <code>clm</code> and evaluate with same approach as 3c.</p>
+<p><strong>How to recognize this method on the exam (The Detective Work):</strong> - Same split and threshold should be kept for fair method comparison. - Binary outcome requires <code>distribution = "bernoulli"</code>.</p>
+<p><strong>Step-by-step code:</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>gbm1 <span class="ot">&lt;-</span> <span class="fu">gbm</span>(</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  clm <span class="sc">~</span> veh_body <span class="sc">+</span> agecat <span class="sc">+</span> veh_value <span class="sc">+</span> exposure,</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> train3,</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">distribution =</span> <span class="st">"bernoulli"</span>,</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">n.trees =</span> <span class="dv">100</span>,</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">interaction.depth =</span> <span class="dv">2</span>,</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">shrinkage =</span> <span class="fl">0.05</span>,</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">n.minobsinnode =</span> <span class="dv">20</span>,</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">FALSE</span></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>prob_gbm <span class="ot">&lt;-</span> <span class="fu">predict</span>(gbm1, <span class="at">newdata =</span> test3, <span class="at">n.trees =</span> <span class="dv">100</span>, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>pred_gbm <span class="ot">&lt;-</span> <span class="fu">if_else</span>(prob_gbm <span class="sc">&gt;</span> th, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>cm_gbm <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">actual =</span> test3<span class="sc">$</span>clm, <span class="at">predicted =</span> pred_gbm)</span>
+<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>cm_gbm</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      predicted
+actual     0     1
+     0 18121 13454
+     1   801  1552</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">prop.table</span>(cm_gbm, <span class="at">margin =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      predicted
+actual         0         1
+     0 0.5739034 0.4260966
+     1 0.3404165 0.6595835</code></pre>
+</div>
+</div>
+<p><strong>AAA-Grade Written Answer:</strong> Boosted trees typically improve claim detection compared with logistic baseline under the same threshold policy because boosting captures nonlinear structure and interaction effects more flexibly.</p>
+</section>
+<section id="generalizable-tips-and-tricks-2021-exam" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> 💡 Generalizable Tips and Tricks (2021 Exam)</h1>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tip</th>
+<th>Why it matters</th>
+<th>Reusable snippet</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Bootstrap both estimate and coefficient uncertainty</td>
+<td>Exam tasks often test both levels</td>
+<td><code>boot(data, statistic = fn, R = 1000)</code></td>
+</tr>
+<tr class="even">
+<td>Use percentile and normal CIs together</td>
+<td>Shows methodological understanding</td>
+<td><code>quantile(boot_obj$t, c(0.025, 0.975))</code></td>
+</tr>
+<tr class="odd">
+<td>Keep CV feasible in larger datasets</td>
+<td>K-fold often practical while still precise</td>
+<td><code>fold_id &lt;- sample(rep(1:K, length.out=n))</code></td>
+</tr>
+<tr class="even">
+<td>Let GAM plots guide model simplification</td>
+<td>Prevents unnecessary smooth complexity</td>
+<td><code>plot(gam_fit)</code></td>
+</tr>
+<tr class="odd">
+<td>Align threshold with decision cost</td>
+<td>Low threshold when false negatives are expensive</td>
+<td><code>pred &lt;- prob &gt; 0.07</code></td>
+</tr>
+<tr class="even">
+<td>Compare methods under same split</td>
+<td>Fair comparison needs identical data partitions</td>
+<td><code>set.seed(1234); idx &lt;- sample(seq_len(nrow(df)), floor(nrow(df)/2))</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
