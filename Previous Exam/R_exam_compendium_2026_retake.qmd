@@ -96,6 +96,7 @@ library(randomForest) # Needed for random forest and bagging-style tree ensemble
 library(gbm)          # Needed for boosted trees, which appeared clearly in 2021 and 2025.
 library(MASS)         # Useful fallback package for LDA/QDA if theory or code asks for it.
 library(e1071)        # Useful fallback package for SVM if BAN404 theory or a rare exam twist asks for it.
+library(insuranceData) # Needed for the 2025 insurance task because `dataOhlsson` lives in this package.
 ```
 
 ## Safe CSV loading templates
@@ -1013,6 +1014,348 @@ km_fit$tot.withinss
 ## How to interpret variable importance in random forest
 
 > The variable importance plot shows which predictors contribute most to reducing prediction error or node impurity across the forest. A higher importance value means the model relied more on that variable when building strong predictive trees.
+
+---
+
+# Dataset-anchored worked examples for likely exam questions
+
+This section builds the generic method playbooks into **fuller, more exam-shaped examples** using datasets that are already known from BAN404. The point is not only to show code, but to show **why this exact code chunk is the right answer to this exact kind of exam wording**.
+
+## Fast map: which local dataset is useful for which model family?
+
+| Dataset | Repo-relative path from this file | Typical BAN404 use | Best methods to revise with it |
+|---|---|---|---|
+| `data_task1.csv` | `2025/data_task1.csv` | small numeric Task 1 data | OLS, ridge, LOOCV, bootstrap, GAM |
+| `dataOhlsson` | package dataset via `insuranceData` | 2025 Task 2 insurance claims | logistic, threshold choice, random forest, boosting |
+| `airline.csv` | `2024/airline.csv` | 2024 Task 2 two-perspective classification | descriptive analysis, logistic, tree, random forest |
+| `Churn.csv` | `2023/Churn.csv` | 2023 mixed regression + classification practice | OLS, LASSO, tree, random forest, logistic, bootstrap |
+| `OJ` | package dataset via `ISLR` / `ISLR2` | 2022 classification practice | logistic, classification tree, threshold CV |
+
+## Example 1 — 2025 Task 1 style: `data_task1.csv`
+
+### Why this is a high-priority example
+
+This is one of the cleanest BAN404 Task 1 datasets for practicing four recurring skills:
+
+1. reading a weird file format correctly,  
+2. comparing **OLS and ridge**,  
+3. using **LOOCV** to tune a parameter, and  
+4. using **bootstrap** when the question is about **sampling uncertainty**, not prediction.
+
+### What kind of exam wording this example prepares you for
+
+- "Extract `X` and `y` and fit OLS and ridge."
+- "Use LOOCV to choose `lambda`."
+- "Use bootstrap to estimate the sampling distribution of the variance."
+- "Look for non-linear relationships and motivate a GAM."
+
+### Full worked code skeleton
+
+```{r}
+# Read the 2025 Task 1 data using read_csv2.  # We use read_csv2 because the file uses semicolon separators and decimal commas.
+task1_2025 <- read_csv2("2025/data_task1.csv", show_col_types = FALSE)  # This is the safest import choice for the stored file format.
+
+# Check that the import worked correctly.  # We want y plus X1 to X20 as separate numeric columns, not one giant text column.
+glimpse(task1_2025)  # Always inspect structure before modeling so we catch file-format mistakes early.
+
+# Split the data into response and predictors.  # Task 1 questions often explicitly ask us to separate X and y.
+y_2025 <- task1_2025 %>% pull(y)                        # The response vector is needed for custom functions and bootstrap work.
+X_2025 <- task1_2025 %>% select(-y) %>% as.matrix()     # Ridge formulas and custom LOOCV functions usually expect a numeric matrix.
+
+# Fit the standard OLS benchmark first.  # OLS is the natural baseline because ridge should be compared against the unpenalized version.
+ols_2025 <- lm(y ~ ., data = task1_2025)                # This uses all predictors linearly, exactly like the baseline exam solution.
+
+# Define the ridge objective from the BAN404-style formula.  # This mirrors the exam's mathematical expression directly.
+ridge_objective_2025 <- function(b1, X, y, la) {        # b1 is the vector of slopes and la is the ridge penalty.
+  sum((y - X %*% b1)^2) + la * sum(b1^2)                # Residual sum of squares plus L2 penalty.
+}
+
+# Define a ridge fitting helper with demeaning.  # Demeaning keeps the intercept outside the penalty, which is what the theory wants.
+g_ridge_2025 <- function(X, y, la) {                    # Inputs are predictor matrix, response vector, and lambda.
+  q <- ncol(X)                                          # Count how many slope coefficients we must estimate.
+  y_centered <- y - mean(y)                             # Center y so the intercept can be handled separately.
+  X_centered <- scale(X, center = TRUE, scale = FALSE)  # Center each predictor but do not rescale here because the exam formula centers only.
+  start_b <- rep(0, q)                                  # Start optimization at zero for a stable neutral starting point.
+  opt <- nlminb(start_b, ridge_objective_2025, X = X_centered, y = y_centered, la = la)  # Numerically minimize the ridge criterion.
+  opt$par                                               # Return the slope coefficients only.
+}
+
+# Compare OLS with ridge at lambda = 0 and lambda = 1000.  # This directly answers a classic BAN404 comparison sub-question.
+b_ols_2025 <- coef(ols_2025)[-1]                        # Drop the intercept so we compare only slope estimates.
+b_ridge0_2025 <- g_ridge_2025(X_2025, y_2025, la = 0)  # Ridge with zero penalty should line up closely with OLS.
+b_ridge1000_2025 <- g_ridge_2025(X_2025, y_2025, la = 1000)  # Strong penalty should shrink coefficients toward zero.
+
+# Build a LOOCV function for lambda tuning.  # LOOCV is a BAN404 favorite when the sample is not very large and every row matters.
+loo_ridge_2025 <- function(la, X, y) {                 # We score one lambda value at a time.
+  n <- nrow(X)                                         # LOOCV leaves out one row in each iteration, so we need n iterations.
+  pred <- numeric(n)                                   # Store one out-of-sample prediction for every left-out observation.
+
+  for (i in seq_len(n)) {                              # Loop through all observations.
+    X_train <- X[-i, , drop = FALSE]                   # Training predictors are all rows except the left-out row.
+    y_train <- y[-i]                                   # Training response excludes the left-out observation.
+    X_test <- X[i, , drop = FALSE]                     # Test predictors are the single left-out row.
+
+    b1_hat <- g_ridge_2025(X_train, y_train, la = la)  # Fit ridge on the n - 1 training rows.
+    b0_hat <- mean(y_train) - colMeans(X_train) %*% b1_hat  # Reconstruct the intercept after centering.
+    pred[i] <- as.numeric(b0_hat + X_test %*% b1_hat)  # Predict the held-out row using the fitted ridge model.
+  }
+
+  mean((y - pred)^2)                                   # Return LOOCV MSE because lower is better for continuous y.
+}
+
+# Search across a reasonable lambda grid.  # A grid search is simple, transparent, and easy to explain in an exam answer.
+lambda_grid_2025 <- seq(0, 2000, length.out = 25)      # Use a moderate grid that covers both weak and strong shrinkage.
+cv_mse_2025 <- purrr::map_dbl(lambda_grid_2025, ~ loo_ridge_2025(.x, X_2025, y_2025))  # Score each lambda with the same LOOCV rule.
+best_lambda_2025 <- lambda_grid_2025[which.min(cv_mse_2025)]  # Pick the lambda with the smallest estimated test error.
+
+# Bootstrap the sample variance of y.  # This is the right resampling tool because the question is about uncertainty in a statistic.
+set.seed(1)                                            # Reproducible bootstrap answers are easier to explain and check.
+B_2025 <- 1000                                         # Use many bootstrap samples so the empirical distribution looks stable.
+boot_var_2025 <- replicate(                            # replicate keeps the code compact but still transparent.
+  B_2025,                                              # Repeat the resampling process B times.
+  var(sample(y_2025, size = length(y_2025), replace = TRUE))  # Resample y with replacement and compute the sample variance.
+)
+
+# Summarize the bootstrap result.  # These are the exact outputs BAN404 likes for this kind of question.
+hist(boot_var_2025, breaks = 30)                       # Show the estimated sampling distribution visually.
+quantile(boot_var_2025, c(0.025, 0.975))               # Percentile confidence interval for the population variance.
+
+# Screen for non-linearity before using GAM.  # We do not use GAM just because it exists; we use it because the scatterplot suggests curvature.
+task1_2025 %>%
+  ggplot(aes(x = X3, y = y)) +                         # Replace X3 if another predictor shows stronger curvature in your actual plot.
+  geom_point(alpha = 0.35) +                           # Scatterplot reveals whether a straight-line assumption looks too crude.
+  geom_smooth(se = FALSE, color = "red")               # The smooth curve helps us spot non-linear shape quickly.
+
+# Compare a linear model with a GAM that flexes one candidate nonlinear predictor.  # This directly supports a "motivate GAM" answer.
+ols_small_2025 <- lm(y ~ X1 + X2 + X3 + X4 + X5, data = task1_2025)          # Linear benchmark using a manageable subset of predictors.
+gam_small_2025 <- gam(y ~ X1 + X2 + s(X3) + X4 + X5, data = task1_2025)      # Same structure except X3 is now allowed to be nonlinear.
+
+# Compare fit using MSE on the same data object.  # Fair model comparison means same response, same rows, same metric.
+mse_ols_small_2025 <- mean(residuals(ols_small_2025)^2)  # In-sample MSE for the linear model.
+mse_gam_small_2025 <- mean(residuals(gam_small_2025)^2)  # In-sample MSE for the flexible GAM.
+```
+
+### Why these code chunks are the right choices
+
+- **OLS first** because BAN404 usually wants a simple baseline before you claim improvement.  
+- **Ridge second** because the exam usually tests whether you understand how the penalty changes coefficient size and bias-variance trade-off.  
+- **LOOCV for `lambda`** because the dataset is not huge, and the task is a tuning question, not an inference question.  
+- **Bootstrap for variance/CI** because the target is the **sampling distribution of a statistic**, not predictive performance.  
+- **GAM only after looking at plots** because BAN404 rewards explaining *why* a flexible model is justified, not blindly fitting one.
+
+### Ready-to-use written explanation
+
+> I used `read_csv2()` because the attached 2025 file is semicolon-separated and uses decimal commas. I started with OLS because it is the correct linear baseline. I then compared it with ridge because ridge adds an L2 penalty that shrinks coefficients toward zero. To choose `lambda`, I used LOOCV rather than a simple train/test split because the dataset is small and the question is specifically about tuning. For the bootstrap part, I resampled `y` with replacement because the goal is to estimate the sampling distribution of the sample variance, not to assess predictive test error. Finally, I only introduced a GAM after plotting `y` against candidate predictors and seeing evidence of curvature, because a GAM is justified when the linearity assumption looks too restrictive.
+
+---
+
+## Example 2 — 2024 Task 2 style: `airline.csv`
+
+### Why this is a high-priority example
+
+This dataset is ideal because it teaches one of the most important BAN404 habits: **the correct model depends not only on the response type, but also on the decision context**.
+
+- If the airline asks **"Why are some customers dissatisfied?"**, you are doing an **explanatory** analysis.
+- If the airline asks **"Can we predict who will be dissatisfied before the next flight?"**, you are doing an **operational predictive** analysis.
+
+Those are **not** the same modeling problem, even though they use the same dataset.
+
+### Full worked code skeleton
+
+```{r}
+# Read the airline data from the 2024 folder.  # The compendium file lives in Previous Exam, so the year subfolder path is short and stable.
+airline_2024 <- read_csv("2024/airline.csv", show_col_types = FALSE)  # This is a standard comma-separated file.
+
+# Convert text variables to factors immediately.  # Logistic regression, trees, and random forests should treat categories as categories.
+airline_2024 <- airline_2024 %>%
+  mutate(across(where(is.character), as.factor))        # Character variables become factors so the model uses dummy coding correctly.
+
+# Create a reproducible split for honest prediction comparison.  # We keep the same split for all predictive models.
+set.seed(123)                                           # Fixed seed makes your answer reproducible.
+idx_2024 <- sample(seq_len(nrow(airline_2024)), size = floor(nrow(airline_2024) / 2))  # 50/50 split mirrors typical exam practice.
+train_2024 <- airline_2024[idx_2024, ]                  # Fit models on training data.
+test_2024 <- airline_2024[-idx_2024, ]                  # Reserve test data for final evaluation.
+
+# Build an explanatory formula.  # These variables help answer "why are customers dissatisfied?" after the flight experience is observed.
+form_explain_2024 <- satisfaction ~ Gender + Customer_Type + Age + Type_of_Travel +
+  Class + Flight_Distance + Food_and_drink + Inflight_entertainment +
+  Online_support + Baggage_handling + Checkin_service + Arrival_Delay_in_Minutes
+
+# Fit explanatory logistic regression.  # Logistic regression is the natural first model because satisfaction is a binary outcome.
+logit_explain_2024 <- glm(form_explain_2024, data = train_2024, family = binomial())  # Coefficients can be interpreted directionally.
+summary(logit_explain_2024)                         # This tells us which service variables are strongly associated with dissatisfaction.
+
+# Build an operational dataset for prediction before the next flight.  # We remove variables that are only known after or during the trip.
+ops_2024 <- airline_2024 %>%
+  select(                                           # Keep only variables that are plausibly available before intervention.
+    satisfaction, Gender, Customer_Type, Age, Type_of_Travel, Class,
+    Flight_Distance, Ease_of_Online_booking, Online_boarding, Departure_Delay_in_Minutes
+  )
+
+# Recreate the same split logic on the operational dataset.  # We want prediction models to use only operationally available information.
+train_ops_2024 <- ops_2024[idx_2024, ]              # Training subset of the operational variables.
+test_ops_2024 <- ops_2024[-idx_2024, ]              # Test subset of the operational variables.
+
+# Fit an operational logistic model.  # This is a fair operational baseline because it is interpretable and fast to explain.
+logit_ops_2024 <- glm(satisfaction ~ ., data = train_ops_2024, family = binomial())  # Predict binary satisfaction from pre-flight variables.
+
+# Predict probabilities on training data to tune the threshold.  # Threshold choice belongs on training data, not test data.
+prob_train_ops_2024 <- predict(logit_ops_2024, newdata = train_ops_2024, type = "response")  # Logistic regression gives probabilities first.
+threshold_grid_2024 <- seq(0.30, 0.70, by = 0.05)   # Search a simple grid instead of assuming 0.50 is automatically best.
+
+# Score thresholds using balanced accuracy.  # This avoids choosing a threshold that is good for one class but poor for the other.
+balanced_accuracy_2024 <- purrr::map_dbl(threshold_grid_2024, function(th) {
+  pred_th <- if_else(prob_train_ops_2024 > th, levels(train_ops_2024$satisfaction)[2], levels(train_ops_2024$satisfaction)[1]) %>%
+    factor(levels = levels(train_ops_2024$satisfaction))  # Convert probabilities to class labels with the chosen threshold.
+  cm_th <- table(actual = train_ops_2024$satisfaction, predicted = pred_th)  # Confusion matrix on training data only.
+  sens_th <- cm_th[2, 2] / sum(cm_th[2, ])           # Sensitivity for the positive class.
+  spec_th <- cm_th[1, 1] / sum(cm_th[1, ])           # Specificity for the negative class.
+  mean(c(sens_th, spec_th))                          # Balanced accuracy = average of sensitivity and specificity.
+})
+
+# Select the best threshold from the grid.  # We use the same chosen threshold once on the test set.
+best_threshold_2024 <- threshold_grid_2024[which.max(balanced_accuracy_2024)]  # Highest balanced accuracy wins.
+
+# Evaluate the operational logistic model on test data.  # This is the first honest out-of-sample score.
+prob_test_ops_2024 <- predict(logit_ops_2024, newdata = test_ops_2024, type = "response")  # Test probabilities.
+pred_test_ops_2024 <- if_else(prob_test_ops_2024 > best_threshold_2024, levels(test_ops_2024$satisfaction)[2], levels(test_ops_2024$satisfaction)[1]) %>%
+  factor(levels = levels(test_ops_2024$satisfaction))  # Final class prediction using tuned threshold.
+cm_logit_ops_2024 <- table(actual = test_ops_2024$satisfaction, predicted = pred_test_ops_2024)  # Honest confusion matrix.
+acc_logit_ops_2024 <- sum(diag(cm_logit_ops_2024)) / sum(cm_logit_ops_2024)  # Overall accuracy for operational logistic regression.
+
+# Fit random forest on the same operational variable set.  # This checks whether flexible nonlinear interactions improve prediction.
+rf_ops_2024 <- randomForest(satisfaction ~ ., data = train_ops_2024, ntree = 300)  # Same target, same split, same predictor set.
+pred_rf_ops_2024 <- predict(rf_ops_2024, newdata = test_ops_2024)  # Default class prediction for factor outcomes.
+cm_rf_ops_2024 <- table(actual = test_ops_2024$satisfaction, predicted = pred_rf_ops_2024)  # Random forest confusion matrix.
+acc_rf_ops_2024 <- sum(diag(cm_rf_ops_2024)) / sum(cm_rf_ops_2024)  # Random forest accuracy.
+
+# Inspect variable importance.  # This is often requested explicitly in airline-style Task 2 questions.
+importance(rf_ops_2024)                               # Numeric importance output for written interpretation.
+```
+
+### Why these code chunks are the right choices
+
+- **Logistic regression** is the safest first classification model because the response is binary and coefficients are interpretable.  
+- **Threshold tuning** belongs to the training set because using the test set to choose the threshold would leak evaluation information.  
+- **Random forest** is the natural "can we improve prediction?" follow-up because it captures interactions and nonlinearities without manual specification.  
+- **Two different formulas/datasets** are necessary because explanatory and operational questions allow different predictors.
+
+### Ready-to-use written explanation
+
+> I treated the airline problem in two separate ways because the exam asks two different business questions. For the explanatory question, I kept variables describing the customer’s service experience because these help explain dissatisfaction after the flight. For the operational prediction question, I restricted the predictor set to variables that are plausibly available before intervention, since the airline cannot use information that only becomes known after the customer has flown. I started with logistic regression because the response is binary and the coefficients are interpretable. I then tuned the classification threshold on the training data, because threshold choice is part of model design and should not use the test data. Finally, I fitted a random forest on the same operational variable set to check whether nonlinearities and interactions improved predictive accuracy.
+
+---
+
+## Example 3 — 2023 style: `Churn.csv` teaches response-type thinking
+
+### Why this example matters
+
+This single dataset is excellent revision material because it contains **two different kinds of target variables**:
+
+- `bill_avg` is **continuous** → think **regression**.  
+- `churn` is **binary** → think **classification**.
+
+That means the dataset trains one of the most important exam reflexes: **choose the method family from the response type first, not from the fact that the predictors look similar**.
+
+### Full worked code skeleton
+
+```{r}
+# Read the 2023 churn data.  # This file is already stored locally in the repository.
+churn_2023 <- read_csv("2023/Churn.csv", show_col_types = FALSE)  # Standard CSV import for the exam dataset.
+
+# Remove the ID and recode binary indicators as factors.  # IDs do not generalize, and binary service indicators should be categorical.
+churn_2023 <- churn_2023 %>%
+  select(-id) %>%                                         # Remove identifier because it has no stable predictive mechanism.
+  mutate(
+    is_tv_subscriber = as.factor(is_tv_subscriber),       # Service subscription indicator should be handled as a category.
+    is_movie_package_subscriber = as.factor(is_movie_package_subscriber),  # Same logic for movie package status.
+    churn = as.factor(churn)                              # Binary churn target must be a factor for classification models.
+  )
+
+# Use the official exam seed and a 50/50 split.  # This mirrors the 2023 exam setup and makes answers reproducible.
+set.seed(86554354)                                        # BAN404 often expects the exact given seed to be used.
+idx_2023 <- sample(seq_len(nrow(churn_2023)), size = floor(nrow(churn_2023) / 2))  # Split row indices reproducibly.
+train_2023 <- churn_2023[idx_2023, ]                      # Training data.
+test_2023 <- churn_2023[-idx_2023, ]                     # Test data.
+
+# ----- Part A: continuous response -> regression -----
+
+# Fit OLS for bill_avg.  # Because bill_avg is numeric, MSE-based regression is the right family.
+ols_bill_2023 <- lm(bill_avg ~ ., data = train_2023)     # Baseline linear regression for the continuous bill target.
+pred_bill_ols_2023 <- predict(ols_bill_2023, newdata = test_2023)  # OLS predictions on unseen customers.
+mse_bill_ols_2023 <- mean((test_2023$bill_avg - pred_bill_ols_2023)^2)  # Test MSE for the OLS baseline.
+
+# Fit LASSO on the same target.  # LASSO is useful when we want shrinkage and possible variable selection.
+X_bill_train_2023 <- model.matrix(bill_avg ~ ., data = train_2023)[, -1]  # Dummy-code factors for glmnet.
+y_bill_train_2023 <- train_2023$bill_avg                                    # Numeric response vector.
+X_bill_test_2023 <- model.matrix(bill_avg ~ ., data = test_2023)[, -1]     # Matching test design matrix.
+
+cv_lasso_bill_2023 <- cv.glmnet(X_bill_train_2023, y_bill_train_2023, alpha = 1, standardize = TRUE)  # Tune lambda by CV.
+lasso_bill_2023 <- glmnet(X_bill_train_2023, y_bill_train_2023, alpha = 1, lambda = cv_lasso_bill_2023$lambda.min, standardize = TRUE)  # Final tuned LASSO.
+pred_bill_lasso_2023 <- as.numeric(predict(lasso_bill_2023, newx = X_bill_test_2023))  # LASSO predictions on test data.
+mse_bill_lasso_2023 <- mean((test_2023$bill_avg - pred_bill_lasso_2023)^2)              # Compare to OLS using the same metric.
+
+# ----- Part B: binary response -> classification -----
+
+# Remove bill_avg when predicting churn if you judge it unrealistic or too close to the business outcome.  # This is a modeling judgment you should justify explicitly.
+train_churn_2023 <- train_2023 %>% select(-bill_avg)      # Use a cleaner predictor set for churn classification.
+test_churn_2023 <- test_2023 %>% select(-bill_avg)        # Match the same columns on the test set.
+
+# Fit logistic regression for churn.  # Because churn is binary, logistic regression is the safest baseline classifier.
+logit_churn_2023 <- glm(churn ~ ., data = train_churn_2023, family = binomial())  # Predict churn probability.
+prob_churn_2023 <- predict(logit_churn_2023, newdata = test_churn_2023, type = "response")  # Test probabilities for churn.
+
+# Convert probabilities to predicted classes.  # Start with the standard threshold unless the class balance suggests another choice.
+pred_churn_2023 <- if_else(prob_churn_2023 > 0.5, levels(test_churn_2023$churn)[2], levels(test_churn_2023$churn)[1]) %>%
+  factor(levels = levels(test_churn_2023$churn))          # Final churn class predictions.
+cm_churn_2023 <- table(actual = test_churn_2023$churn, predicted = pred_churn_2023)  # Confusion matrix for logistic churn model.
+acc_churn_2023 <- sum(diag(cm_churn_2023)) / sum(cm_churn_2023)  # Classification accuracy.
+
+# Optional: bootstrap the churn rate itself.  # This shows when bootstrap is used for uncertainty around a proportion, not model tuning.
+set.seed(1)                                               # Reproducible resampling.
+B_churn_2023 <- 1000                                      # Number of bootstrap samples.
+churn_numeric_2023 <- as.numeric(as.character(churn_2023$churn))  # Convert 0/1 factor to numeric for mean calculation.
+boot_rate_2023 <- replicate(
+  B_churn_2023,                                           # Repeat the resampling many times.
+  mean(sample(churn_numeric_2023, size = length(churn_numeric_2023), replace = TRUE))  # Bootstrap sample proportion of churners.
+)
+quantile(boot_rate_2023, c(0.025, 0.975))                # Bootstrap confidence interval for the churn probability.
+```
+
+### Why these code chunks are the right choices
+
+- **OLS and LASSO** are appropriate only for `bill_avg` because `bill_avg` is continuous.  
+- **Logistic regression** is appropriate for `churn` because `churn` is binary.  
+- **Bootstrap of churn rate** is not for tuning a model; it is for estimating uncertainty around the proportion of churners.  
+- **Removing `id`** is standard because identifiers rarely generalize and can mislead flexible models.
+
+### Ready-to-use written explanation
+
+> I first identified the response type before choosing the model family. For `bill_avg`, which is continuous, I used regression methods and evaluated them with test MSE. For `churn`, which is binary, I used logistic regression and evaluated the predictions with a confusion matrix and accuracy. I used LASSO as a natural extension of OLS because it can shrink weak coefficients and, in some cases, improve generalization. I used the bootstrap only when the target was the uncertainty of a statistic such as the churn rate, not when the task was parameter tuning or final predictive evaluation.
+
+---
+
+## Ready-to-use reasoning blocks for model and resampling choice
+
+### Why logistic regression instead of OLS?
+
+> I used logistic regression rather than OLS because the response variable is binary. Logistic regression models probabilities in a way that respects the 0-to-1 range, while OLS can produce values below 0 or above 1 and does not model class probabilities appropriately.
+
+### Why LOOCV instead of a simple train/test split?
+
+> I used LOOCV because the question is about tuning a parameter and the dataset is not very large. LOOCV lets almost the entire dataset be used for fitting in each iteration, while still producing an approximately honest estimate of generalization error for the tuning choice.
+
+### Why bootstrap instead of cross-validation?
+
+> I used the bootstrap because the goal is to approximate the sampling distribution of a statistic and compute uncertainty measures such as a standard error or confidence interval. Cross-validation is designed for prediction assessment and tuning, not for estimating the sampling variability of a statistic.
+
+### Why random forest after logistic regression or a single tree?
+
+> I used random forest after the simpler baseline because it can capture nonlinear effects and interactions automatically, and it often improves predictive performance. However, I still started with the simpler model because BAN404 usually rewards showing a clear benchmark and explaining the tradeoff between interpretability and predictive power.
+
+### Why remove a variable for the operational prediction version?
+
+> I removed that variable because the company would not know it at the moment the prediction must be made. Even if it improves apparent model fit, using it would create leakage and make the model unrealistic for real deployment.
 
 ---
 
