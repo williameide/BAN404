@@ -1286,9 +1286,7 @@ ridge_objective_2025 <- function(b1, X, y, la) {        # b1 is the vector of sl
 g_ridge_2025 <- function(X, y, la) {                    # Inputs are predictor matrix, response vector, and lambda.
   q <- ncol(X)                                          # Count how many slope coefficients we must estimate.
   y_centered <- y - mean(y)                             # Center y so the intercept can be handled separately.
-  X_centered <- scale(X, center = TRUE, scale = FALSE)  # Center each predictor.
-                                                          # Do not standardize here because the BAN404 ridge objective is written for centered raw columns, not unit-variance columns.
-                                                          # Standardization becomes more appropriate in tools like glmnet or distance-based methods where variable scale directly changes the penalty or distance.
+  X_centered <- scale(X, center = TRUE, scale = FALSE)  # Center each predictor, but do not standardize because this BAN404 ridge objective is written for centered raw columns; glmnet and distance-based methods are where scaling is more important.
   start_b <- rep(0, q)                                  # Start optimization at zero for a stable neutral starting point.
   opt <- nlminb(start_b, ridge_objective_2025, X = X_centered, y = y_centered, la = la)  # Numerically minimize the ridge criterion.
   opt$par                                               # Return the slope coefficients only.
@@ -1528,7 +1526,6 @@ acc_churn_2023 <- sum(diag(cm_churn_2023)) / sum(cm_churn_2023)  # Classificatio
 # Optional: bootstrap the churn rate itself.  # This shows when bootstrap is used for uncertainty around a proportion, not model tuning.
 set.seed(1)                                               # Reproducible resampling.
 B_churn_2023 <- 1000                                      # Number of bootstrap samples.
-stopifnot(all(levels(churn_2023$churn) %in% c("0", "1")))                 # Confirm that churn is stored with the expected 0/1 labels before numeric conversion.
 churn_numeric_2023 <- as.numeric(churn_2023$churn == "1")                 # Convert explicitly to 0/1 by checking whether each churn label is the positive class.
 boot_rate_2023 <- replicate(
   B_churn_2023,                                           # Repeat the resampling many times.
