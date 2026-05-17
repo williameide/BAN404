@@ -1,5 +1,5 @@
 ---
-title: "R from Zero — BAN404 Exam Foundation"
+title: "R from Zero — BAN404 Deep Reference"
 author: "BAN404 Self-Study"
 format:
   html:
@@ -12,9 +12,11 @@ execute:
   warning: false
 ---
 
-# R from Zero — Everything You Need for BAN404 (and Nothing Else)
+# R from Zero — BAN404 Deep Reference
 
-> **This file assumes zero prior coding knowledge.** It teaches only the R concepts that appear on BAN404 exams. Read it once before studying the method-specific files.
+> **This file assumes zero prior coding knowledge.** It remains the detailed background file.
+>
+> **For the final 2 exam days, use `/home/runner/work/BAN404/BAN404/cheatsheet_practical.qmd` as the main practical working file**, and return here only when you need more step-by-step background.
 
 ---
 

@@ -1,0 +1,1463 @@
+---
+title: "Previous Exams Solved"
+subtitle: "Runnable starting point for 2025, 2024, and 2023 solved-exam work"
+author: "Self-study preparation file"
+date: "2026"
+format:
+  html:
+    toc: true
+    toc-depth: 4
+    number-sections: true
+    theme: flatly
+    highlight-style: kate
+  pdf:
+    toc: true
+    number-sections: true
+execute:
+  echo: true
+  warning: false
+  message: false
+  eval: false
+---
+
+# How to use this compendium
+
+This file is the main worked-exam starting point for the final revision days. It is meant to be run, corrected, expanded, and annotated further so it becomes a fast copy-adjust-explain source during the exam. For each sub-question you will find:
+
+1.  **The question** — verbatim or closely paraphrased from the exam.
+2.  **Theory connection** — which method or concept the question tests, and why.
+3.  **Step-by-step code** — fully commented R code that answers the question.
+4.  **Written answer** — model text that could appear in an exam submission.
+
+The 2025 and 2024 exams are **highest priority** (same format expected). 2023 is included because it tests most of the same methods and has a different dataset angle.
+
+------------------------------------------------------------------------
+
+# 2025 School Exam — `data_task1.csv` + `insuranceData::dataOhlsson`
+
+## Exam overview
+
+-   **Date**: 2025-06-02, 6 hours
+-   **Task 1** (50 p): methodological questions — ridge regression, LOOCV, bootstrap, GAM
+-   **Task 2** (50 p): real-data classification with insurance claims data
+-   **Allowed**: all written self-made material, calculator
+-   **Submission**: PDF + R script or R Markdown
+
+------------------------------------------------------------------------
+
+## Task 1 — Methodological questions
+
+### Task 1a (10p) — Explain the ridge regression functions
+
+**Question:**\
+You are given two R functions `f` and `g`. Explain what they do. Which method treated in the course is this a version of?
+
+```{r}
+f <- function(b1, X, y, la) {
+  fval <- sum((y - X %*% b1)^2) + la * sum(b1^2)
+  return(fval)
+}
+
+g <- function(X, y, la) {
+  q <- ncol(X)
+  b0 <- mean(y)
+  yd <- y - b0
+  Xd <- X
+  for(k in 1:q) Xd[,k] <- X[,k] - mean(X[,k])
+  b1start <- rep(0, q)
+  opt <- nlminb(b1start, f, X=Xd, y=yd, la=la)
+  b1 <- opt$par
+  return(b1)
+}
+```
+
+**Theory connection:** This is **ridge regression** (L2-penalized regression). Ridge minimises RSS + λ·Σβ². When λ = 0 you get OLS. As λ increases, coefficients are shrunk toward zero. The functions also demean both y and X (centre around their means) before fitting — this handles the intercept analytically and is standard practice for ridge.
+
+**Step-by-step code annotation:**
+
+```{r}
+# f(b1, X, y, la):
+#   Computes the ridge objective function value for given coefficients b1.
+#   sum((y - X %*% b1)^2) = residual sum of squares (RSS)
+#   la * sum(b1^2)         = L2 penalty on the size of coefficients
+#   A larger la penalises large coefficients more heavily -> shrinkage
+
+# g(X, y, la):
+#   Estimates ridge regression coefficients by minimising f.
+#   q <- ncol(X)           # p = number of predictors
+#   b0 <- mean(y)          # intercept = mean of y (after demeaning, intercept = mean(y))
+#   yd <- y - b0           # demean y
+#   Xd[,k] <- X[,k] - mean(X[,k])  # demean each column of X
+#   b1start <- rep(0, q)   # start optimisation at zero
+#   nlminb() minimises f w.r.t. b1 using the demeaned data
+#   opt$par                # extract the optimal (minimising) coefficients
+```
+
+**Written answer:**\
+`f` computes the ridge regression objective: the sum of squared residuals plus a penalty `la * sum(b1^2)` on the magnitude of the regression coefficients. `g` estimates ridge regression for a given penalty parameter `la`. It first centres (demeans) both y and each column of X so that the intercept is simply `mean(y)`. It then uses numerical minimisation (`nlminb`) to find the coefficients that minimise `f`. This is a version of **ridge regression** where X-variables are demeaned but not divided by their standard deviation (i.e., not fully standardised).
+
+------------------------------------------------------------------------
+
+### Task 1b (10p) — Compare OLS vs ridge, la=0 vs la=1000
+
+**Question:**\
+Read `data_task1.csv` (100 obs, 20 predictors). Fit by OLS (`lm`) and by `g` with `la=1000`. Comment on the difference. What is the explanation? Also fit using `g` with `la=0`.
+
+**Theory connection:** When there are many predictors relative to observations (here 20/100 = 1:5), OLS can overfit. Ridge shrinks large coefficients. When `la=0`, ridge = OLS (no penalty). When `la=1000`, coefficients are substantially shrunk — the sum of squared coefficients is smaller.
+
+**Step-by-step code:**
+
+```{r}
+# Read data (semi-colon delimited: read.csv2)
+Xy <- read.csv2("data_task1.csv")
+X  <- as.matrix(Xy[, -1])   # predictor matrix, all columns except col 1
+y  <- as.matrix(Xy[,  1])   # outcome, first column
+
+# OLS via lm; extract slope coefficients (drop intercept position 1)
+b1ols  <- lm(y ~ X)$coef[-1]
+
+# Ridge with la=0 should reproduce OLS
+b1g0   <- g(X, y, la = 0)
+
+# Ridge with la=1000: substantial penalty -> coefficients shrunk toward zero
+b1g1000 <- g(X, y, la = 1000)
+
+# Compare all three in a table
+cbind(b1ols, b1g0, b1g1000)
+
+# Quantify shrinkage: sum of squared coefficients should be smaller for la=1000
+sum(b1ols^2)    # exam-run value is around 18k
+sum(b1g1000^2)  # exam-run value is around 8k (clearly smaller)
+```
+
+**Written answer:**\
+`g` with `la=0` gives virtually identical coefficients to OLS — as expected, since no penalty is applied. With `la=1000` the coefficients are substantially smaller in magnitude (sum of squared coefficients drops from \~18 187 to \~8 335). The explanation is that ridge regression adds a penalty that discourages large coefficients; the larger `la`, the stronger the shrinkage. This can reduce prediction variance at the cost of a small increase in bias, which often improves test performance when there are many predictors.
+
+------------------------------------------------------------------------
+
+### Task 1c (10p) — LOOCV to find optimal lambda
+
+**Question:**\
+Explain what the `loo` function does and use it to find an optimal `la`. Is it necessary to demean the x-variables?
+
+```{r}
+loo <- function(la, X, y) {
+  n <- nrow(X); q <- ncol(X)
+  b0 <- mean(y); yd <- y - b0
+  Xd <- X
+  for(k in 1:q) Xd[,k] <- X[,k] - mean(X[,k])
+  ydpred <- matrix(0, n, 1)
+  for(i in 1:n) {
+    b1 <- g(X=X[-i,], y=y[-i], la)
+    ydpred[i] <- Xd[i,] %*% b1
+  }
+  testMSE <- mean((yd - ydpred)^2)
+  return(testMSE)
+}
+```
+
+**Theory connection:** Leave-one-out cross-validation (LOOCV): for each observation i, fit the model on all other n-1 observations, predict observation i, and accumulate squared errors. The average gives the LOO test MSE. We do this for a grid of `la` values and pick the one with the smallest LOO MSE.
+
+**Step-by-step code:**
+
+``` {r}
+# Step 1: broad search over la grid (0 to 10000)
+lavec_broad <- seq(0, 10000, length.out = 20)
+mse_broad <- sapply(lavec_broad, function(la) loo(la, X, y))
+plot(lavec_broad, mse_broad, main = "LOO MSE vs lambda (broad)")
+# Visual inspection: minimum appears between 4000 and 6000
+
+# Step 2: refined search around the minimum
+lavec_fine <- seq(4000, 6000, length.out = 20)
+mse_fine <- sapply(lavec_fine, function(la) loo(la, X, y))
+plot(lavec_fine, mse_fine, main = "LOO MSE vs lambda (refined)")
+
+# Step 3: even more refined
+lavec_opt <- seq(4500, 5000, length.out = 10)
+mse_opt <- sapply(lavec_opt, function(la) loo(la, X, y))
+la_star <- lavec_opt[which.min(mse_opt)]
+cat("Optimal lambda:", la_star)  # ~4722
+```
+
+**Written answer:**\
+The `loo` function implements leave-one-out cross-validation for the ridge estimator. In each iteration, one observation is left out; the model is fitted on the remaining n-1 observations using `g`; the left-out observation is then predicted using the demeaned predictor values. The function returns the average squared prediction error. Demeaning x is necessary because `g` always demeans the training data — the prediction must therefore also use demeaned test predictors to be on the same scale. A grid search reveals that the LOO-optimal `la` is approximately **4722**.
+
+------------------------------------------------------------------------
+
+### Task 1d (10p) — Bootstrap variance and 95% CI
+
+**Question:**\
+Use the bootstrap to estimate the sampling distribution of the sample variance of y. Show as a histogram. Also compute a 95% bootstrap confidence interval for Var(y).
+
+**Theory connection:** The bootstrap estimates the sampling distribution of a statistic by resampling with replacement from the original data. Here the statistic is `var(y)` (sample variance). Repeating B times gives B bootstrap replications; the 2.5th and 97.5th percentiles give a 95% CI.
+
+**Step-by-step code:**
+
+``` {r}
+n <- length(y)
+B <- 10000                   # number of bootstrap replications
+vboot <- numeric(B)          # pre-allocate storage
+
+set.seed(123)
+for(b in 1:B) {
+  yboot  <- sample(y, size = n, replace = TRUE)  # resample WITH replacement
+  vboot[b] <- var(yboot)                          # compute variance of bootstrap sample
+}
+
+# Visualise the bootstrap distribution
+hist(vboot, breaks = 50,
+     main = "Bootstrap distribution of sample variance",
+     xlab = "Sample variance")
+
+# 95% percentile bootstrap CI
+quantile(vboot, probs = c(0.025, 0.975))
+# Typical output in the exam material: 2.5% ≈ 1 522 449, 97.5% ≈ 2 134 932
+```
+
+**Written answer:**\
+By resampling y with replacement 10 000 times and computing the sample variance each time, the bootstrap distribution of the variance is approximately bell-shaped, centred around the observed sample variance. The 95% bootstrap confidence interval is approximately **\[1 522 449, 2 134 932\]**. This means we are 95% confident that the true variance of y lies in this range, based on the variation seen in bootstrap samples.
+
+------------------------------------------------------------------------
+
+### Task 1e (10p) — GAM for nonlinearity + R²
+
+**Question:**\
+Identify any nonlinear relationships between y and its predictors. Can a GAM improve the in-sample (training) MSE over OLS? Compute R² for both models.
+
+**Theory connection:** Generalised Additive Models (GAM) allow each predictor to enter through a smooth nonlinear function `s(x)` rather than a linear term. If scatter plots or residuals against predictors reveal a curved relationship, replacing a linear term with `s(x)` reduces training MSE (increases R²). R² = 1 - MSE_model / MSE_null, where MSE_null = Var(y) (variance of y without any predictors).
+
+**Step-by-step code:**
+
+``` {r}
+library(gam)
+
+# Step 1: scan for nonlinear patterns
+par(mfrow = c(4, 5))
+for(j in 1:20) plot(Xy[, j+1], Xy[, 1],
+                    xlab = paste0("X", j), ylab = "y")
+# Variable X3 shows a curved pattern -> candidate for s()
+
+# Step 2: fit OLS baseline (in-sample)
+ols <- lm(y ~ ., data = Xy)
+MSE_ols <- mean(residuals(ols)^2)   # in-sample MSE (training MSE)
+
+# Step 3: fit GAM with X3 as smooth term; all others linear
+# Build formula programmatically
+formula_gam <- as.formula(paste0("y ~ X1 + X2 + s(X3) +",
+                                  paste0("X", 4:20, collapse = "+")))
+gam1 <- gam(formula_gam, data = Xy)
+MSE_gam <- mean(residuals(gam1)^2)  # in-sample MSE
+
+# Step 4: compute R² for each model
+# R² = 1 - MSE_model / MSE_null, where MSE_null = Var(y) (no predictors at all)
+MSE_null <- mean((y - mean(y))^2)
+R2_ols  <- 1 - MSE_ols  / MSE_null
+R2_gam  <- 1 - MSE_gam  / MSE_null
+cat("R² OLS:", round(R2_ols, 4))
+cat("R² GAM:", round(R2_gam, 4))
+```
+
+**Written answer:**\
+Plotting y against each predictor reveals that X3 has a curved (nonlinear) relationship with y. Adding a smoothing spline for X3 in the GAM reduces the in-sample MSE compared to OLS. This increases R² from approximately **0.34 (OLS)** to **0.40 (GAM)**, meaning the GAM explains about 6 percentage points more variation in y. The improvement confirms that modelling the nonlinearity in X3 is beneficial.
+
+------------------------------------------------------------------------
+
+## Task 2 — Insurance claims (`dataOhlsson`)
+
+### Task 2a (10p) — Create claim variable, remove leakage, EDA
+
+**Question:**\
+Create a binary variable `claim` (antskad ≥ 1 = TRUE). Remove variables not available at prediction time. Split into training/test. Use descriptive statistics to find useful predictors.
+
+**Theory connection:** Before fitting any model, we must remove *target leakage* — variables that contain direct information about the outcome that would not be available in a real prediction scenario. `antskad` (number of claims) determines `claim` directly; `skadkost` (claim cost) is only known after a claim occurs. Both must be removed.\
+Encode categorical variables as factors so that R handles them correctly in `glm`, `tree`, etc.
+
+**Step-by-step code:**
+
+``` {r}
+library(insuranceData)
+data("dataOhlsson")
+ydata <- dataOhlsson
+
+# Create binary target: claim = TRUE if antskad >= 1
+ydata$claim <- ydata$antskad >= 1
+
+# Remove variables that are NOT available at prediction time:
+# antskad = number of claims  -> IS the (raw) target, not a predictor
+# skadkost = claim cost       -> only known AFTER a claim has occurred
+ydata <- ydata[, !(names(ydata) %in% c("antskad", "skadkost"))]
+
+# Encode ordinal/categorical variables as factors
+ydata$zon     <- as.factor(ydata$zon)     # geographic zone
+ydata$bonuskl <- as.factor(ydata$bonuskl) # bonus class
+ydata$mcklass <- as.factor(ydata$mcklass) # motorcycle class
+
+# 50/50 train/test split
+set.seed(123)
+n     <- nrow(ydata)
+ind   <- sample(1:n, size = floor(n/2))
+train <- ydata[ind,]
+test  <- ydata[-ind,]
+
+# --- Descriptive statistics: numeric predictors ---
+# Boxplot of numeric vars by claim status
+plot(duration ~ as.factor(claim), data = train, main = "Duration by claim")
+plot(agarald  ~ as.factor(claim), data = train, main = "Owner age by claim")
+plot(fordald  ~ as.factor(claim), data = train, main = "Vehicle age by claim")
+
+# --- Descriptive statistics: categorical predictors ---
+# Proportion of claim=TRUE within each category
+prop.table(table(train$kon,     train$claim), margin = 1)
+prop.table(table(train$bonuskl, train$claim), margin = 1)
+prop.table(table(train$zon,     train$claim), margin = 1)
+prop.table(table(train$mcklass, train$claim), margin = 1)
+```
+
+**Written answer:**\
+`antskad` and `skadkost` are removed because they are either the outcome itself or only observable after the claim. Categorical variables `zon`, `bonuskl`, and `mcklass` are encoded as factors. Descriptive analysis shows that: (1) younger owner age (`agarald`) is associated with more claims; (2) newer vehicles (`fordald`) make more claims; (3) male policy-holders (`kon = M`) claim more often; (4) zone 1 has the highest claim rate; (5) bonus class 7 has the highest claim rate. `duration` shows little visible difference between claim groups.
+
+------------------------------------------------------------------------
+
+### Task 2b (10p) — Logistic regression: full and reduced models
+
+**Question:**\
+Fit a logistic regression with all variables and one with a selection of variables. Base the selection on task 2a and on the significance of coefficients in the full model.
+
+**Theory connection:** Logistic regression models P(claim=1 \| X) = sigmoid(β₀ + β'X). We use `family = binomial()` in `glm`. A *reduced model* that drops non-significant predictors may improve parsimony and generalisation.
+
+**Step-by-step code:**
+
+``` {r}
+# Full logistic model with all available predictors
+logreg1 <- glm(claim ~ ., data = train, family = binomial())
+summary(logreg1)
+# Key significant predictors: agarald (***), konM (***), zon (***),
+#                             fordald (***), duration (***), bonuskl7 (*)
+# Non-significant: most mcklass levels, bonuskl2-6
+
+# Reduced model: keep the most important predictors based on significance
+logreg2 <- glm(claim ~ agarald + kon + zon + fordald + duration,
+               data = train, family = binomial())
+summary(logreg2)
+```
+
+**Written answer:**\
+The full logistic model shows that `agarald` (owner age), `kon` (gender), most `zon` levels, `fordald` (vehicle age), and `duration` are strongly significant (p \< 0.001). Most `mcklass` and `bonuskl` levels are not significant. A reduced model using only the significant continuous and categorical predictors retains near-equivalent fit while being more parsimonious.
+
+------------------------------------------------------------------------
+
+### Task 2c (10p) — Evaluate predictions: threshold + confusion matrix
+
+**Question:**\
+Evaluate the model predictions from 2b with an appropriate measure. Determine a threshold to convert probabilities to predicted classes.
+
+**Theory connection:** With rare events (claim rate ≈ 1%), the default 0.5 threshold classifies almost everything as "no claim." A lower threshold catches more true claims (higher sensitivity) at the cost of more false positives. We can experiment on the training set to find a pragmatic threshold.
+
+**Step-by-step code:**
+
+``` {r}
+# --- Determine threshold by experimenting on TRAINING data ---
+prob_train <- predict(logreg1, newdata = train, type = "response")
+
+# Try threshold = 0.01 (very low, because claim rate is ~1%)
+th <- 0.01
+pred_train <- prob_train > th
+prop.table(table(train$claim, pred_train), margin = 1)
+# Look at row 2 (claim=TRUE): we want this to be high (~sensitivity)
+
+# --- Evaluate on TEST data ---
+prob_test <- predict(logreg1, newdata = test, type = "response")
+pred_test <- prob_test > th
+
+# Confusion matrix (rows = actual, columns = predicted)
+cm1 <- table(test$claim, pred_test)
+cm1
+
+# Row-wise proportions (how well do we classify each class?)
+prop.table(cm1, margin = 1)
+# Example output:
+#        FALSE  TRUE
+# FALSE  0.686  0.314   <- 68.6% of no-claim correctly predicted
+# TRUE   0.283  0.717   <- 71.7% of claims correctly predicted
+
+# Overall accuracy
+sum(diag(cm1)) / sum(cm1)
+```
+
+**Written answer:**\
+Because claims are rare (\~1% of observations), a 0.5 threshold classifies almost everything as "no claim." Experimenting on training data with a threshold of 0.01 gives a more balanced classifier: approximately 71.7% of actual claims are correctly identified (sensitivity) and 68.6% of non-claims are correctly identified (specificity). A good model answer acknowledges this class imbalance and justifies the threshold choice.
+
+------------------------------------------------------------------------
+
+### Task 2d (10p) — Random forest
+
+**Question:**\
+Fit a random forest to predict `claim` and evaluate predictions. Compare with the logistic model.
+
+**Theory connection:** Random forests grow many decision trees on bootstrap samples of the training data, each using a random subset of `mtry` predictors at each split. The prediction is the majority vote (classification) or average (regression). They typically outperform single logistic models on complex patterns and class-imbalanced data.
+
+**Step-by-step code:**
+
+``` {r}
+library(randomForest)
+
+# Fit random forest; convert claim to factor for classification
+rf <- randomForest(as.factor(claim) ~ ., data = train, mtry = 7, ntree = 500)
+
+# Predict probabilities and convert to class using a threshold
+prob_rf <- predict(rf, newdata = test, type = "prob")  # columns: [FALSE, TRUE]
+pred_rf  <- prob_rf[, 2] > 0.02  # low threshold: same reasoning as logistic
+
+# Confusion matrix
+cm_rf <- table(test$claim, pred_rf)
+prop.table(cm_rf, margin = 1)
+# Typically: FALSE ~83.5% correct, TRUE ~43.2% correct
+# Better at no-claim class, worse at claim class vs logistic
+```
+
+**Written answer:**\
+The random forest improves accuracy for the no-claim class compared to logistic regression but at the cost of somewhat lower sensitivity for the claim class. The optimal threshold may differ from the logistic model. The random forest has no single coefficient to interpret, but variable importance can be examined with `varImpPlot(rf)`.
+
+------------------------------------------------------------------------
+
+### Task 2e (10p) — Boosted tree
+
+**Question:**\
+Fit a boosted tree and evaluate predictions. Compare with logistic regression and random forest.
+
+**Theory connection:** Gradient boosting (`gbm`) builds trees sequentially, each one fitting the residuals (errors) of all previous trees. Key hyperparameters: `n.trees` (number of iterations), `interaction.depth` (tree depth), `shrinkage` (learning rate — smaller = more trees needed but better generalisation).
+
+**Step-by-step code:**
+
+``` {r}
+library(gbm)
+
+# For binary outcome use distribution = "bernoulli"
+# Convert logical claim to numeric 0/1 for gbm
+train_bt <- train
+train_bt$claim <- as.numeric(train$claim)  # TRUE -> 1, FALSE -> 0
+
+bt <- gbm(claim ~ ., data = train_bt,
+          distribution = "bernoulli",  # binary outcome
+          n.trees = 1000,
+          interaction.depth = 3,       # max depth of each tree
+          shrinkage = 0.01)            # learning rate
+
+# Predict: type="response" gives predicted probabilities
+prob_bt <- predict(bt, newdata = test, n.trees = 1000, type = "response")
+pred_bt  <- prob_bt > 0.01  # same threshold approach
+
+cm_bt <- table(test$claim, pred_bt)
+prop.table(cm_bt, margin = 1)
+# Typically similar to logistic regression performance
+```
+
+**Written answer:**\
+The boosted tree yields performance broadly similar to logistic regression, with approximately 70% of claims and 67% of non-claims correctly classified at a threshold of 0.01. It does not clearly outperform logistic regression here, which may reflect the difficulty of predicting rare claims from the available predictors. The random forest is the strongest performer among the three methods on the no-claim class, while logistic regression and boosting show higher sensitivity.
+
+------------------------------------------------------------------------
+
+# 2024 School Exam — `airline.csv`
+
+## Exam overview
+
+-   **Date**: 2024-05-27, 6 hours
+-   **Task 1** (50 p): methodological questions — local regression, LOOCV, multi-predictor extension, backfitting
+-   **Task 2** (50 p): airline satisfaction data — classification pipeline, two perspectives
+-   **Dataset**: 25 923 rows, airline customer survey
+
+------------------------------------------------------------------------
+
+## Task 1 — Methodological questions
+
+### Task 1a (10p) — Explain the local regression function
+
+**Question:**\
+Explain what the following R function `f` is doing.
+
+``` {r}
+f <- function(x0, x, y, K = 3) {
+  d    <- abs(x - x0)
+  o    <- order(d)[1:K]
+  xl   <- x[o]
+  yl   <- y[o]
+  xydata <- data.frame(xl = xl, yl = yl)
+  reg  <- lm(yl ~ xl, data = xydata)
+  ypred <- predict(reg, newdata = data.frame(xl = x0, yl = 1))
+  return(ypred)
+}
+```
+
+**Theory connection:** This is **local regression** (related to KNN but more sophisticated). Standard KNN predicts by averaging the K nearest neighbours' y-values. This function instead *fits a local linear regression* to the K nearest neighbours and predicts from that regression. It is a combination of the KNN proximity idea and linear regression.
+
+**Step-by-step code annotation:**
+
+``` {r}
+f <- function(x0, x, y, K = 3) {
+  d  <- abs(x - x0)       # Step 1: absolute distance from each training x to x0
+  o  <- order(d)[1:K]     # Step 2: indices of K smallest distances (K nearest neighbours)
+  xl <- x[o]              # Step 3: the K nearest x-values
+  yl <- y[o]              # Step 4: corresponding y-values
+  xydata <- data.frame(xl = xl, yl = yl)   # Step 5: small local dataset of K points
+  reg <- lm(yl ~ xl, data = xydata)        # Step 6: fit a linear regression on these K points
+  ypred <- predict(reg,                    # Step 7: predict y at x0 from the local regression
+                   newdata = data.frame(xl = x0, yl = 1))
+  return(ypred)
+}
+```
+
+**Written answer:**\
+The function implements **local linear regression**. It finds the K training observations closest to a query point x0 (using absolute distance). It then fits a simple linear regression of y on x using only those K neighbours, and returns the predicted value at x0 from that local regression. Unlike standard KNN which takes an average, this method fits a line through the nearest neighbours, which can handle locally linear patterns more accurately.
+
+------------------------------------------------------------------------
+
+### Task 1b (10p) — LOOCV to find optimal K
+
+**Question:**\
+Given the small dataset (x: 5.26, 9.13, 11.17, 15.64, 25.32, 25.55, 41.39, 48.17, 58.65, 68.24; corresponding y-values), use leave-one-out cross-validation to find the optimal K for `f`.
+
+**Theory connection:** LOOCV: for each observation i, fit the model on all other n-1 observations and predict i. Repeat for all observations to get the LOO test MSE. Do this for a range of K values and choose the K with the lowest test MSE.
+
+**Step-by-step code:**
+
+``` {r}
+# Dataset from the exam
+x <- 1:10
+y <- c(5.26, 9.13, 11.17, 15.64, 25.32, 25.55, 41.39, 48.17, 58.65, 68.24)
+
+n <- length(x)
+
+# Define LOO function for our local regression f
+loo_f <- function(K, x, y) {
+  ypred <- numeric(n)
+  for(i in 1:n) {
+    # Leave out observation i; fit on the other n-1 observations
+    ypred[i] <- f(x0 = x[i], x = x[-i], y = y[-i], K = K)
+  }
+  mean((y - ypred)^2)  # LOO test MSE
+}
+
+# Try K from 2 to 9 (K=1 is just the nearest point; K=n would use all points)
+Ks <- 2:(n-1)
+testMSE_k <- sapply(Ks, function(K) loo_f(K, x, y))
+
+# Plot to identify optimal K
+plot(Ks, testMSE_k, type = "b", xlab = "K", ylab = "LOO test MSE",
+     main = "LOOCV: choosing K for local regression")
+
+# Optimal K
+K_opt <- Ks[which.min(testMSE_k)]
+cat("Optimal K:", K_opt)  # Solution: K = 5
+```
+
+**Written answer:**\
+The LOO cross-validation procedure fits the local regression model on n-1 observations and evaluates prediction on the left-out observation for each K. The minimum LOO test MSE occurs at **K = 5**, so we use K = 5 as the optimal number of neighbours.
+
+------------------------------------------------------------------------
+
+### Task 1c (10p) — Plot y vs x with optimal K predictions
+
+**Question:**\
+Plot y against x and add a curve with the predictions from the optimal K found in 1b.
+
+**Step-by-step code:**
+
+``` {r}
+K_opt <- 5  # from 1b
+
+# Compute predictions at each training x using the FULL data (not LOO)
+ypred_opt <- numeric(n)
+for(i in 1:n) {
+  ypred_opt[i] <- f(x0 = x[i], x = x, y = y, K = K_opt)
+}
+
+# Plot
+plot(x, y, pch = 16, col = "black",
+     main = paste("Local regression with K =", K_opt),
+     xlab = "x", ylab = "y")
+lines(sort(x), ypred_opt[order(x)], col = "red", lwd = 2)
+legend("topleft", legend = c("Observed", "Predicted"), col = c("black","red"),
+       pch = c(16, NA), lty = c(NA, 1))
+```
+
+**Written answer:**\
+The red line passes through or near each observation, adapting to the local structure of the data. With K = 5, the fitted curve is reasonably smooth — it captures the general trend without overfitting.
+
+------------------------------------------------------------------------
+
+### Task 1d (10p) — Multi-predictor extension: Euclidean distance
+
+**Question:**\
+In `f`, there is only one predictor. One way to allow for more than one predictor is to compute `d` differently. Explain how.
+
+**Theory connection:** In one dimension, "distance" from x0 to x is \|x - x0\|. With p predictors, we generalise to Euclidean distance in p-dimensional space. For two predictors x = (x₁, x₂) and x0 = (x01, x02): d = sqrt((x₁−x01)² + (x₂−x02)²).
+
+**Step-by-step code:**
+
+``` {r}
+# Modified f for 2 predictors (X is an n x 2 matrix, x0 is a 1 x 2 vector)
+f2d <- function(x0, X, y, K = 3) {
+  # Euclidean distance in 2D (generalises to p dimensions)
+  d  <- sqrt((X[, 1] - x0[1])^2 + (X[, 2] - x0[2])^2)
+  o  <- order(d)[1:K]
+  xl <- X[o, ]
+  yl <- y[o]
+  xydata <- data.frame(x1 = xl[,1], x2 = xl[,2], y = yl)
+  reg   <- lm(y ~ x1 + x2, data = xydata)
+  ypred <- predict(reg, newdata = data.frame(x1 = x0[1], x2 = x0[2]))
+  return(ypred)
+}
+
+# General p-dimensional Euclidean distance:
+# d <- sqrt(rowSums((X - matrix(x0, nrow(X), ncol(X), byrow=TRUE))^2))
+```
+
+**Written answer:**\
+With two predictors x = (x₁, x₂) and query point x0 = (x01, x02), the distance is:\
+d = √\[(x₁ − x01)² + (x₂ − x02)²\]\
+This generalises naturally to p predictors as the Euclidean norm of the difference vector. Important: if predictors are on very different scales, they should be standardised before computing distances (otherwise a variable on a large scale dominates).
+
+------------------------------------------------------------------------
+
+### Task 1e (10p) — Backfitting for multiple predictors
+
+**Question:**\
+Another way to allow for several predictors is to use **backfitting**. Explain how you would implement backfitting for this method (you do not need to code it).
+
+**Theory connection:** Backfitting is the algorithm used in GAMs to estimate additive models. For our local regression function, it extends to multiple predictors by iteratively fitting each predictor while holding the contributions of all others fixed, using residuals.
+
+**Written answer (no code needed):**\
+Here is the backfitting algorithm for two predictors x₁ and x₂:
+
+1.  **Initialise**: set ĝ₂(x₂) = 0 (zero function for the second predictor).
+2.  **Step for x₁**: define residuals r₁ = y − ĝ₂(x₂). Fit f on (x₁, r₁) to obtain ĝ₁(x₁).
+3.  **Step for x₂**: define residuals r₂ = y − ĝ₁(x₁). Fit f on (x₂, r₂) to obtain ĝ₂(x₂).
+4.  **Repeat** steps 2–3 until ĝ₁ and ĝ₂ no longer change significantly.
+5.  **Predict**: ŷ = ĝ₁(x₁) + ĝ₂(x₂) + intercept.
+
+Each iteration uses the residuals from the previous fit as the "new y", so each predictor's smooth function is estimated net of the contribution of all others. This generalises straightforwardly to p predictors by cycling through all of them.
+
+------------------------------------------------------------------------
+
+## Task 2 — Airline satisfaction data
+
+### Task 2a (3p) — Recode categorical variables as factors
+
+**Question:**\
+If necessary, recode categorical variables as factors. Motivate your choices.
+
+**Theory connection:** R treats numeric columns as continuous. Variables with a small number of distinct values (e.g., satisfaction ratings 1–5, class, gender) should be factors so models create proper dummy variables and trees make correct splits.
+
+**Step-by-step code:**
+
+``` {r}
+airline <- read.csv("airline.csv")
+
+# Automatic: convert columns with <= 7 distinct values to factor
+p <- ncol(airline)
+for(i in 1:p) {
+  if(length(unique(airline[, i])) <= 7) {
+    airline[, i] <- as.factor(airline[, i])
+  }
+}
+
+# Check result
+sapply(airline, class)
+
+# 50/50 train/test split
+set.seed(123)
+n   <- nrow(airline)
+ind <- sample(1:n, size = floor(n/2))
+training <- airline[ind, ]
+test     <- airline[-ind, ]
+```
+
+**Written answer:**\
+Variables with 7 or fewer distinct values — including satisfaction ratings (0–5), class (Eco/Business/Eco Plus), gender, customer type, and type of travel — are recoded as factors. Purely numeric variables like `Age`, `Flight_Distance`, and `Arrival_Delay_in_Minutes` remain numeric. The `satisfaction` outcome variable becomes a factor with two levels ("dissatisfied", "satisfied").
+
+------------------------------------------------------------------------
+
+### Task 2b (3p) — Motivate choice of training vs test data for "why dissatisfied?" question
+
+**Question:**\
+Tasks (a)–(g) answer the question "Why are some customers dissatisfied?" Motivate your choice of whether to use all data, training data, or test data for this analysis.
+
+**Written answer:**\
+Two defensible approaches:
+
+1.  **Use training data only** (recommended): although the "why" question is inherently explanatory rather than predictive, splitting the data into train/test and doing all exploratory/model fitting on training data ensures that the test data remains a clean holdout for the later operational prediction task (tasks h–l). This avoids contaminating the evaluation.
+
+2.  **Use all data**: the "why" question is about understanding patterns, not predicting new observations, so there is no strict need to hold out data. Using all data gives more statistical power for inference.
+
+Either argument receives full marks if clearly stated. I use training data to keep the evaluation in tasks j–k unbiased.
+
+------------------------------------------------------------------------
+
+### Task 2c (3p) — Descriptive statistics: find variables associated with satisfaction
+
+**Question:**\
+Use descriptive statistics to find variables associated with satisfaction. Explain what you use and summarise results.
+
+**Step-by-step code:**
+
+``` {r}
+# For binary predictors / low-cardinality factors: table of proportions
+prop.table(table(training$Gender,        training$satisfaction), margin = 1)
+prop.table(table(training$Customer_Type, training$satisfaction), margin = 1)
+prop.table(table(training$Class,         training$satisfaction), margin = 1)
+prop.table(table(training$Type_of_Travel,training$satisfaction), margin = 1)
+
+# For numeric predictors: boxplot by satisfaction group
+par(mfrow = c(2, 3))
+boxplot(Age ~ satisfaction, data = training, main = "Age")
+boxplot(Flight_Distance ~ satisfaction, data = training, main = "Flight Distance")
+boxplot(Arrival_Delay_in_Minutes ~ satisfaction, data = training,
+        main = "Arrival Delay")
+boxplot(Departure_Delay_in_Minutes ~ satisfaction, data = training,
+        main = "Departure Delay")
+
+# For satisfaction rating columns (0-5): compare means
+rating_vars <- c("Inflight_entertainment","Baggage_handling","Online_support",
+                 "Food_and_drink","Seat_comfort","Checkin_service")
+sapply(rating_vars, function(v)
+  tapply(as.numeric(as.character(training[[v]])), training$satisfaction, mean))
+```
+
+**Written answer:**\
+Business class passengers, business travellers, and loyal customers show much higher satisfaction rates. Among the rating variables, `Inflight_entertainment`, `Online_support`, and `Baggage_handling` show the largest mean differences between satisfied and dissatisfied groups. Delay variables show some association but are less distinct.
+
+------------------------------------------------------------------------
+
+### Task 2d (5p) — Logistic regression model + evaluation
+
+**Question:**\
+Formulate and fit a logistic regression model for satisfaction. Evaluate with appropriate measure(s).
+
+**Step-by-step code:**
+
+``` {r}
+# Initial model with all variables (may have NA coefficients due to collinearity)
+logreg1 <- glm(satisfaction ~ . - DA_time_convenient - Cleanliness - Online_boarding,
+               data = training, family = binomial())
+# Remove variables causing collinearity issues
+
+# Reduced model based on significant predictors
+formula2 <- satisfaction ~ Gender + Customer_Type + Age +
+  Type_of_Travel + Class + Flight_Distance +
+  Food_and_drink + Inflight_entertainment +
+  Online_support + Baggage_handling +
+  Checkin_service + Arrival_Delay_in_Minutes
+logreg2 <- glm(formula2, data = training, family = binomial())
+
+# Predict on TEST data
+prob2 <- predict(logreg2, newdata = test, type = "response")
+pred2 <- prob2 > 0.5
+
+# Confusion matrix
+cm <- table(test$satisfaction, pred2)
+cm
+prop.table(cm, margin = 1)
+# ~84.6% of dissatisfied correctly classified
+# ~85.9% of satisfied correctly classified
+
+# Overall accuracy
+overall_acc <- sum(diag(cm)) / sum(cm)
+cat("Accuracy:", round(overall_acc, 3))  # ~0.854
+```
+
+**Written answer:**\
+The logistic model achieves approximately 85% overall accuracy on the test set, correctly classifying 84.6% of dissatisfied and 85.9% of satisfied customers. Key significant predictors include `Inflight_entertainment`, `Online_support`, `Baggage_handling`, `Customer_Type`, and `Type_of_Travel`. Variables causing perfect separation (like `DA_time_convenient`) were excluded.
+
+------------------------------------------------------------------------
+
+### Task 2e (5p) — Classification tree
+
+**Question:**\
+Fit a classification tree, plot and interpret it. Evaluate model fit.
+
+**Step-by-step code:**
+
+``` {r}
+library(tree)
+
+# Fit classification tree
+tree1 <- tree(formula2, data = training)
+
+# Plot with labels
+plot(tree1)
+text(tree1, pretty = 0, cex = 0.7)
+
+# Evaluate on test data
+prob_tree <- predict(tree1, newdata = test)        # gives class probabilities
+pred_tree <- prob_tree[, "satisfied"] > 0.5        # classify using 0.5 threshold
+
+# Confusion matrix
+cm_tree <- table(test$satisfaction, pred_tree)
+prop.table(cm_tree, margin = 1)
+# ~81.8% dissatisfied, ~84.9% satisfied -> slightly worse than logistic
+
+overall_acc_tree <- sum(diag(cm_tree)) / sum(cm_tree)
+cat("Tree accuracy:", round(overall_acc_tree, 3))  # ~0.835
+```
+
+**Written answer:**\
+The classification tree splits first on `Inflight_entertainment`, indicating this is the most discriminating variable. Subsequent splits involve `Customer_Type`, `Baggage_handling`, `Gender`, and `Class`. A dissatisfied customer is, for example, someone dissatisfied with in-flight entertainment who is a disloyal customer. The tree achieves \~83.5% accuracy, slightly lower than logistic regression (85.4%).
+
+------------------------------------------------------------------------
+
+### Task 2f (5p) — Bagging / random forest + variable importance
+
+**Question:**\
+Can bagging or random forest improve predictions? Compute variable importance and interpret it.
+
+**Step-by-step code:**
+
+``` {r}
+library(randomForest)
+
+# Random forest (default mtry = sqrt(p) for classification)
+rf <- randomForest(formula2, data = training, na.action = na.omit)
+
+# Predict on test data (class predictions directly)
+pred_rf <- predict(rf, newdata = test)
+
+# Confusion matrix
+cm_rf <- table(test$satisfaction, pred_rf)
+prop.table(cm_rf, margin = 1)
+# ~90.6% dissatisfied, ~92.7% satisfied -> major improvement!
+
+overall_acc_rf <- sum(diag(cm_rf)) / sum(cm_rf)
+cat("RF accuracy:", round(overall_acc_rf, 3))  # ~0.918
+
+# Variable importance: MeanDecreaseGini measures how much each variable
+# reduces impurity (Gini index) across all trees; larger = more important
+varImpPlot(rf, main = "Variable importance (Random Forest)")
+```
+
+**Written answer:**\
+The random forest achieves approximately 91.8% overall accuracy — a significant improvement over logistic regression (85.4%) and the single tree (83.5%). The variable importance plot shows `Inflight_entertainment` and `Online_support` as the most important predictors, followed by `Baggage_handling`. MeanDecreaseGini measures the average reduction in node impurity attributed to each variable across all trees; a higher value means the variable contributes more to building pure leaf nodes.
+
+------------------------------------------------------------------------
+
+### Task 2g (4p) — Why are some customers dissatisfied?
+
+**Question:**\
+Based on your analysis in 2a–2f, what is your answer to the airline's question "Why are some customers dissatisfied?"
+
+**Written answer:**\
+All models consistently indicate that **in-flight entertainment, online support, and baggage handling** are the most important factors associated with overall dissatisfaction. Customers who rate these aspects poorly are much more likely to report dissatisfaction. Additionally, **disloyal customers, economy class passengers**, and **personal travellers** (as opposed to business travellers) show higher dissatisfaction rates. Demographics (age, gender) and operational factors (delay, flight distance) play a secondary role.
+
+------------------------------------------------------------------------
+
+### Task 2h (4p) — Operational perspective: variable availability for new customers
+
+**Question:**\
+The airline wants to predict if a new customer will be dissatisfied *before* the flight. Which variables will be available?
+
+**Written answer:**\
+Survey questions about the customer's satisfaction with specific aspects of the flight experience (e.g., `Inflight_entertainment`, `Food_and_drink`, `Baggage_handling`, `Online_support`, `Seat_comfort`, `Leg_room_service`, `On_board_service`, `Checkin_service`, `Online_boarding`) are **not available** before the flight — they reflect post-flight evaluations. Variables that **are available** at the time of ticket purchase include: `Gender`, `Customer_Type`, `Age`, `Type_of_Travel`, `Class`, `Flight_Distance`, `Gate_location` (partly). Delay variables would not be known in advance. I therefore restrict the operational model to: `Gender`, `Customer_Type`, `Age`, `Type_of_Travel`, `Class`, `Flight_Distance`.
+
+------------------------------------------------------------------------
+
+### Task 2i (2p) — Evaluation strategy for operational prediction
+
+**Written answer:**\
+For the operational prediction question, prediction accuracy on **test data** is the appropriate evaluation criterion. The goal is to predict satisfaction for future unseen customers, so we must evaluate on a hold-out set that was not used for model fitting or variable selection.
+
+------------------------------------------------------------------------
+
+### Task 2j (5p) — Operational logistic model
+
+**Step-by-step code:**
+
+``` {r}
+# Operational formula: only pre-flight variables
+formula_op <- satisfaction ~ Gender + Customer_Type + Age +
+  Type_of_Travel + Class + Flight_Distance
+
+logreg_op <- glm(formula_op, data = training, family = binomial())
+
+prob_op <- predict(logreg_op, newdata = test, type = "response")
+pred_op <- prob_op > 0.5
+
+cm_op <- table(test$satisfaction, pred_op)
+prop.table(cm_op, margin = 1)
+overall_acc_op <- sum(diag(cm_op)) / sum(cm_op)
+cat("Operational logistic accuracy:", round(overall_acc_op, 3))  # ~0.760
+```
+
+**Written answer:**\
+Without the in-flight satisfaction ratings, the logistic model achieves only \~76% accuracy. This is significantly lower than the full model (85.4%), confirming that the satisfaction ratings carry substantial predictive information. However, the operational model still performs well above chance (50%).
+
+------------------------------------------------------------------------
+
+### Task 2k (7p) — Operational random forest
+
+**Step-by-step code:**
+
+``` {r}
+rf_op <- randomForest(formula_op, data = training, na.action = na.omit)
+pred_rf_op <- predict(rf_op, newdata = test)
+
+cm_rf_op <- table(test$satisfaction, pred_rf_op)
+prop.table(cm_rf_op, margin = 1)
+overall_acc_rf_op <- sum(diag(cm_rf_op)) / sum(cm_rf_op)
+cat("Operational RF accuracy:", round(overall_acc_rf_op, 3))  # ~0.785
+```
+
+**Written answer:**\
+The operational random forest improves accuracy to \~78.5% compared to \~76% for logistic regression. While the improvement is moderate, the random forest is still preferred as it can capture nonlinear interactions between predictors like `Class`, `Customer_Type`, and `Age`.
+
+------------------------------------------------------------------------
+
+### Task 2l (4p) — Future data collection
+
+**Question:**\
+Are there variables that could realistically be collected in advance to improve the operational prediction?
+
+**Written answer:**\
+Some of the dropped in-flight satisfaction variables could potentially be collected in advance with different designs: - **Gate location satisfaction** could be partially predicted from flight scheduling data. - **Check-in service satisfaction** could be estimated from pre-check-in data (online vs. airport check-in behaviour). - **Seat comfort** might be partially captured by class and seat type at booking.
+
+Anonymous survey questions about general preferences could also be collected at booking. However, most of the highly predictive variables (entertainment, food, baggage handling) remain inherently unmeasurable before the flight.
+
+------------------------------------------------------------------------
+
+# 2023 School Exam — `Churn.csv`
+
+## Exam overview
+
+-   **Dataset**: Churn.csv — 11 variables about ISP customers, including churn status
+-   **Task 1** (10 sub-tasks): Predict `bill_avg` (regression)
+-   **Task 2** (6 sub-tasks): Predict `churn` (classification)
+-   **Seed**: `set.seed(86554354)` for the train/test split
+-   **Note**: 3 exam versions with different seeds existed; only one is shown here
+
+------------------------------------------------------------------------
+
+## Task 1 — Predicting `bill_avg` (regression)
+
+### Task 1a — Recode, remove variables, and split
+
+**Question:**\
+Recode categorical variables as factors. Remove variables that cannot be used. Split 50/50 with `set.seed(86554354)`.
+
+**Theory connection:** This is a supervised learning data-preparation step: define realistic predictors, encode categorical variables correctly, and create a strict train/test split for unbiased out-of-sample evaluation.
+
+**Step-by-step code:**
+
+``` {r}
+Churn <- read.csv("Churn.csv")
+
+# Check variable types
+sapply(Churn, class)
+
+# Remove id (no predictive value, just an identifier)
+xdata <- Churn[, -1]
+
+# Recode binary indicator variables and churn as factors
+fa <- c("is_tv_subscriber", "is_movie_package_subscriber", "churn")
+for(i in 1:length(fa)) xdata[, fa[i]] <- as.factor(xdata[, fa[i]])
+
+# Note: 'churn' can be included as a predictor for bill_avg IF we assume
+# churn status is known at prediction time. Clearly state this assumption.
+
+# 50/50 split
+n <- nrow(xdata)
+set.seed(86554354)
+ind   <- sample(1:n, size = floor(n/2))
+train <- xdata[ind, ]
+test  <- xdata[-ind, ]
+```
+
+**Written answer:**\
+`id` is removed (not a predictor). `is_tv_subscriber`, `is_movie_package_subscriber`, and `churn` are binary indicator variables — they are recoded as factors. Whether to include `churn` as a predictor for `bill_avg` depends on whether we assume churn status is available at prediction time. Here we assume it is, but a clearly stated opposite assumption also receives marks.
+
+------------------------------------------------------------------------
+
+### Task 1b — Descriptive analysis for bill_avg predictors
+
+**Question:**\
+Use descriptive methods to find useful predictors for `bill_avg`.
+
+**Theory connection:** Exploratory analysis is used to detect plausible signal before modeling. Visual patterns and group differences guide variable interpretation, but final inclusion should be validated by test-set prediction performance.
+
+**Step-by-step code:**
+
+``` {r}
+# Plot bill_avg against all other variables in training data
+par(mfrow = c(3, 3))
+plot(bill_avg ~ ., data = train)
+graphics.off()
+
+# Key observations from plots:
+# - is_tv_subscriber: TV non-subscribers appear to have higher bills
+# - subscription_age: positive relationship visible
+# - remaining_contract: longer remaining -> lower bill (? check)
+# - download_avg and upload_avg: less clear visually but included in full model
+```
+
+**Written answer:**\
+Plotting `bill_avg` against all predictors shows variation with most variables. TV and movie package subscriptions, subscription age, and download/upload averages all appear to show some association with the bill average. Download and upload averages are less visually clear but may still be informative in a multivariate setting.
+
+------------------------------------------------------------------------
+
+### Task 1c — OLS regression and evaluation
+
+**Question:**\
+Produce the best possible predictions of `bill_avg` using OLS and evaluate them.
+
+**Theory connection:** OLS provides a linear baseline for continuous outcomes. With no explicit business-loss function, test MSE is the standard criterion: lower MSE implies better predictive performance.
+
+**Step-by-step code:**
+
+``` {r}
+# Full OLS model
+lr <- lm(bill_avg ~ ., data = train)
+pred_lr <- predict(lr, newdata = test)
+MSE_lr  <- mean((test$bill_avg - pred_lr)^2)
+cat("Full model test MSE:", round(MSE_lr, 2))  # ~117.86
+
+# Reduced model (remove download_avg and upload_avg after inspecting plots)
+lr2 <- lm(bill_avg ~ . - download_avg - upload_avg, data = train)
+pred_lr2 <- predict(lr2, newdata = test)
+MSE_lr2  <- mean((test$bill_avg - pred_lr2)^2)
+cat("Reduced model test MSE:", round(MSE_lr2, 2))  # ~146.74
+
+# Full model is better -> use MSE_lr = 117.86 as OLS benchmark
+```
+
+**Written answer:**\
+MSE is used as the evaluation metric because no specific decision loss function is given. The full OLS model (test MSE ≈ 117.9) outperforms the reduced model (test MSE ≈ 146.7), suggesting that `download_avg` and `upload_avg` do contribute to predictions despite their unclear visual pattern.
+
+------------------------------------------------------------------------
+
+### Task 1d — LASSO with CV tuning, compare with OLS
+
+**Question:**\
+Fit a LASSO regression. Find the optimal lambda. Standardise? Compare coefficients with OLS.
+
+**Theory connection:** LASSO (L1-penalized regression) controls variance and can perform variable selection. Cross-validation chooses the penalty strength (`lambda`) that balances bias and variance.
+
+**Step-by-step code:**
+
+``` {r}
+library(glmnet)
+
+# Convert factor variables to numeric dummies (required by glmnet)
+for(i in 1:length(fa)) xdata[, fa[i]] <- as.numeric(xdata[, fa[i]]) - 1
+train <- xdata[ind, ]
+test  <- xdata[-ind, ]
+
+# Create X matrix and y vector (bill_avg is column 4)
+trainX <- as.matrix(train[, -4])   # all predictors
+trainy <- as.matrix(train[,  4])   # bill_avg
+testX  <- as.matrix(test[,  -4])
+
+# Fit LASSO with 10-fold CV to find optimal lambda
+# alpha=1 specifies LASSO (alpha=0 would be ridge)
+lasso_cv  <- cv.glmnet(trainX, trainy, alpha = 1, standardize = TRUE)
+lasso_lambda <- lasso_cv$lambda.min
+lasso <- glmnet(trainX, trainy, alpha = 1, lambda = lasso_lambda, standardize = TRUE)
+
+# Compare OLS and LASSO coefficients
+cbind(lr$coefficients[-1], as.vector(lasso$beta))
+```
+
+**Written answer:**\
+The predictors are standardised because they have very different scales (download_avg in GB, subscription_age in years, etc.). Without standardisation, LASSO would penalise large-scale variables more, which is undesirable. The LASSO coefficients are similar to OLS — none are reduced to exactly zero with this dataset and lambda, suggesting that all variables contribute meaningfully.
+
+------------------------------------------------------------------------
+
+### Task 1e — Evaluate LASSO predictions
+
+**Theory connection:** After tuning and fitting, the model must be evaluated on held-out test data using the same metric as OLS (MSE) for a fair method comparison.
+
+**Step-by-step code:**
+
+``` {r}
+pred_lasso <- predict(lasso, newx = testX)
+MSE_lasso  <- mean((test$bill_avg - pred_lasso)^2)
+cat("LASSO test MSE:", round(MSE_lasso, 2))  # ~117.87 (similar to OLS)
+```
+
+**Written answer:**\
+The LASSO test MSE (≈117.9) is nearly identical to OLS (≈117.9). In this case, regularisation did not significantly improve predictions, suggesting that either overfitting is not a major problem here, or the optimal lambda is very small.
+
+------------------------------------------------------------------------
+
+### Task 1f — Regression tree for bill_avg
+
+**Question:**\
+Fit a regression tree. Explain your choices. Interpret the tree.
+
+**Theory connection:** Regression trees model nonlinearities and interactions through recursive partitioning. They are interpretable because each split defines an explicit decision rule.
+
+**Step-by-step code:**
+
+``` {r}
+library(tree)
+
+# Reconvert factors back from numeric (if needed)
+for(i in 1:length(fa)) xdata[, fa[i]] <- as.factor(as.character(xdata[, fa[i]]))
+train <- xdata[ind, ]
+test  <- xdata[-ind, ]
+
+tree1 <- tree(bill_avg ~ ., data = train)
+
+# Plot tree with terminal node labels
+plot(tree1)
+text(tree1, pretty = 0)
+# Root split: download_avg < 333.2
+# Interpretation: high download_avg drives high bill
+```
+
+**Written answer:**\
+The root split is on `download_avg < 333.2`, indicating this is the most discriminating predictor. Customers with very high download averages (\>861.5 GB) who are not TV subscribers have the highest average bills (\~264.6). Customers with low downloads, who have never exceeded the download limit, and who are very new subscribers have the lowest bills (\~4.6). The tree reveals a nonlinear threshold structure that OLS cannot capture.
+
+------------------------------------------------------------------------
+
+### Task 1g — Evaluate regression tree predictions
+
+**Theory connection:** Tree interpretation is not enough; predictive quality must be compared out-of-sample against linear methods using test MSE.
+
+**Step-by-step code:**
+
+``` {r}
+pred_tree1 <- predict(tree1, newdata = test)
+MSE_tree1  <- mean((test$bill_avg - pred_tree1)^2)
+cat("Tree test MSE:", round(MSE_tree1, 2))  # ~120.3
+```
+
+**Written answer:**\
+The regression tree (test MSE ≈ 120.3) is comparable to OLS and LASSO, confirming that a moderate level of nonlinearity is present but the tree does not dramatically outperform linear methods on this dataset.
+
+------------------------------------------------------------------------
+
+### Task 1h — Random forest for bill_avg + variable importance
+
+**Question:**\
+Fit a random forest. Plot and interpret the variable importance measure. Explain the measure.
+
+**Theory connection:** Random forests reduce variance by averaging many de-correlated trees. Variable importance summarizes how much each predictor contributes to impurity reduction across the forest.
+
+**Step-by-step code:**
+
+``` {r}
+library(randomForest)
+
+# Fit random forest (reduce ntree=50 for speed if needed)
+tree2 <- randomForest(bill_avg ~ ., data = train, ntree = 50)
+
+# Variable importance plot
+varImpPlot(tree2, main = "RF Variable Importance — bill_avg")
+# IncNodePurity = increase in RSS due to splits on each variable (summed over trees)
+# Higher = more important
+
+# The measure (IncNodePurity / MeanDecreaseGini for regression):
+# For each tree and each split, the decrease in RSS due to the split is attributed
+# to the variable used. We average this over all splits and all trees.
+```
+
+**Written answer:**\
+The variable importance plot shows `download_avg` and `upload_avg` as the most important predictors — consistent with the regression tree and in contrast to the descriptive analysis, which showed less obvious visual patterns for these variables. The variable importance measure is the average reduction in RSS (residual sum of squares) per split, averaged over all splits and all trees. A higher value means the variable is responsible for more of the variance explained.
+
+------------------------------------------------------------------------
+
+### Task 1i — Random forest predictions evaluation
+
+**Theory connection:** Ensemble methods are justified only if they improve test performance; therefore RF predictions are evaluated with test MSE and compared to OLS/LASSO/tree.
+
+**Step-by-step code:**
+
+``` {r}
+pred_tree2 <- predict(tree2, newdata = test)
+MSE_tree2  <- mean((test$bill_avg - pred_tree2)^2)
+cat("RF test MSE:", round(MSE_tree2, 2))  # ~96.5
+```
+
+**Written answer:**\
+The random forest (test MSE ≈ 96.5) significantly outperforms OLS, LASSO, and the single regression tree. This confirms that the nonlinear relationships captured by the ensemble of trees provide genuine predictive value over linear methods.
+
+------------------------------------------------------------------------
+
+### Task 1j — Features of high/low bill customers
+
+**Theory connection:** This is model-based profiling: combine coefficient signs, tree splits, and ensemble importance to describe segments associated with high vs low outcomes.
+
+**Written answer:**\
+Based on all models: - **High bill customers**: high download and upload averages, no TV subscription, long subscription history, short remaining contract, many service failures, not exceeding download limit frequently. - **Low bill customers**: low download/upload averages, newer customers, possible TV or movie package subscriptions.\
+The random forest's superiority suggests nonlinear interactions (e.g., download threshold effects) are important, consistent with the tree structure.
+
+------------------------------------------------------------------------
+
+## Task 2 — Predicting `churn` (classification)
+
+### Task 2a — Descriptive analysis for churn predictors
+
+**Question:**\
+Use descriptive statistics to find promising predictors for `churn`.
+
+**Theory connection:** For classification, class-conditional summaries and plots reveal directional effects and candidate predictors before fitting probabilistic models.
+
+**Step-by-step code:**
+
+``` {r}
+library(dplyr)  # or base R equivalent
+
+# Compare means of numeric predictors by churn group (training data)
+xdata[ind, ] %>%
+  group_by(churn) %>%
+  summarise(across(where(is.numeric), mean)) %>%
+  t()
+
+# Boxplot of remaining_contract by churn (strong predictor)
+plot(remaining_contract ~ as.factor(churn), data = xdata[ind, ],
+     ylab = "Remaining contract", xlab = "Churn",
+     main = "Remaining contract by churn status")
+```
+
+**Written answer:**\
+Key differences between churners (churn=1) and non-churners (churn=0): - `remaining_contract`: much higher for non-churners (1.0 vs 0.09) — customers with a long contract left rarely churn. - `download_avg`: higher for non-churners (65.9 vs 26.8) — high-usage customers less likely to churn. - `download_over_limit`: higher for churners (0.35 vs 0.04) — customers who frequently exceed limits may be frustrated. - `upload_avg`: higher for non-churners. - `is_movie_package_subscriber`: more non-churners have the movie package.
+
+------------------------------------------------------------------------
+
+### Task 2b — Bootstrap CI for churn probability
+
+**Question:**\
+Use the first 50 observations of `churn`. Use the bootstrap to compute a 95% CI for the churn probability p. Compare with the normal approximation.
+
+**Theory connection:** Bootstrap approximates a sampling distribution by resampling with replacement; the normal approximation is an asymptotic benchmark for a proportion estimator.
+
+**Step-by-step code:**
+
+``` {r}
+# First 50 observations (from the original full dataset)
+nobs <- 50
+y_boot <- xdata$churn[1:nobs]
+
+B     <- 1000
+pboot <- numeric(B)
+set.seed(1)
+for(b in 1:B) {
+  yb       <- sample(y_boot, size = nobs, replace = TRUE)
+  pboot[b] <- mean(yb == "1")  # proportion churning
+}
+
+# Bootstrap CI (percentile method)
+quantile(pboot, probs = c(0.025, 0.975))
+# Approx: [0.68, 0.90]
+
+# Standard normal approximation: p_hat ± 1.96 * sqrt(p_hat*(1-p_hat)/n)
+phat <- mean(y_boot == "1")
+ci_normal <- c(phat - 1.96 * sqrt(phat*(1-phat)/nobs),
+               phat + 1.96 * sqrt(phat*(1-phat)/nobs))
+cat("Normal CI:", round(ci_normal, 3))
+# Approx: [0.689, 0.911]
+```
+
+**Written answer:**\
+The bootstrap CI (≈\[0.68, 0.90\]) and the normal approximation CI (≈\[0.69, 0.91\]) are very similar. This indicates that the normal approximation works well here, which is expected given that n=50 is large enough for the Central Limit Theorem to apply.
+
+------------------------------------------------------------------------
+
+### Task 2c — Logistic regression for churn + coefficient interpretation
+
+**Question:**\
+Fit a logistic regression for `churn`. Interpret the coefficients for `is_tv_subscriber` and `is_movie_package_subscriber`. Are the signs as expected?
+
+**Theory connection:** Logistic regression models class probability via log-odds. Exponentiated coefficients are odds ratios, enabling direct interpretation of multiplicative changes in churn odds.
+
+**Step-by-step code:**
+
+``` {r}
+# Reconvert factors if needed
+for(i in 1:length(fa)) xdata[, fa[i]] <- as.factor(as.character(xdata[, fa[i]]))
+train <- xdata[ind, ]
+test  <- xdata[-ind, ]
+
+logistic1 <- glm(churn ~ ., data = train, family = binomial())
+summary(logistic1)
+
+# Odds ratio for is_tv_subscriber1
+exp(coef(logistic1)["is_tv_subscriber1"])  # ~0.17 -> 17%
+# Odds ratio for is_movie_package_subscriber1
+exp(coef(logistic1)["is_movie_package_subscriber1"])  # ~0.94 -> 94%
+```
+
+**Written answer:**\
+The coefficient for `is_tv_subscriber1` corresponds to an odds ratio of \~0.17: **TV subscribers have only 17% of the churn odds compared to non-subscribers**, everything else equal. This is plausible — TV subscribers are more committed to the service. The coefficient for `is_movie_package_subscriber1` gives an odds ratio of \~0.94 (94%), showing a weaker and barely significant association. The signs are both negative, as expected — additional service subscriptions should bind customers to the provider.
+
+------------------------------------------------------------------------
+
+### Task 2d — Evaluate logistic, experiment with variable selection
+
+**Theory connection:** Classification performance should be assessed on test data with confusion-matrix metrics. Removing non-significant predictors may improve parsimony without hurting predictive accuracy.
+
+**Step-by-step code:**
+
+``` {r}
+# Predict churn on test data (threshold 0.5)
+pred_log1 <- predict(logistic1, newdata = test, type = "response") > 0.5
+
+# Confusion matrix
+cm_log1 <- table(test$churn, pred_log1)
+prop.table(cm_log1, margin = 1)
+# ~81.6% of churn=0 correct, ~91.7% of churn=1 correct
+
+# Reduced model (remove non-significant: bill_avg, upload_avg)
+logistic2 <- glm(churn ~ . - bill_avg - upload_avg, data = train, family = binomial())
+pred_log2 <- predict(logistic2, newdata = test, type = "response") > 0.5
+cm_log2   <- table(test$churn, pred_log2)
+prop.table(cm_log2, margin = 1)
+# Very similar performance
+```
+
+**Written answer:**\
+With a threshold of 0.5, the logistic model correctly classifies 91.7% of churners and 81.6% of non-churners. Removing the non-significant variables (`bill_avg`, `upload_avg`) changes the test performance negligibly. The threshold of 0.5 works well here because the churn rate is not extremely rare (unlike the insurance claims dataset).
+
+------------------------------------------------------------------------
+
+### Task 2e — Random forest for churn
+
+**Theory connection:** Random forest classification can capture nonlinear churn patterns and interactions that logistic regression may miss, often improving sensitivity/specificity.
+
+**Step-by-step code:**
+
+``` {r}
+rf1 <- randomForest(churn ~ ., data = train, ntree = 50)
+pred_rf1 <- predict(rf1, newdata = test, type = "response")
+
+cm_rf1 <- table(test$churn, pred_rf1)
+prop.table(cm_rf1, margin = 1)
+# ~94.6% of churn=0 correct, ~93.7% of churn=1 correct
+# Major improvement over logistic regression!
+```
+
+**Written answer:**\
+The random forest considerably improves predictions — 93.7% sensitivity (churn=1 correctly classified) and 94.6% specificity (churn=0 correctly classified), versus 91.7% and 81.6% for logistic regression. The improvement in classifying non-churners is particularly notable.
+
+------------------------------------------------------------------------
+
+### Task 2f — Typical features of churning customers
+
+**Theory connection:** Final business interpretation should synthesize descriptive findings and model evidence into actionable churn-risk profiles.
+
+**Written answer:**\
+Based on the logistic model and descriptive analysis, churning customers tend to: - Have **no TV subscription** (biggest single effect) - Have **shorter subscription history** - Have a **short or zero remaining contract** - Have **many service failures** - Have **lower download and upload averages** than non-churners - **Exceed the download limit** frequently - Have **no movie package subscription** (weaker effect)
+
+These patterns suggest that customers with fewer service engagements (no TV, low usage), especially those near contract expiry, are most at risk of churning.
+
+------------------------------------------------------------------------
+
+# Appendix: Reusable R Skeletons for All Exam Patterns
+
+## Split + factor setup
+
+``` {r}
+set.seed(123)
+n   <- nrow(df)
+ind <- sample(1:n, size = floor(n/2))
+train <- df[ind, ]
+test  <- df[-ind, ]
+
+# Convert low-cardinality columns to factor
+for(i in 1:ncol(df))
+  if(length(unique(df[,i])) <= 7) df[,i] <- as.factor(df[,i])
+```
+
+## Model comparison table
+
+``` {r}
+results <- data.frame(
+  Model = c("OLS", "LASSO", "Tree", "RF"),
+  TestMSE = c(mse_ols, mse_lasso, mse_tree, mse_rf)
+)
+results[order(results$TestMSE), ]
+```
+
+## LOOCV generic loop
+
+``` {r}
+n  <- nrow(df)
+se <- numeric(n)
+for(i in 1:n) {
+  m   <- lm(y ~ ., data = df[-i, ])
+  pr  <- predict(m, newdata = df[i, ])
+  se[i] <- (df$y[i] - pr)^2
+}
+mean(se)
+```
+
+## Bootstrap CI generic
+
+``` {r}
+set.seed(1); B <- 2000
+stat_boot <- numeric(B)
+for(b in 1:B) {
+  samp <- sample(y, length(y), replace = TRUE)
+  stat_boot[b] <- median(samp)  # replace median with desired statistic
+}
+quantile(stat_boot, c(0.025, 0.975))
+hist(stat_boot, breaks = 40)
+```
+
+## GLM + threshold grid
+
+``` {r}
+probs <- predict(m_log, newdata = test, type = "response")
+for(th in seq(0.01, 0.5, by = 0.01)) {
+  pred <- probs > th
+  cm   <- table(test$y, pred)
+  cat(th, ": sensitivity =",
+      round(cm["TRUE","TRUE"]/sum(cm["TRUE",]),3), "\n")
+}
+```
+
+## GAM with smooth term
+
+``` {r}
+library(gam)
+m_gam <- gam(y ~ s(x1) + x2 + x3, data = train)
+p_gam <- predict(m_gam, newdata = test)
+mse_gam <- mean((test$y - p_gam)^2)
+R2_gam  <- 1 - mse_gam / var(test$y)
+```
+
+## Ridge / LASSO (glmnet)
+
+``` {r}
+library(glmnet)
+Xtr <- model.matrix(y ~ ., data = train)[, -1]
+ytr <- train$y
+Xte <- model.matrix(y ~ ., data = test)[, -1]
+
+# Ridge (alpha=0)
+cv_r <- cv.glmnet(Xtr, ytr, alpha = 0)
+m_r  <- glmnet(Xtr, ytr, alpha = 0, lambda = cv_r$lambda.min)
+
+# LASSO (alpha=1)
+cv_l <- cv.glmnet(Xtr, ytr, alpha = 1)
+m_l  <- glmnet(Xtr, ytr, alpha = 1, lambda = cv_l$lambda.min)
+```
+
+## Random forest + variable importance
+
+``` {r}
+library(randomForest)
+rf_type <- if(is.factor(train$y)) "class" else "response"
+m_rf    <- randomForest(y ~ ., data = train)
+p_rf    <- predict(m_rf, newdata = test, type = rf_type)
+varImpPlot(m_rf)
+```
+
+## Boosted tree (gbm)
+
+``` {r}
+library(gbm)
+dist <- if(is.factor(train$y)) "bernoulli" else "gaussian"
+m_bt <- gbm(y ~ ., data = train,
+            distribution = dist,
+            n.trees = 1000, interaction.depth = 3, shrinkage = 0.01)
+p_bt <- predict(m_bt, newdata = test, n.trees = 1000,
+                type = if(dist=="bernoulli") "response" else "link")
+```

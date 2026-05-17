@@ -1,5 +1,5 @@
 ---
-title: "BAN404 Exam — Task 2 Guided Template"
+title: "Task 2 Cheatsheet"
 subtitle: "Fill this in during the exam, then keep only the parts you actually use"
 author: "Candidate [REPLACE: number]"
 date: "[REPLACE: exam date]"

@@ -1,0 +1,274 @@
+---
+title: "BAN404 Practical Cheatsheet"
+subtitle: "Exam-first, tidyverse-first, and built for runnable adaptation"
+author: "William"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+execute:
+  echo: true
+  eval: false
+editor: visual
+---
+
+# How to use this file
+
+Use this file when you need a **full practical workflow** instead of isolated code lines.
+
+The idea is:
+
+1. read data,
+2. inspect data,
+3. clean only what is needed,
+4. do EDA with sensible plots,
+5. choose models,
+6. evaluate and explain.
+
+Everything below is written so it is easy to adapt during the exam.
+
+# 1. Setup
+
+```{r}
+library(tidyverse)      # main exam workflow: readr + dplyr + ggplot2 + tibble + forcats
+library(randomForest)   # strong nonlinear benchmark model
+library(gbm)            # boosting model if asked for or useful
+
+set.seed(123)           # replace only if the exam gives a different seed
+```
+
+# 2. Read and understand the data
+
+```{r}
+# Use read_csv() for comma separated files.
+# Use read_csv2() for semicolon separated files.
+data_raw <- read_csv("[REPLACE_WITH_FILE_NAME].csv")
+# data_raw <- read_csv2("[REPLACE_WITH_FILE_NAME].csv")
+
+glimpse(data_raw)       # best first look at names, types, and example values
+summary(data_raw)       # helps spot strange ranges, missing values, and skew
+head(data_raw, 5)       # good for understanding the row structure
+```
+
+## What to write after this step
+
+- what the target variable seems to be,
+- which variables look numeric,
+- which variables look categorical,
+- whether any columns look like IDs or leakage.
+
+# 3. Clean the data
+
+```{r}
+data <- data_raw %>%
+  rename_with(~ gsub("\\.", "_", make.names(.x)), everything()) %>%   # easier names make the exam workflow less error-prone
+  mutate(across(where(is.character), as.factor))               # character columns are often true categories
+
+missing_tbl <- data %>%
+  summarise(across(everything(), ~ sum(is.na(.x)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_missing") %>%
+  arrange(desc(n_missing))
+
+missing_tbl
+```
+
+## Important reminders
+
+- Convert a numeric variable to factor if it is really a category code.
+- Remove a variable only if you can explain why.
+- Good removal reasons: unique ID, leakage, or information unavailable at prediction time.
+
+# 4. Split train and test
+
+```{r}
+index <- sample(seq_len(nrow(data)), size = floor(0.5 * nrow(data)))
+train <- data %>% slice(index)
+test  <- data %>% slice(-index)
+
+tibble(sample = c("train", "test"), n = c(nrow(train), nrow(test)))
+```
+
+# 5. EDA — what plot to use when
+
+## 5.1 One numeric variable: histogram
+
+```{r}
+train %>%
+  ggplot(aes(x = [REPLACE_NUMERIC_VAR])) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  labs(
+    title = "Distribution of [REPLACE_NUMERIC_VAR]",
+    x = "[REPLACE_NUMERIC_VAR]",
+    y = "Count"
+  )
+```
+
+Use this when you want to check:
+
+- skewness,
+- outliers,
+- unusual spikes,
+- whether transformations may help.
+
+## 5.2 Numeric variable vs target group: boxplot
+
+```{r}
+train %>%
+  ggplot(aes(x = target, y = [REPLACE_NUMERIC_VAR], fill = target)) +
+  geom_boxplot(show.legend = FALSE) +
+  labs(
+    title = "[REPLACE_NUMERIC_VAR] by target",
+    x = "Target",
+    y = "[REPLACE_NUMERIC_VAR]"
+  )
+```
+
+Use this when the target is binary or categorical and you want to see whether groups differ.
+
+## 5.3 Two numeric variables: scatter plot
+
+```{r}
+train %>%
+  ggplot(aes(x = [REPLACE_X], y = [REPLACE_Y])) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "firebrick") +
+  labs(
+    title = "[REPLACE_Y] against [REPLACE_X]",
+    x = "[REPLACE_X]",
+    y = "[REPLACE_Y]"
+  )
+```
+
+Use this when you want to see trend, direction, and possible nonlinearity.
+
+## 5.4 Categorical variable vs target: within-group proportions
+
+```{r}
+train %>%
+  count([REPLACE_FACTOR_VAR], target) %>%
+  group_by([REPLACE_FACTOR_VAR]) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup() %>%
+  ggplot(aes(x = [REPLACE_FACTOR_VAR], y = prop, fill = target)) +
+  geom_col() +
+  labs(
+    title = "Target composition within [REPLACE_FACTOR_VAR]",
+    x = "[REPLACE_FACTOR_VAR]",
+    y = "Within-group proportion"
+  )
+```
+
+Use this when you want to see whether outcome rates differ by category.
+
+## 5.5 Collinearity check: correlation heatmap
+
+```{r}
+cor_tbl <- train %>%
+  select(where(is.numeric)) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  as.data.frame() %>%
+  rownames_to_column("var1") %>%
+  pivot_longer(-var1, names_to = "var2", values_to = "correlation")
+
+cor_tbl %>%
+  ggplot(aes(x = var1, y = var2, fill = correlation)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "firebrick", mid = "white", high = "navy", midpoint = 0) +
+  labs(title = "Correlation heatmap") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## What to remember about collinearity
+
+- high collinearity can make OLS coefficients unstable,
+- **ridge** is often better when the goal is prediction with correlated predictors,
+- **lasso** is useful when you want a smaller selected set of predictors.
+
+# 6. Baseline classification model: logistic regression
+
+```{r}
+log_fit <- glm(target ~ ., data = train, family = binomial())
+summary(log_fit)
+exp(coef(log_fit))
+
+log_prob <- predict(log_fit, newdata = test, type = "response")
+log_pred <- if_else(log_prob > 0.5, "yes", "no") %>%
+  factor(levels = levels(test$target))
+
+log_cm <- table(Actual = test$target, Predicted = log_pred)
+log_cm
+prop.table(log_cm, margin = 1)
+log_accuracy <- sum(diag(log_cm)) / sum(log_cm)
+log_accuracy
+```
+
+# 7. Flexible benchmark: random forest
+
+```{r}
+rf_fit <- randomForest(
+  target ~ .,
+  data = train,
+  ntree = 500,
+  mtry = floor(sqrt(ncol(train) - 1)),
+  importance = TRUE
+)
+
+rf_pred <- predict(rf_fit, newdata = test)
+rf_cm <- table(Actual = test$target, Predicted = rf_pred)
+rf_cm
+prop.table(rf_cm, margin = 1)
+rf_accuracy <- sum(diag(rf_cm)) / sum(rf_cm)
+rf_accuracy
+
+importance(rf_fit)
+varImpPlot(rf_fit)
+```
+
+# 8. Flexible benchmark: boosting
+
+```{r}
+train_bt <- train %>%
+  mutate(target_num = if_else(target == "yes", 1, 0)) %>%
+  select(-target)
+
+test_bt <- test %>%
+  mutate(target_num = if_else(target == "yes", 1, 0))
+
+boost_fit <- gbm(
+  target_num ~ .,
+  data = train_bt,
+  distribution = "bernoulli",
+  n.trees = 1000,
+  interaction.depth = 3,
+  shrinkage = 0.01,
+  bag.fraction = 0.8
+)
+
+boost_prob <- predict(boost_fit, newdata = test_bt, n.trees = 1000, type = "response")
+boost_pred <- if_else(boost_prob > 0.5, 1, 0)
+boost_cm <- table(Actual = test_bt$target_num, Predicted = boost_pred)
+boost_cm
+prop.table(boost_cm, margin = 1)
+boost_accuracy <- sum(diag(boost_cm)) / sum(boost_cm)
+boost_accuracy
+```
+
+# 9. Final comparison
+
+```{r}
+tibble(
+  model = c("logistic", "random_forest", "boosting"),
+  accuracy = c(log_accuracy, rf_accuracy, boost_accuracy)
+) %>%
+  arrange(desc(accuracy))
+```
+
+# 10. Final writing checklist
+
+When you write the answer, include:
+
+- what data preparation you did,
+- what EDA suggested,
+- which variables looked important,
+- which model performed best,
+- and one short reason why that result makes sense.
