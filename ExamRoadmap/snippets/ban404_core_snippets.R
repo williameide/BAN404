@@ -84,7 +84,7 @@ boot_mean <- function(x, B = 2000, seed = 123) {
   boot_stats <- numeric(B)                                                  # pre-allocate storage for speed and clarity
 
   for (b in seq_len(B)) {
-    x_boot <- sample(x, size = n, replace = TRUE)                           # THE TELL: replace = TRUE means bootstrap
+    x_boot <- sample(x, size = n, replace = TRUE)                           # replace = TRUE is what makes this bootstrap resampling
     boot_stats[b] <- mean(x_boot)                                           # save one bootstrap replicate of the statistic
   }
 
