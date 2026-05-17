@@ -1,5 +1,5 @@
 ---
-title: "R from Zero — BAN404 Exam Foundation"
+title: "BAN404 Practical Cheatsheet — Tidyverse First"
 author: "BAN404 Self-Study"
 format:
   html:
@@ -10,637 +10,434 @@ execute:
   echo: true
   eval: false
   warning: false
+  message: false
 ---
 
-# R from Zero — Everything You Need for BAN404 (and Nothing Else)
+# Why this file exists
 
-> **This file assumes zero prior coding knowledge.** It teaches only the R concepts that appear on BAN404 exams. Read it once before studying the method-specific files.
+This file is for the last days before the exam. It is written to be:
+
+- **tidyverse-first** so the code looks like the style you are used to
+- **runnable** so you can copy, run, inspect output, and learn from it
+- **over-commented** so you do not have to guess why a line is there
+- **exam-focused** so it starts with the most likely practical tasks
+
+> Important: the examples below use small built-in datasets so that the code is self-contained. On the exam, you will keep the same structure and only swap dataset names and variable names.
 
 ---
 
-# PART 1: R Language Basics
-
-## 1.1 Running Code
-
-Code runs line by line. In RStudio, place cursor on a line and press **Ctrl+Enter** (Windows) or **Cmd+Enter** (Mac).
+# 1. Setup you can trust
 
 ```{r}
-# This is a comment — R ignores it
-2 + 2          # R calculates and shows: [1] 4
+# Load the packages used most often in the exam workflow                 # tidyverse = read, clean, plot, summarise
+library(tidyverse)                                                       # gives dplyr, ggplot2, readr, tibble, stringr, purrr, etc.
+
+# Set a seed before splits or resampling so your results are reproducible # important when you must explain your exact output
+set.seed(123)
+```
+
+## A small runnable demo dataset
+
+```{r}
+# Start from mtcars because it exists in base R installations            # safe built-in dataset for practice
+cars_tbl <- mtcars |>
+  tibble::rownames_to_column(var = "model") |>
+  as_tibble() |>
+  mutate(
+    transmission = factor(am, levels = c(0, 1), labels = c("automatic", "manual")), # binary target example
+    cylinders    = factor(cyl),                                                        # discrete count -> category for many plots
+    engine_shape = factor(vs, levels = c(0, 1), labels = c("v-shaped", "straight")), # another factor for EDA
+    gears        = factor(gear)                                                        # categorical version of number of gears
+  ) |>
+  select(model, mpg, disp, hp, wt, qsec, transmission, cylinders, engine_shape, gears) # keep a compact practice table
+
+cars_tbl |> glimpse()                                                     # always inspect structure before doing anything else
+cars_tbl |> head()                                                        # first rows help you understand meaning and formatting
+```
+
+**What to notice:**
+- `transmission` is now a clean binary target for classification practice
+- some columns stay numeric (`mpg`, `hp`, `wt`)
+- some columns are made into factors because they are categories in practice
+
+---
+
+# 2. Read real exam data without getting stuck
+
+## 2.1 Read the file
+
+```{r}
+# Comma-separated file                                                    # use this if the file looks like a normal CSV
+exam_data <- readr::read_csv("data.csv")
+
+# Semicolon-separated file                                                # use this if numbers use comma decimals or the file is European-style
+exam_data <- readr::read_delim("data.csv", delim = ";")
+```
+
+## 2.2 First inspection checklist
+
+```{r}
+exam_data |> glimpse()                                                    # fastest way to see column names + types + sample values
+exam_data |> head()                                                       # first rows to catch weird formatting early
+exam_data |> summary()                                                    # quick univariate summary for all variables
+names(exam_data)                                                          # useful if you want to copy exact variable names safely
+nrow(exam_data)                                                           # number of rows = sample size
+ncol(exam_data)                                                           # number of columns = feature count
+```
+
+## 2.3 Questions to ask immediately
+
+1. **What is the target?**
+2. **Is the target already binary, or must you create it?**
+3. **Which variables are categories and should become factors?**
+4. **Which variables are leakage, IDs, or post-event variables and should be removed?**
+5. **Are there missing values you must handle before modeling?**
+
+---
+
+# 3. Tidyverse cleaning and recoding
+
+## 3.1 Basic mutate / select / filter patterns
+
+```{r}
+# Create a cleaned practice copy                                          # work on a new object so you can always go back if needed
+cars_clean <- cars_tbl |>
+  mutate(
+    weight_ton = wt / 2.205,                                              # example of creating a new variable from an old one
+    heavy_car  = if_else(wt > median(wt), "heavy", "light"),             # binary label from a numeric split
+    heavy_car  = factor(heavy_car)                                         # convert character label to factor for plotting/modeling
+  ) |>
+  filter(mpg > 10) |>                                                     # keep only rows satisfying a condition
+  select(-model)                                                          # remove a column when it is only an ID / label helper
+
+cars_clean |> glimpse()
+```
+
+## 3.2 Convert categories to factors
+
+```{r}
+# This is one of the most common exam clean-up steps                      # models should know these are categories, not numbers to average
+cars_model <- cars_tbl |>
+  mutate(
+    across(c(transmission, cylinders, engine_shape, gears), as.factor)    # tidyverse way to convert several columns at once
+  )
+
+cars_model |> glimpse()
+```
+
+## 3.3 Remove leakage or useless columns
+
+```{r}
+# Example pattern for exam data                                           # adapt the variable names to the actual dataset
+leakage_vars <- c("claim_amount_after_event", "raw_target_count")         # values known only after the outcome happened
+id_vars      <- c("customer_id", "policy_number")                        # unique identifiers usually add no predictive signal
+
+# exam_model_data <- exam_data |>
+#   select(-any_of(c(leakage_vars, id_vars)))                              # any_of() is safe even if one name is missing
+```
+
+**What to write in the exam:**
+“I removed `[variable]` because it is a leakage variable / post-event variable / pure identifier. Keeping it would let the model use information that would not be available at prediction time.”
+
+## 3.4 Create a binary target if needed
+
+```{r}
+# Example pattern if the raw variable is a count                          # common BAN404 move: turn event count into yes/no target
+# exam_model_data <- exam_data |>
+#   mutate(target = if_else(number_of_claims >= 1, "yes", "no"),         # define the event of interest clearly
+#          target = factor(target, levels = c("no", "yes")))              # set reference level explicitly
 ```
 
 ---
 
-## 1.2 Storing Values (Variables)
+# 4. Train / test split in tidyverse-friendly style
 
 ```{r}
-x <- 5          # Store the number 5 in a variable called x
-x               # Show x: [1] 5
-y <- x * 2      # y = 10
-name <- "hello" # Text (strings) need quote marks
+set.seed(123)                                                             # same split every time if you re-run the code
+
+n_obs      <- nrow(cars_model)                                            # count rows once so the split code is readable
+train_index <- sample.int(n_obs, size = floor(0.5 * n_obs))               # 50/50 split is very common in BAN404 examples
+
+train_data <- cars_model |> slice(train_index)                            # training set = sampled rows
+test_data  <- cars_model |> slice(-train_index)                           # test set = all remaining rows
+
+train_data |> count(transmission) |> mutate(prop = n / sum(n))            # always check class balance in training data
+test_data  |> count(transmission) |> mutate(prop = n / sum(n))            # and also in test data
 ```
 
-The `<-` arrow means "store the right side in the left side."
+**Why this step matters:**
+You fit models on `train_data` and evaluate them on `test_data`. That is how you estimate whether the model generalizes to new data.
 
 ---
 
-## 1.3 Vectors (a list of numbers)
+# 5. EDA — which plot should you use?
+
+## 5.1 Decision guide
+
+| Situation | Good first choice | Why |
+|---|---|---|
+| Numeric predictor vs binary target | Boxplot or violin plot | Shows whether the distributions differ across groups |
+| Numeric predictor alone | Histogram + density | Shows skewness, spread, and possible outliers |
+| Categorical predictor vs binary target | Proportion table + bar plot | Shows whether event rates differ by category |
+| Numeric vs numeric | Scatter plot | Shows direction, shape, and possible non-linearity |
+| Many numeric predictors together | Correlation heatmap | Quick scan for strong relationships and collinearity |
+
+> Exam rule: if you are unsure, start with a simple plot that helps you compare groups clearly.
+
+---
+
+# 6. EDA — full runnable examples
+
+## 6.1 Histogram for one numeric variable
 
 ```{r}
-v <- c(1, 2, 3, 4, 5)    # c() combines values into a vector
-length(v)                  # How many elements? [1] 5
-v[2]                       # Get the 2nd element: [1] 2
-v[c(1,3)]                  # Get elements 1 and 3: [1] 1 3
-v[-2]                      # All elements EXCEPT 2nd: [1] 1 3 4 5
-mean(v)                    # Average: [1] 3
-sd(v)                      # Standard deviation
-var(v)                     # Variance
-sum(v)                     # Sum: [1] 15
+ggplot(cars_model, aes(x = mpg)) +                                        # choose the numeric variable you want to inspect
+  geom_histogram(bins = 12, fill = "steelblue", color = "white") +      # histogram = first look at shape, spread, and outliers
+  labs(
+    title = "Distribution of mpg",                                       # title should say exactly what the plot shows
+    x = "Miles per gallon",
+    y = "Count"
+  ) +
+  theme_minimal()
 ```
 
----
+**What you are looking for:**
+- Is the variable symmetric or skewed?
+- Are there extreme values?
+- Does it look multi-modal?
 
-## 1.4 Data Frames (a table of data — what exams give you)
+## 6.2 Histogram split by target group
 
 ```{r}
-# A data frame is like a spreadsheet
-df <- data.frame(
-  age    = c(25, 30, 35),
-  income = c(40000, 60000, 80000),
-  churn  = c(0, 1, 0)
-)
-
-nrow(df)         # Number of rows
-ncol(df)         # Number of columns
-dim(df)          # Both: rows x columns
-head(df)         # First 6 rows
-str(df)          # Structure: column types
-summary(df)      # Summary statistics per column
-
-# Access a column with $ 
-df$age           # [1] 25 30 35
-
-# Access a specific cell: df[row, column]
-df[2, 1]         # Row 2, column 1: [1] 30
-df[, 1]          # All rows, column 1 (same as df$age)
-df[2, ]          # All columns, row 2
+ggplot(cars_model, aes(x = mpg, fill = transmission)) +                   # fill by target to compare the two groups directly
+  geom_histogram(alpha = 0.60, bins = 10, position = "identity") +       # overlap shows whether groups live in different regions
+  labs(
+    title = "mpg by transmission group",
+    x = "Miles per gallon",
+    y = "Count",
+    fill = "Transmission"
+  ) +
+  theme_minimal()
 ```
 
----
+**When this helps:**
+Use it when you want to see whether one class tends to have higher or lower values than the other.
 
-## 1.5 Reading Data Files (how exams start)
+## 6.3 Boxplot for numeric predictor vs binary target
 
 ```{r}
-# Read a CSV file (comma-separated)
-data <- read.csv("myfile.csv")
-
-# Read a semicolon-separated file (European format)
-data <- read.csv2("myfile.csv")
-
-# Check what you got
-head(data)
-dim(data)
-names(data)    # Column names
+ggplot(cars_model, aes(x = transmission, y = hp, fill = transmission)) +  # boxplot is usually the clearest first choice in Task 2
+  geom_boxplot(alpha = 0.80, outlier.color = "red") +                    # red outliers help you spot extreme observations fast
+  labs(
+    title = "Horsepower by transmission",
+    x = "Transmission",
+    y = "Horsepower"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
 ```
 
----
+**What to write after this plot:**
+“`hp` looks useful because the distributions differ across the target groups. The medians are not the same, and the manual group tends to have higher horsepower.”
 
-## 1.6 Factors (categorical variables — very important for models)
+## 6.4 Group summary table that supports the boxplot
 
 ```{r}
-# A "factor" is a categorical variable (like gender, class, zone)
-x <- c("male", "female", "female", "male")
-x_factor <- as.factor(x)
-levels(x_factor)    # [1] "female" "male"
-
-# EXAM TIP: Always convert category columns to factors before fitting models
-df$gender <- as.factor(df$gender)
-df$zone   <- as.factor(df$zone)
+cars_model |>
+  group_by(transmission) |>
+  summarise(
+    mean_hp   = mean(hp),                                                  # average helps quantify the visual difference
+    median_hp = median(hp),                                                # median is robust to outliers
+    sd_hp     = sd(hp),                                                    # spread matters too
+    n         = n(),                                                       # always useful to know how many observations support the pattern
+    .groups   = "drop"
+  )
 ```
 
----
-
-## 1.7 Logical Conditions (TRUE/FALSE)
+## 6.5 Bar plot for categorical predictor vs binary target
 
 ```{r}
-x <- 5
-x > 3      # [1] TRUE
-x == 5     # [1] TRUE  (== means "is equal to")
-x != 4     # [1] TRUE  (! means NOT)
-
-# Use on vectors
-v <- c(1, 2, 3, 4, 5)
-v > 3      # [1] FALSE FALSE FALSE TRUE TRUE
-v[v > 3]   # Keep only elements > 3: [1] 4 5
+cars_model |>
+  count(cylinders, transmission) |>
+  group_by(cylinders) |>
+  mutate(prop = n / sum(n)) |>                                             # within each cylinder group, compute class proportions
+  ungroup() |>
+  ggplot(aes(x = cylinders, y = prop, fill = transmission)) +
+  geom_col(position = "dodge") +                                          # side-by-side bars make comparison easier than stacked bars here
+  scale_y_continuous(labels = scales::percent_format()) +                  # show proportions as percentages
+  labs(
+    title = "Transmission mix inside each cylinder group",
+    x = "Cylinders",
+    y = "Share of cars",
+    fill = "Transmission"
+  ) +
+  theme_minimal()
 ```
 
----
+**What to write after this plot:**
+“`cylinders` seems informative because the transmission proportions change noticeably across cylinder groups. That suggests the category may help predict the target.”
 
-## 1.8 For Loops (the engine of LOOCV and Bootstrap)
+## 6.6 Scatter plot for numeric vs numeric
 
 ```{r}
-# A for loop repeats code for each value in a sequence
-for(i in 1:5) {
-  print(i)    # Prints 1, then 2, then 3, then 4, then 5
-}
-
-# Typical exam pattern: pre-allocate a container, fill it in the loop
-n <- 10
-results <- numeric(n)    # Create an empty vector of 0s with n slots
-for(i in 1:n) {
-  results[i] <- i^2      # Store i-squared in slot i
-}
-results                  # [1]  1  4  9 16 25 36 49 64 81 100
+ggplot(cars_model, aes(x = wt, y = mpg, color = transmission)) +          # start by checking direction and rough shape of the relationship
+  geom_point(size = 2.5, alpha = 0.85) +                                   # each point is one observation
+  geom_smooth(method = "lm", se = FALSE) +                                # straight fitted lines help you judge linear tendency quickly
+  labs(
+    title = "Weight vs mpg",
+    x = "Weight",
+    y = "Miles per gallon",
+    color = "Transmission"
+  ) +
+  theme_minimal()
 ```
 
----
+**What you are looking for:**
+- negative or positive association
+- possible curvature
+- outliers that may influence the model
 
-## 1.9 Writing Functions
+## 6.7 Correlation heatmap for collinearity check
 
 ```{r}
-# Functions let you package code to reuse
-my_function <- function(x, y) {
-  result <- x + y
-  return(result)    # return() sends the answer back
-}
+corr_tbl <- cars_model |>
+  select(where(is.numeric)) |>                                             # keep only numeric columns because correlation needs numbers
+  cor() |>                                                                  # compute the correlation matrix
+  as.data.frame() |>                                                        # turn matrix into data frame for tidy reshaping
+  tibble::rownames_to_column(var = "var1") |>
+  pivot_longer(-var1, names_to = "var2", values_to = "correlation")     # long format is easier for ggplot heatmaps
 
-my_function(3, 4)   # [1] 7
-
-# Functions with default arguments
-my_power <- function(x, power = 2) {
-  return(x ^ power)
-}
-my_power(3)     # Uses default: 3^2 = 9
-my_power(3, 3)  # Override: 3^3 = 27
+ggplot(corr_tbl, aes(x = var1, y = var2, fill = correlation)) +
+  geom_tile() +                                                             # one tile per variable pair
+  geom_text(aes(label = round(correlation, 2)), size = 3) +                # print the correlation on top so you do not have to guess shades
+  scale_fill_gradient2(low = "firebrick", mid = "white", high = "steelblue", midpoint = 0) +
+  labs(
+    title = "Correlation heatmap for numeric predictors",
+    x = NULL,
+    y = NULL,
+    fill = "Corr"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
----
+**How to use this in the exam:**
+- very high absolute correlations suggest possible collinearity
+- if two predictors tell almost the same story, OLS/logistic coefficients can become unstable
+- this is where you may mention **ridge** or **lasso** as regularized alternatives if needed
 
-## 1.10 Matrices (how X is stored in exam code)
+**Example interpretation sentence:**
+“Some predictors appear strongly correlated, so coefficient-based models may become unstable. If that causes problems, a regularized model such as ridge or lasso could be more robust.”
+
+## 6.8 Quick numeric screening table
 
 ```{r}
-# A matrix is a 2D table of numbers
-M <- matrix(c(1,2,3,4,5,6), nrow=2, ncol=3)
-#      [,1] [,2] [,3]
-# [1,]    1    3    5
-# [2,]    2    4    6
+numeric_screen <- cars_model |>
+  group_by(transmission) |>
+  summarise(across(where(is.numeric), list(mean = mean, median = median), .names = "{.col}_{.fn}"), .groups = "drop")
 
-M[1, 2]      # Row 1, column 2: [1] 3
-nrow(M)      # [1] 2
-ncol(M)      # [1] 3
-
-# Exam code often does this: 
-X <- as.matrix(df[, -1])   # All columns except the first → predictor matrix
-y <- as.matrix(df[,  1])   # First column only → response vector
-
-# Matrix multiply: %*%
-A <- matrix(c(1,2,3,4), 2, 2)
-b <- c(1, 0)
-A %*% b     # Matrix × vector
+numeric_screen
 ```
 
+This is useful when you want a compact table to support statements like:
+- “manual cars have higher average `hp`”
+- “automatic cars have higher average `wt`”
+
 ---
 
-## 1.11 sapply — Apply a Function to a List
+# 7. Missing values and quick checks
 
 ```{r}
-# sapply runs a function on each element of a vector/list
-# This is how λ-grids and K-grids are searched on exams
-lambdas <- c(0, 10, 100, 1000)
-result <- sapply(lambdas, function(la) la^2)
-# result = [1]      0    100  10000 1000000
+# Count missing values per column                                           # do this before modeling so you know if imputation is needed
+cars_model |>
+  summarise(across(everything(), ~ sum(is.na(.x))))
 
-# Equivalent to:
-result2 <- numeric(length(lambdas))
-for(i in 1:length(lambdas)) result2[i] <- lambdas[i]^2
+# Share of missing values per column                                        # more interpretable than raw counts when n is large
+cars_model |>
+  summarise(across(everything(), ~ mean(is.na(.x))))
 ```
 
----
-
-# PART 2: The BAN404 Code Translator
-
-> **This is the most important part for the exam.** When you see a code pattern, look it up here.
-
-## 2.1 The Master Recognition Table
-
-| If you see this in code | It is doing | Section |
-|-------------------------|-------------|---------|
-| `sample(..., replace=TRUE)` | Bootstrap (resampling with replacement) | 3.1 |
-| `for(i in 1:n)` + `X[-i,]` | LOOCV (leave-one-out cross-validation) | 3.2 |
-| `for(i in 1:K)` + `folds == i` | K-fold cross-validation | 3.3 |
-| `sum((y - X%*%b)^2) + la*sum(b^2)` | Ridge regression objective | 3.4 |
-| `sum((y - X%*%b)^2) + la*sum(abs(b))` | Lasso regression objective | 3.5 |
-| `solve(t(X)%*%X) %*% t(X)%*%y` | OLS closed-form solution | 3.6 |
-| `abs(x-x0)` + `order(d)[1:K]` | KNN (K-nearest neighbors) | 3.7 |
-| `y - f2` / `y - f1` inside loop + `smooth.spline` | Backfitting (GAM) | 3.8 |
-| `exp(eta)/(1+exp(eta))` | Logistic sigmoid → probability | 3.9 |
-| `prob > 0.5` + `table(truth, predicted)` | Threshold + confusion matrix | 3.10 |
-| `randomForest(y ~ ., mtry=...)` | Random Forest | 3.11 |
-| `gbm(y ~ ., distribution="bernoulli"...)` | Gradient Boosting | 3.12 |
-| `r <- y - fhat` inside loop | Boosting residual update | 3.12 |
-| `for(s in candidates)` + RSS or Gini | Tree split selection | 3.13 |
-| `nlminb(b1start, f, ...)` | Numerical optimizer (minimise a function) | 3.4 |
+If you find missing values, your next question is:
+- can I drop a few rows safely?
+- do I need to impute?
+- should I mention that the missingness may affect conclusions?
 
 ---
 
-# PART 3: Minimum Runnable Examples
+# 8. Fast interpretation helpers
 
-## 3.1 Bootstrap — Standard Error and 95% CI
+## 8.1 After a histogram
+
+Write about:
+- centre
+- spread
+- skewness
+- outliers
+
+## 8.2 After a boxplot
+
+Write about:
+- median differences
+- overlap between groups
+- spread / IQR
+- outliers
+- whether the predictor seems useful
+
+## 8.3 After a bar plot with proportions
+
+Write about:
+- which category has the highest event rate
+- whether the differences are small or large
+- whether the variable looks promising for prediction
+
+## 8.4 After a correlation heatmap
+
+Write about:
+- strong positive or negative relationships
+- possible redundancy among predictors
+- whether regularization may help
+
+---
+
+# 9. A copy-adjust-use starter workflow for Task 2
 
 ```{r}
-# Goal: estimate standard error of any statistic (e.g., mean, variance, coefficient)
-set.seed(1)
-n   <- length(y)          # Number of observations
-B   <- 1000               # Number of bootstrap repetitions
-res <- numeric(B)         # Container for bootstrap statistics
+# 1. Read data                                                             # start simple and make sure the file loads correctly
+# data_raw <- readr::read_csv("your_file.csv")
 
-for(b in 1:B) {
-  idx     <- sample(1:n, size=n, replace=TRUE)   # Sample WITH replacement
-  yb      <- y[idx]                              # Bootstrap sample
-  res[b]  <- var(yb)                             # YOUR STATISTIC HERE (e.g., var, mean, coef)
-}
+# 2. Inspect                                                               # never skip this or you may model the wrong variable types
+# data_raw |> glimpse()
+# data_raw |> summary()
 
-# Standard error
-se_boot <- sd(res)
+# 3. Clean
+# data_clean <- data_raw |>
+#   mutate(across(c(var1, var2, var3), as.factor)) |>                      # replace with actual categorical variables
+#   select(-any_of(c("id", "leakage_var")))                               # remove IDs and leakage if present
 
-# 95% CI — Normal approximation
-ci_normal <- mean(res) + c(-1, 1) * 1.96 * se_boot
+# 4. Split
+# set.seed(123)
+# idx <- sample.int(nrow(data_clean), size = floor(0.5 * nrow(data_clean)))
+# train <- data_clean |> slice(idx)
+# test  <- data_clean |> slice(-idx)
 
-# 95% CI — Percentile (no normality assumption — more robust)
-ci_percentile <- quantile(res, c(0.025, 0.975))
+# 5. EDA
+# ggplot(train, aes(x = target, y = numeric_var, fill = target)) +
+#   geom_boxplot()
 
-# Histogram of sampling distribution
-hist(res, breaks=50, main="Bootstrap distribution", xlab="Statistic")
-```
+# train |>
+#   count(category_var, target) |>
+#   group_by(category_var) |>
+#   mutate(prop = n / sum(n))
 
-**In plain English:** We fake-create 1000 new datasets by resampling rows from the original data (with replacement). We compute our statistic on each fake dataset. The spread (sd) of these 1000 values is the bootstrap standard error.
-
----
-
-## 3.2 LOOCV — Leave-One-Out Cross-Validation
-
-```{r}
-# Goal: estimate test error when n is small, or tune a hyperparameter
-n      <- nrow(X)
-preds  <- numeric(n)
-
-for(i in 1:n) {
-  train_X <- X[-i, ]          # Train on all EXCEPT row i
-  train_y <- y[-i]
-  test_X  <- X[i, , drop=FALSE]
-  
-  b       <- solve(t(train_X)%*%train_X) %*% t(train_X)%*%train_y  # Fit OLS
-  preds[i] <- test_X %*% b                                           # Predict row i
-}
-
-testMSE <- mean((y - preds)^2)
-```
-
-**In plain English:** We hold out one row at a time, train on the rest, predict the held-out row. We repeat for every row. Average error = LOOCV test MSE.
-
----
-
-## 3.3 K-Fold Cross-Validation
-
-```{r}
-K     <- 5
-n     <- nrow(X)
-folds <- sample(rep(1:K, length.out=n))   # Randomly assign rows to K groups
-errors <- numeric(K)
-
-for(i in 1:K) {
-  train_X <- X[folds != i, ]
-  train_y <- y[folds != i]
-  test_X  <- X[folds == i, ]
-  test_y  <- y[folds == i]
-  
-  b        <- solve(t(train_X)%*%train_X) %*% t(train_X)%*%train_y
-  preds    <- test_X %*% b
-  errors[i] <- mean((test_y - preds)^2)
-}
-
-cv_error <- mean(errors)
+# 6. Only after this move to the modeling files                             # EDA should tell you what looks promising
 ```
 
 ---
 
-## 3.4 Ridge Regression — Manual Implementation
-
-```{r}
-# Ridge objective function: RSS + lambda * sum(beta^2)
-f <- function(b1, X, y, la) {
-  sum((y - X %*% b1)^2) + la * sum(b1^2)
-}
-
-# Ridge estimator: demean X and y, then minimise f numerically
-g <- function(X, y, la) {
-  q      <- ncol(X)
-  b0     <- mean(y)          # Intercept = mean(y) after demeaning
-  yd     <- y - b0           # Demean y
-  Xd     <- X
-  for(k in 1:q) Xd[,k] <- X[,k] - mean(X[,k])   # Demean each predictor
-  
-  b1start <- rep(0, q)       # Start optimiser at zero
-  opt     <- nlminb(b1start, f, X=Xd, y=yd, la=la)
-  return(opt$par)            # Return ridge coefficients
-}
-
-# LOOCV to find optimal lambda
-lavec <- seq(0, 5000, length.out=20)
-mses  <- sapply(lavec, function(la) {
-  n  <- nrow(X)
-  q  <- ncol(X)
-  yd <- y - mean(y)
-  Xd <- X; for(k in 1:q) Xd[,k] <- X[,k] - mean(X[,k])
-  preds <- numeric(n)
-  for(i in 1:n) {
-    b1       <- g(X=X[-i,], y=y[-i], la=la)
-    preds[i] <- Xd[i,] %*% b1
-  }
-  mean((yd - preds)^2)
-})
-la_opt <- lavec[which.min(mses)]
-```
-
----
-
-## 3.5 Lasso with glmnet (Practical exam approach)
-
-```{r}
-library(glmnet)
-
-# glmnet requires matrices, alpha=1 for Lasso, alpha=0 for Ridge
-lasso_cv <- cv.glmnet(X, y, alpha=1, standardize=TRUE)
-la_opt   <- lasso_cv$lambda.min     # λ with smallest CV error
-
-# Fit final model at optimal λ
-lasso_fit <- glmnet(X, y, alpha=1, lambda=la_opt)
-coef(lasso_fit)   # Coefficients (zeros = selected out)
-
-# Predict on new data
-preds <- predict(lasso_fit, newx=X_test, s=la_opt)
-```
-
----
-
-## 3.6 OLS — Linear Regression
-
-```{r}
-# Method 1: lm() function (standard exam approach)
-model <- lm(y ~ x1 + x2 + x3, data=df)
-summary(model)               # Coefficients, p-values, R²
-coef(model)                  # Extract coefficients
-predict(model, newdata=df_test)   # Predictions on test data
-
-# Method 2: Matrix formula (may appear in Task 1)
-X_mat <- cbind(1, as.matrix(df[, c("x1","x2","x3")]))  # Add intercept column
-b     <- solve(t(X_mat) %*% X_mat) %*% t(X_mat) %*% y
-```
-
----
-
-## 3.7 KNN Local Regression
-
-```{r}
-# KNN local regression (from 2024 exam)
-f_knn <- function(x0, x, y, K=3) {
-  d  <- abs(x - x0)          # Distance from x0 to all points
-  o  <- order(d)[1:K]        # Indices of K nearest points
-  xl <- x[o]; yl <- y[o]
-  reg   <- lm(yl ~ xl, data=data.frame(xl, yl))
-  ypred <- predict(reg, newdata=data.frame(xl=x0))
-  return(ypred)
-}
-
-# LOOCV to find optimal K
-Kgrid <- 1:10
-mseK  <- sapply(Kgrid, function(K) {
-  mean(sapply(1:n, function(i) {
-    pred <- f_knn(x[i], x[-i], y[-i], K=K)
-    (y[i] - pred)^2
-  }))
-})
-K_opt <- Kgrid[which.min(mseK)]
-```
-
----
-
-## 3.8 GAM with Smoothing Splines
-
-```{r}
-library(gam)
-
-# Fit GAM — s(x) means "smooth function of x"
-gam_fit <- gam(y ~ s(x1) + x2 + x3, data=train)
-
-# Compare MSE: OLS vs GAM
-ols_fit  <- lm(y ~ x1 + x2 + x3, data=train)
-MSE_ols  <- mean(residuals(ols_fit)^2)    # In-sample (training) MSE
-MSE_gam  <- mean(residuals(gam_fit)^2)
-
-# R² = fraction of variance explained
-# Formula: 1 - MSE_model / Var(y)
-MSE_null <- var(train$y)
-R2_ols   <- 1 - MSE_ols / MSE_null
-R2_gam   <- 1 - MSE_gam / MSE_null
-
-# Plot smooth terms
-plot(gam_fit, se=TRUE)
-```
-
----
-
-## 3.9 Logistic Regression
-
-```{r}
-# family=binomial → logistic regression
-logreg <- glm(churn ~ age + income + tenure, data=train, family=binomial())
-summary(logreg)          # Coefficients on log-odds scale
-
-# Predict probabilities
-prob <- predict(logreg, newdata=test, type="response")  # type="response" → probabilities
-
-# Convert to classes with a threshold
-threshold <- 0.5
-pred_class <- ifelse(prob > threshold, 1, 0)
-
-# Confusion matrix and accuracy
-cm  <- table(Actual=test$churn, Predicted=pred_class)
-cm
-acc <- sum(diag(cm)) / sum(cm)
-prop.table(cm, margin=1)    # Row proportions (sensitivity/specificity)
-```
-
-**Interpreting coefficients:** A coefficient of 0.3 on variable x means: holding other predictors constant, a 1-unit increase in x increases the **log-odds** of the outcome by 0.3. To get the odds ratio: `exp(0.3)` = 1.35 → 35% higher odds.
-
----
-
-## 3.10 Confusion Matrix + Threshold Selection
-
-```{r}
-# Why use a different threshold?
-# Default 0.5 predicts "no" when events are rare (e.g., 2% churn rate)
-# A lower threshold catches more true positives at cost of more false positives
-
-# Check class balance first
-table(train$churn)   # If very imbalanced, use low threshold
-
-# Try several thresholds, evaluate sensitivity (true positive rate)
-thresholds <- seq(0.01, 0.5, by=0.01)
-sensitivity <- sapply(thresholds, function(th) {
-  pred <- prob > th
-  cm   <- table(Actual=test$churn, Predicted=pred)
-  # Sensitivity = TP / (TP + FN) = row 2, col 2 / row 2 sum
-  if(nrow(cm)==2 && ncol(cm)==2) cm[2,2] / sum(cm[2,]) else NA
-})
-best_th <- thresholds[which.max(sensitivity)]
-
-# Final confusion matrix at chosen threshold
-pred_final <- prob > best_th
-table(Actual=test$churn, Predicted=pred_final)
-```
-
----
-
-## 3.11 Random Forest
-
-```{r}
-library(randomForest)
-
-# For classification: outcome must be a factor
-train$churn <- as.factor(train$churn)
-test$churn  <- as.factor(test$churn)
-
-rf <- randomForest(churn ~ ., data=train, 
-                   mtry=sqrt(ncol(train)-1),  # Default: sqrt(p) for classification
-                   ntree=500,
-                   importance=TRUE)
-
-# Predict classes
-pred_rf <- predict(rf, newdata=test)
-table(Actual=test$churn, Predicted=pred_rf)
-
-# Predict probabilities (for threshold tuning)
-prob_rf <- predict(rf, newdata=test, type="prob")   # Matrix, 1 col per class
-
-# Variable importance plot
-varImpPlot(rf)   # Higher = more important
-importance(rf)   # Numeric values: MeanDecreaseAccuracy, MeanDecreaseGini
-```
-
----
-
-## 3.12 Boosting (gbm)
-
-```{r}
-library(gbm)
-
-# Binary classification: distribution="bernoulli", y must be 0/1 numeric
-train$churn <- as.numeric(as.character(train$churn))   # Factor → 0/1 numeric
-
-bt <- gbm(churn ~ ., data=train,
-          distribution="bernoulli",   # Binary outcome
-          n.trees=1000,
-          interaction.depth=3,        # Tree depth
-          shrinkage=0.01,             # Learning rate (smaller = slower but better)
-          cv.folds=5)                 # Cross-validation to find optimal n.trees
-
-best_trees <- which.min(bt$cv.error)   # Optimal n.trees from CV
-
-# Predict probabilities
-prob_bt <- predict(bt, newdata=test, n.trees=best_trees, type="response")
-pred_bt <- prob_bt > 0.5
-
-# Confusion matrix
-table(Actual=test$churn, Predicted=pred_bt)
-```
-
----
-
-## 3.13 Decision Tree
-
-```{r}
-library(tree)
-
-# Regression tree
-tree_reg <- tree(y ~ ., data=train)
-plot(tree_reg); text(tree_reg, pretty=0)   # Visualize
-pred_tree <- predict(tree_reg, newdata=test)
-MSE_tree  <- mean((test$y - pred_tree)^2)
-
-# Classification tree (outcome must be factor)
-tree_cls <- tree(as.factor(churn) ~ ., data=train)
-plot(tree_cls); text(tree_cls, pretty=0)
-pred_cls  <- predict(tree_cls, newdata=test, type="class")
-table(Actual=test$churn, Predicted=pred_cls)
-```
-
----
-
-# PART 4: Common R Errors and Fixes
-
-## Error lookup table (exam panic guide)
-
-| Error message | Likely cause | Fix |
-|---------------|-------------|-----|
-| `object 'X' not found` | Variable doesn't exist yet | Check spelling, run the line that creates X |
-| `non-conformable arguments` | Matrix dimensions don't match | Check `dim(X)` and `length(y)` |
-| `factor has different levels` | Train/test have different factor levels | Use `droplevels()` or refit with full data |
-| `$ operator is invalid for atomic vectors` | Using `$` on a non-data-frame | Use `[` indexing instead |
-| `system is computationally singular` | Matrix can't be inverted (collinear predictors) | Remove duplicated/collinear columns |
-| `Error in predict: object is not a model` | Fitted object stored incorrectly | Check that model was saved with `<-` |
-| `subscript out of bounds` | Accessing an index that doesn't exist | Check `length()` or `nrow()` of the object |
-| `package not found` | Package not installed | `install.packages("packagename")` |
-| NaN or NA in predictions | Data contains missing values | `na.omit(df)` or `complete.cases()` |
-
-## Quick fixes checklist
-
-```{r}
-# Check for missing values
-sum(is.na(df))
-df <- na.omit(df)          # Remove rows with any NA
-
-# Make sure factor columns are factors
-str(df)                    # Check types
-df$col <- as.factor(df$col)  # Convert if needed
-
-# Check matrix dimensions before multiplying
-dim(X); length(y)
-
-# Make predictions safe: type="response" for glm, type="class" for tree classification
-predict(model, newdata=test, type="response")
-```
-
----
-
-# PART 5: R² Formula Reference
-
-```{r}
-# R² measures how much variation the model explains
-# Formula: R² = 1 - MSE_model / MSE_null
-# where MSE_null = Var(y) = mean squared deviation from the mean
-
-MSE_null  <- mean((y - mean(y))^2)   # = var(y) * (n-1)/n
-MSE_model <- mean((y - fitted(model))^2)
-
-R2 <- 1 - MSE_model / MSE_null
-cat("R² =", round(R2, 4))
-
-# Note: lm() reports adjusted R², which is similar but penalises extra predictors
-# For exam purposes, the formula above is sufficient
-```
-
----
-
-# PART 6: Packages You Must Have Installed
-
-```{r}
-# Run this BEFORE the exam to install all needed packages:
-pkgs <- c("MASS", "ISLR2", "car", "class", "e1071", "leaps", "glmnet",
-          "pls", "splines", "gam", "tree", "randomForest", "gbm",
-          "ROCR", "Matrix", "insuranceData")
-
-for(p in pkgs) {
-  if(!requireNamespace(p, quietly=TRUE)) install.packages(p)
-}
-```
+# 10. Final exam reminders
+
+1. Start with a **simple clean workflow** before trying advanced models.
+2. Use plots that directly answer the question you need to answer.
+3. Support plots with one small summary table if it helps interpretation.
+4. If predictors look highly correlated, mention ridge/lasso as a sensible next step.
+5. Keep the loop short: **run -> inspect -> interpret -> adjust -> re-run**.

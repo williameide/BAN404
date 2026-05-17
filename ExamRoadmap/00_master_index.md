@@ -1,164 +1,98 @@
-# BAN404 ExamRoadmap — Master Index
+# BAN404 ExamRoadmap — 2-Day Navigation File
 
-> **This is your navigation hub. Everything you need for the exam is here. Start here, always.**
-
----
-
-## The System at a Glance
-
-| File | What it does | When to use |
-|------|-------------|-------------|
-| **You are here** `00_master_index.md` | Navigation hub, learning order, priorities | Start every study session |
-| `01_curriculum_exam_map.md` | Topic × year frequency table, likelihood scores | First read to understand what matters |
-| `02_gap_analysis.md` | Honest audit of existing materials | Once, for orientation |
-| `03_r_from_zero_for_ban404.qmd` | R language basics + code translator | First week; reference when confused |
-| `snippets/ban404_core_snippets.R` | All key R snippets in one file | During exam — copy paste |
-| `04_task1_mastery.qmd` | Method recognition + explain + extend (Task 1) | Core study — main review file |
-| `05_task2_playbooks.qmd` | Full EDA→model→evaluate→interpret pipelines | Core study — Task 2 preparation |
-| `templates/task2_exam_template.qmd` | Blank exam template to fill during exam | During exam — open immediately |
-| `06_drill_book.qmd` | Timed practice drills by topic | Active study — use daily |
-| `07_mock_exams.qmd` | 3 full mock exams with solutions | Exam simulation — final week |
-| `08_self_grading_rubric.md` | Answer quality rubric + fallback strategy | After every practice attempt |
-| `09_exam_day_runbook.md` | Pre-exam → during exam → per-task workflows | Exam morning and during exam |
-
-**Existing materials to use alongside:**
-| File | What it is | Priority |
-|------|-----------|----------|
-| `Task1_comp.qmd` | 25 Task 1 code patterns with "The Tell" recognition cues | HIGH — read this |
-| `Practical_understanding_comp.qmd` | When to use which method | HIGH — read this |
-| `Previous Exam/R_exam_compendium_2026_retake.qmd` | Full worked solutions 2025, 2024, 2023 | HIGH — study solved examples |
-| `Course_approval/BAN404_compendium_text.txt` | Full course theory | MEDIUM — theory reference |
-| `Previous Exam/BAN404_exam_202X.md` | All 5 exam transcripts | Use for practice |
+> Use this file only as a fast lookup page. It is **not** a study plan. It tells you **which file to open, when, and why**.
 
 ---
 
-## A→Z Learning Order (follow this sequence)
+## The 5 files that matter most now
 
-### Week 1 — Foundation
-
-| Day | Task | Files |
-|-----|------|-------|
-| Day 1 | Read exam format overview | `01_curriculum_exam_map.md` |
-| Day 1 | Read R basics (Parts 1-2) | `03_r_from_zero_for_ban404.qmd` |
-| Day 2 | Read "The Tell" for all 10 methods | `04_task1_mastery.qmd` (skim) |
-| Day 2 | Read Task 2 pipeline overview | `05_task2_playbooks.qmd` (Playbook A header) |
-| Day 3 | Work through 2025 exam in detail | `Previous Exam/R_exam_compendium_2026_retake.qmd` |
-| Day 4 | Work through 2024 exam in detail | `Previous Exam/R_exam_compendium_2026_retake.qmd` |
-| Day 5 | Work through 2023 exam in detail | Churn.csv + compendium |
-| Day 6-7 | Re-read all of `04_task1_mastery.qmd` and `05_task2_playbooks.qmd` | — |
-
-### Week 2 — Drills
-
-| Day | Task | Files |
-|-----|------|-------|
-| Day 8 | Topic drills: Bootstrap + LOOCV | `06_drill_book.qmd` Topics 1-2 |
-| Day 9 | Topic drills: Ridge + GAM | `06_drill_book.qmd` Topics 3-4 |
-| Day 10 | Topic drills: Logistic + RF + Boosting | `06_drill_book.qmd` Topics 5-6 |
-| Day 11 | Mixed drills | `06_drill_book.qmd` Mixed section |
-| Day 12 | Mock Exam 1 (timed, 6h) | `07_mock_exams.qmd` Exam 1 |
-| Day 13 | Grade Mock 1, review weaknesses | `08_self_grading_rubric.md` |
-| Day 14 | Review weak topics from Mock 1 | `04_task1_mastery.qmd` or `05_task2_playbooks.qmd` |
-
-### Week 3 — Exam Simulation
-
-| Day | Task | Files |
-|-----|------|-------|
-| Day 15 | Mock Exam 2 (timed, 6h) | `07_mock_exams.qmd` Exam 2 |
-| Day 16 | Grade + review | `08_self_grading_rubric.md` |
-| Day 17 | Mock Exam 3 (timed, 8h — home exam format) | `07_mock_exams.qmd` Exam 3 |
-| Day 18 | Grade + final review | — |
-| Day 19-20 | Final read: `04_task1_mastery.qmd` + `snippets/ban404_core_snippets.R` | — |
-| Day 21 | Read `09_exam_day_runbook.md` the morning before | — |
+| File | Use it for | Open it when |
+|---|---|---|
+| `/home/runner/work/BAN404/BAN404/ExamRoadmap/01_curriculum_exam_map.md` | See what has been tested before and what is most likely now | When deciding what to prioritize today |
+| `/home/runner/work/BAN404/BAN404/ExamRoadmap/03_r_from_zero_for_ban404.qmd` | Practical tidyverse-first code foundation, EDA flow, plots, and interpretation help | When you need runnable starter code and reminders |
+| `/home/runner/work/BAN404/BAN404/ExamRoadmap/snippets/ban404_core_snippets.R` | Full runnable mini-examples for common BAN404 methods | When you want copy-adjust-run code |
+| `/home/runner/work/BAN404/BAN404/ExamRoadmap/templates/task2_exam_template.qmd` | Step-by-step Task 2 answer template for the actual exam | Open first when Task 2 starts |
+| `/home/runner/work/BAN404/BAN404/Previous Exam/R_exam_compendium_2026_retake.qmd` | Worked previous exams that should be turned into your fastest reference source | When practicing likely exam tasks |
 
 ---
 
-## Priority by Topic (revised from exam frequency analysis)
+## What to focus on in the final 2 days
 
-### 🔴 Do not skip — these appear every year
+### Highest-value practical skills
 
-1. **Logistic regression** — fit, interpret, threshold, confusion matrix
-2. **Random Forest** — fit, variable importance, evaluate
-3. **Bootstrap** — SE, histogram, CI (normal + percentile)
-4. **LOOCV** — inner loop structure, lambda/K tuning
-5. **GAM** — detect non-linearity, fit with `s()`, compare MSE/R²
+1. **Read data correctly**
+2. **Clean and recode safely**
+3. **Run EDA with the right plots**
+4. **Fit and interpret logistic regression**
+5. **Evaluate with confusion matrix + threshold logic**
+6. **Compare with random forest / boosting**
+7. **Write short, correct interpretations**
+8. **Recognize Task 1 code patterns quickly**
 
-### 🟠 Very likely — prepare fully
+### Lowest-priority activities right now
 
-6. **Ridge regression** — objective function, demeaning, LOOCV tuning
-7. **Boosting (gbm)** — bernoulli/gaussian, n.trees, shrinkage, evaluate
-8. **Confusion matrix + threshold** — class imbalance logic, row proportions
-9. **Train/test split + data cleaning** — factor encoding, leakage removal
-10. **EDA workflow** — boxplot, prop.table, cor(), summary()
-
-### 🟡 Likely — prepare a solid answer
-
-11. **KNN local regression** — distance, `order()`, LOOCV for K
-12. **Backfitting** — explain in plain English (often theory-only)
-13. **Lasso (glmnet)** — abs penalty, variable selection, cv.glmnet
-14. **Regression/classification tree** — fit, prune, interpret, plot
-15. **Variable importance** — explain MeanDecreaseAccuracy and Gini
-
-### 🟢 Know for theory — skip code depth
-
-16. SVM, PCA/PCR, LDA/QDA, K-means, polynomial regression
-17. These appear in the course text but **never appeared on actual exams** (2021–2025)
+- Long-term week plans
+- Nice-to-have extra theory not likely to help on the exam
+- Short code fragments that are not runnable
 
 ---
 
-## Quick Reference: Most Important Code Lines
+## Which file to open for each need
 
-```r
-# Bootstrap
-sample(1:n, size=n, replace=TRUE)
+### If you need to understand what plot to use
+Open: `/home/runner/work/BAN404/BAN404/ExamRoadmap/03_r_from_zero_for_ban404.qmd`
 
-# LOOCV  
-X[-i, ]    # Remove row i
+### If you need runnable code you can copy and adjust
+Open: `/home/runner/work/BAN404/BAN404/ExamRoadmap/snippets/ban404_core_snippets.R`
 
-# Ridge penalty
-la * sum(b1^2)
+### If you need a ready structure for Task 2
+Open: `/home/runner/work/BAN404/BAN404/ExamRoadmap/templates/task2_exam_template.qmd`
 
-# Lasso penalty
-la * sum(abs(b1))
+### If you need to see how similar questions were solved before
+Open: `/home/runner/work/BAN404/BAN404/Previous Exam/R_exam_compendium_2026_retake.qmd`
 
-# GAM smooth
-gam(y ~ s(x1) + x2)
-
-# Logistic
-glm(y ~ ., family=binomial())
-predict(..., type="response")   # → probabilities
-
-# RF
-randomForest(as.factor(y) ~ ., mtry=..., ntree=500)
-
-# Boosting
-gbm(y ~ ., distribution="bernoulli", n.trees=1000, shrinkage=0.01)
-
-# R²
-1 - MSE_model / var(y)
-
-# Confusion matrix
-table(Actual=test$y, Predicted=pred)
-prop.table(cm, margin=1)
-```
+### If you need to decide what topics are most likely
+Open: `/home/runner/work/BAN404/BAN404/ExamRoadmap/01_curriculum_exam_map.md`
 
 ---
 
-## Pre-Exam Checklist (15 minutes before exam starts)
+## Likely exam workflow
 
-- [ ] Packages installed: `randomForest`, `gbm`, `gam`, `tree`, `glmnet`, `insuranceData`, `ISLR2`
-- [ ] `snippets/ban404_core_snippets.R` open in a separate editor tab
-- [ ] `templates/task2_exam_template.qmd` copied and renamed for today
-- [ ] `09_exam_day_runbook.md` open
-- [ ] `04_task1_mastery.qmd` open on the "Recognition Cues" section
-- [ ] Calculator ready (for mental R² checks)
-- [ ] Timer set
+### Task 1 workflow
+1. Recognize the method from the code pattern
+2. Name the method clearly
+3. Explain what the loop / objective / prediction step is doing
+4. State why the method is used
+5. If asked, extend with runnable code from the snippets file
+
+### Task 2 workflow
+1. Open the Task 2 template immediately
+2. Read the dataset and inspect variable types
+3. Decide the target, leakage variables, and factor variables
+4. Split into train/test
+5. Do EDA with the correct plots
+6. Fit baseline model first
+7. Evaluate before moving to more advanced models
+8. Compare models and write a business-style conclusion
 
 ---
 
-## Exam-Day File Access Order
+## Previous exam datasets you can practice on
 
-1. **Open first:** `templates/task2_exam_template.qmd` → rename to `[date]_exam_answers.qmd`
-2. **Read exam questions:** Identify Task 1 method from code → go to `04_task1_mastery.qmd`
-3. **During Task 2:** Follow `05_task2_playbooks.qmd` step by step
-4. **If stuck:** Check `snippets/ban404_core_snippets.R` and `08_self_grading_rubric.md` fallback tree
-5. **Final check:** `09_exam_day_runbook.md` post-answer sanity checklist
+| Year | Main dataset |
+|---|---|
+| 2025 | `/home/runner/work/BAN404/BAN404/Previous Exam/2025/data_task1.csv` and `insuranceData::dataOhlsson` |
+| 2024 | `/home/runner/work/BAN404/BAN404/Previous Exam/2024/airline.csv` |
+| 2023 | `/home/runner/work/BAN404/BAN404/Previous Exam/2023/Churn.csv` |
+| 2022 | Package datasets / exam-provided context |
+| 2021 | Package datasets / exam-provided context |
+
+---
+
+## Final reminder
+
+Your best materials are the ones that let you do this loop fast:
+
+**read question -> run code -> inspect output -> write interpretation -> adjust -> re-run**
+
+That is the standard the practical files should support.

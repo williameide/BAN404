@@ -1,231 +1,372 @@
 ---
-title: "BAN404 Exam — Task 2 Template"
-subtitle: "[REPLACE: Dataset description]"
-author: "Candidate [REPLACE: number]"
-date: "[REPLACE: exam date]"
+title: "BAN404 Exam — Task 2 Working Template"
+subtitle: "Replace all placeholders before final submission"
+author: "Candidate [REPLACE]"
+date: "[REPLACE]"
 format:
   pdf:
     toc: false
     number-sections: true
 execute:
   echo: true
+  eval: true
   warning: false
   message: false
-  eval: true
 ---
 
-# INSTRUCTIONS FOR USE
-# 1. Open this file at the START of the exam
-# 2. Replace all [REPLACE: ...] markers with actual values
-# 3. Delete this instruction block
-# 4. Delete code sections you do not need
-# 5. Add your written answers after each code chunk
+# How to use this template during the exam
+
+1. Open this file **immediately** when Task 2 starts.
+2. Replace the placeholders in the setup chunk first.
+3. Run the setup and inspection chunks before writing anything important.
+4. Do **not** jump straight to models. First decide: target, factor variables, leakage variables, and split.
+5. Keep code that you use. Delete code you do not use only near the end if you want a cleaner PDF.
+
+> This template is intentionally over-explained. The goal is that you should know **why each step exists** while you are working.
 
 ---
 
-# Setup
+# 1. Setup and first inspection
 
 ```{r setup}
-# Load packages
-library(MASS); library(ISLR2)
-library(e1071); library(glmnet)
-library(gam); library(tree)
-library(randomForest); library(gbm)
-library(splines)
+# Load packages used in the standard BAN404 Task 2 workflow                 # tidyverse handles reading, wrangling, plotting, and summaries
+library(tidyverse)
+library(randomForest)                                                       # common comparison model for classification tasks
+library(gbm)                                                                # common boosting package in course material
 
-# Set seed (use seed given in exam, or 123)
-set.seed(123)
+set.seed(123)                                                               # replace if the exam gives you another seed
 
-# Read data
-data <- read.csv("[REPLACE: filename.csv]")
-# OR: data <- read.csv2("[REPLACE: filename.csv]")  # for semicolon-separated
+file_path      <- "[REPLACE_WITH_FILE_NAME.csv]"                            # exact file name provided in the exam
+file_delimiter <- ","                                                      # change to ";" if the file is semicolon-separated
 
-str(data)
-head(data, 3)
-dim(data)
+target_var     <- "[REPLACE_WITH_TARGET]"                                   # the variable you want to predict
+positive_class <- "[REPLACE_WITH_POSITIVE_CLASS]"                           # e.g. "yes", "1", "claim", "satisfied"
+
+factor_vars    <- c("[REPLACE_FACTOR_1]", "[REPLACE_FACTOR_2]")            # list every categorical variable you want as a factor
+id_vars        <- c("[REPLACE_ID_IF_ANY]")                                  # IDs usually add no predictive value
+leakage_vars   <- c("[REPLACE_LEAKAGE_IF_ANY]")                             # post-event / target-derived variables must be removed
+
+# Read the data in a way that works for both comma and semicolon files      # this keeps the file-reading logic explicit and easy to change
+if (file_delimiter == ";") {
+  data_raw <- readr::read_delim(file_path, delim = ";")                     # European-style csv
+} else {
+  data_raw <- readr::read_csv(file_path)                                     # normal comma-separated csv
+}
+
+data_raw |> glimpse()                                                        # first mandatory check: names + types + sample values
+data_raw |> head()                                                           # second mandatory check: make sure rows look sensible
+data_raw |> summary()                                                        # quick scan for strange ranges and missing values
 ```
+
+## What you should decide before moving on
+
+- Which variable is the target?
+- Is the target already in the format you need?
+- Which variables are categories?
+- Which variables are leakage or IDs?
+- Are there missing values that need handling?
 
 ---
 
-# Task 2a — Data Cleaning and EDA (10p)
+# 2. Cleaning and recoding
 
-## Data Cleaning
+## 2.1 Count missing values first
 
-```{r clean}
-# STEP 1: Inspect unique values / types for all columns
-summary(data)
-
-# STEP 2: Convert categorical variables to factors
-# [REPLACE: list the columns that need to be factors]
-# data$col1 <- as.factor(data$col1)
-# data$col2 <- as.factor(data$col2)
-
-# STEP 3: Remove leakage / non-predictive variables
-# [REPLACE: list variables to remove and explain why]
-data <- data[, !(names(data) %in% c("[REPLACE: var1]", "[REPLACE: var2]"))]
-
-# STEP 4: Create binary target (if needed)
-# data$target <- as.numeric(data$raw_count >= 1)
-# data$target <- factor(ifelse(data$raw >= 1, "yes", "no"))
-
-# STEP 5: Train/test split (50/50)
-n     <- nrow(data)
-idx   <- sample(1:n, size=floor(n/2))
-train <- data[idx, ]
-test  <- data[-idx, ]
-
-cat("Train size:", nrow(train), "| Test size:", nrow(test))
-prop.table(table(train$target))  # Class balance check
+```{r missing-check}
+data_raw |>
+  summarise(across(everything(), ~ sum(is.na(.x))))                          # count missing values for every column before you change anything
 ```
 
-**Written answer — data cleaning:**
-I removed [variable X] because [it is the raw target / only available after the event / has no predictive value as a unique ID]. The variable [Y] was converted to a factor because it represents [a categorical group / a zone / a class]. The data was split 50/50 into training (n=[]) and test (n=[]) sets.
+## 2.2 Create the modeling dataset
 
-## EDA — Finding Useful Predictors
+```{r clean-data}
+# If the target must be created from another variable, do it here first     # uncomment and adapt only if needed
+# data_raw <- data_raw |>
+#   mutate(
+#     target = if_else(number_of_claims >= 1, "yes", "no"),                # example binary target creation from a count
+#     target = factor(target, levels = c("no", "yes"))                     # set the non-event as the first level
+#   )
 
-```{r eda-numeric}
-# Continuous predictors vs binary target: boxplots
-# Uncomment and adjust as needed:
+data_model <- data_raw |>
+  mutate(across(any_of(factor_vars), as.factor)) |>                          # convert known categorical variables to factors
+  select(-any_of(c(id_vars, leakage_vars)))                                  # remove IDs and leakage variables safely
 
-par(mfrow=c(2,3))  # Adjust grid size for your number of plots
+# If the target is character, convert it to factor explicitly               # factor target is safer for tables and tree-based classification models
+# data_model <- data_model |>
+#   mutate(!!target_var := factor(.data[[target_var]]))
 
-# boxplot(var1 ~ target, data=train, main="var1 by target")
-# boxplot(var2 ~ target, data=train, main="var2 by target")
-# boxplot(var3 ~ target, data=train, main="var3 by target")
-
-# Means by group
-# tapply(train$var1, train$target, mean)
+data_model |> glimpse()                                                      # inspect again after cleaning so you know the modeling types are correct
 ```
 
-```{r eda-categorical}
-# Categorical predictors vs binary target: cross-tables
-# prop.table(table(train$cat_var, train$target), margin=1)
-```
-
-**Written answer — EDA:**
-From the boxplots, [variable A] shows a clear difference between groups (median [X] for target=0 vs [Y] for target=1). [Variable B] shows similar distributions in both groups. The cross-table for [variable C] shows that [category X] has [P]% positive cases vs [Q]% for [category Y], suggesting it is a useful predictor. I conclude that the most promising predictors are: [A, B, C].
+**Written answer starter:**
+“I converted `[factor variables]` to factors because they represent categories, not continuous measurements. I removed `[removed variables]` because they are IDs / leakage variables / post-event variables and would otherwise distort the prediction task.”
 
 ---
 
-# Task 2b — Logistic Regression (10p)
+# 3. Train / test split
+
+```{r split}
+set.seed(123)                                                                # repeat here so the split is easy to find when reading your file
+n_obs <- nrow(data_model)                                                    # count rows once for readability
+idx   <- sample.int(n_obs, size = floor(0.5 * n_obs))                        # 50/50 split is often expected in BAN404 examples
+
+train_data <- data_model |> slice(idx)                                       # training data used to fit models
+test_data  <- data_model |> slice(-idx)                                      # test data used only for evaluation
+
+train_data |> count(.data[[target_var]]) |> mutate(prop = n / sum(n))        # always inspect class balance before choosing threshold
+test_data  |> count(.data[[target_var]]) |> mutate(prop = n / sum(n))
+```
+
+**Why this step exists:**
+You need an honest test set. If you evaluate on the same data you trained on, the performance can look much better than it really is.
+
+**Written answer starter:**
+“I split the cleaned data into training and test sets using a 50/50 split and a fixed seed for reproducibility. The models are fitted on the training data and evaluated on the test data to estimate out-of-sample performance.”
+
+---
+
+# 4. EDA — do this before fitting models
+
+## 4.1 Create variable lists
+
+```{r variable-lists}
+numeric_vars <- train_data |>
+  select(where(is.numeric), -any_of(target_var)) |>                          # numeric predictors only; remove target if it is numeric 0/1
+  names()
+
+categorical_vars <- train_data |>
+  select(where(~ is.factor(.x) || is.character(.x)), -any_of(target_var)) |> # category-like predictors only
+  names()
+
+numeric_vars
+categorical_vars
+```
+
+## 4.2 Numeric predictor vs binary target — boxplots
+
+```{r eda-boxplots}
+# Replace "hp" with one of your real numeric variables first               # start with the variables you think are most likely to matter
+eda_numeric_var <- "[REPLACE_NUMERIC_VAR]"
+
+ggplot(train_data, aes(x = .data[[target_var]], y = .data[[eda_numeric_var]], fill = .data[[target_var]])) +
+  geom_boxplot(alpha = 0.80, outlier.color = "red") +                      # boxplot is usually the clearest first EDA plot for numeric vs binary target
+  labs(
+    title = paste(eda_numeric_var, "by", target_var),
+    x = target_var,
+    y = eda_numeric_var,
+    fill = target_var
+  ) +
+  theme_minimal()
+
+train_data |>
+  group_by(.data[[target_var]]) |>
+  summarise(
+    mean_value   = mean(.data[[eda_numeric_var]], na.rm = TRUE),             # average difference supports what you see in the plot
+    median_value = median(.data[[eda_numeric_var]], na.rm = TRUE),           # median is robust and often more stable to discuss
+    sd_value     = sd(.data[[eda_numeric_var]], na.rm = TRUE),               # spread matters for overlap and separation
+    n            = n(),
+    .groups      = "drop"
+  )
+```
+
+**What to ask yourself:**
+- Do the medians differ clearly?
+- Is one group much more spread out than the other?
+- Are there strong outliers?
+- Does the predictor look useful for distinguishing the classes?
+
+## 4.3 Categorical predictor vs binary target — proportions
+
+```{r eda-categories}
+# Replace "cylinders" with one real categorical predictor                  # choose the variable that seems most interesting after inspection
+eda_categorical_var <- "[REPLACE_CATEGORICAL_VAR]"
+
+train_data |>
+  count(.data[[eda_categorical_var]], .data[[target_var]]) |>
+  group_by(.data[[eda_categorical_var]]) |>
+  mutate(prop = n / sum(n)) |>                                               # within each category, what share belongs to each target class?
+  ungroup()
+
+train_data |>
+  count(.data[[eda_categorical_var]], .data[[target_var]]) |>
+  group_by(.data[[eda_categorical_var]]) |>
+  mutate(prop = n / sum(n)) |>
+  ungroup() |>
+  ggplot(aes(x = .data[[eda_categorical_var]], y = prop, fill = .data[[target_var]])) +
+  geom_col(position = "dodge") +                                            # dodge is easier to compare than stacked bars for this purpose
+  scale_y_continuous(labels = scales::percent_format()) +
+  labs(
+    title = paste("Target proportions by", eda_categorical_var),
+    x = eda_categorical_var,
+    y = "Share within category",
+    fill = target_var
+  ) +
+  theme_minimal()
+```
+
+## 4.4 Correlation heatmap for numeric predictors
+
+```{r eda-correlation}
+correlation_tbl <- train_data |>
+  select(where(is.numeric), -any_of(target_var)) |>                          # keep numeric predictors only
+  cor(use = "pairwise.complete.obs") |>                                      # safer if missing values exist
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "var1") |>
+  pivot_longer(-var1, names_to = "var2", values_to = "correlation")
+
+ggplot(correlation_tbl, aes(x = var1, y = var2, fill = correlation)) +
+  geom_tile() +                                                               # heatmap is the fastest visual collinearity check
+  geom_text(aes(label = round(correlation, 2)), size = 3) +                  # print values so you can quote them directly if needed
+  scale_fill_gradient2(low = "firebrick", mid = "white", high = "steelblue", midpoint = 0) +
+  labs(title = "Correlation heatmap", x = NULL, y = NULL, fill = "Corr") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+**What to write if correlations are high:**
+“Some predictors are strongly correlated, which may make coefficient estimates less stable in linear or logistic models. If necessary, a regularized model such as ridge or lasso could help.”
+
+---
+
+# 5. Baseline model — logistic regression
 
 ```{r logistic}
-# Full model
-logreg_full <- glm(target ~ ., data=train, family=binomial())
-summary(logreg_full)
+# Replace the formula with the predictors you decided to keep               # do not be afraid to start with a sensible smaller model
+log_mod <- glm(
+  formula = as.formula("[REPLACE_TARGET] ~ [REPLACE_PREDICTORS]"),          # example: target ~ age + income + zone + class
+  data = train_data,
+  family = binomial()
+)
 
-# Reduced model (based on EDA + significance)
-# [REPLACE: list selected predictors]
-# logreg_red <- glm(target ~ var1 + var2 + var3, data=train, family=binomial())
-
-# Odds ratios
-round(exp(coef(logreg_full)), 3)
+summary(log_mod)                                                             # inspect sign, size, and significance of coefficients
+exp(coef(log_mod))                                                           # odds ratios are easier to explain than raw log-odds
 ```
 
-**Written answer — logistic regression:**
-The full logistic model shows that [variable A] is strongly significant (p < 0.001) with a coefficient of [X], corresponding to an odds ratio of [OR]. This means a one-unit increase in [A] multiplies the odds of [target] by [OR]. [Variable B] with coefficient [Y] (OR = [OR2]) is [significant/not significant]. Based on the summary, I selected the reduced model with [list variables] as these showed the strongest and most significant associations.
+**How to interpret one coefficient:**
+If a coefficient is positive, the predictor increases the log-odds of the positive class. If its odds ratio is above 1, the predictor increases the odds. If the odds ratio is below 1, it decreases the odds.
+
+**Written answer starter:**
+“The coefficient for `[variable]` is `[estimate]`, which corresponds to an odds ratio of `[OR]`. This means that a one-unit increase in `[variable]` multiplies the odds of `[positive class]` by `[OR]`, holding the other variables fixed.”
 
 ---
 
-# Task 2c — Evaluate Predictions (10p)
+# 6. Evaluate the logistic model
 
-```{r evaluate}
-# Predict probabilities on test data
-prob_full <- predict(logreg_full, newdata=test, type="response")
+```{r logistic-eval}
+prob_log <- predict(log_mod, newdata = test_data, type = "response")        # predicted probability of the positive class
 
-# Check class imbalance to decide threshold
-prop.table(table(train$target))
+threshold <- 0.50                                                            # start here; lower it if the positive class is rare
+pred_log <- if_else(prob_log >= threshold, positive_class,                   # convert probabilities into class labels
+                    setdiff(levels(factor(train_data[[target_var]])), positive_class)[1])
 
-# Choose threshold (0.5 default; lower if positive class is rare)
-threshold <- 0.5   # [REPLACE: adjust if needed]
-pred_class <- ifelse(prob_full > threshold, 1, 0)
+pred_log <- factor(pred_log, levels = levels(factor(train_data[[target_var]])))
+actual_y <- factor(test_data[[target_var]], levels = levels(pred_log))       # align levels before building the confusion matrix
 
-# Confusion matrix
-cm <- table(Actual=test$target, Predicted=pred_class)
-cm
-prop.table(cm, margin=1)  # Row proportions
-
-# Accuracy
-acc_logistic <- sum(diag(cm)) / sum(cm)
-cat("Accuracy:", round(acc_logistic, 4))
+cm_log <- table(Actual = actual_y, Predicted = pred_log)
+cm_log
+prop.table(cm_log, margin = 1)                                               # row-wise performance = class-wise accuracy
+sum(diag(cm_log)) / sum(cm_log)                                              # overall accuracy
 ```
 
-**Written answer — evaluation:**
-Using a threshold of [T], the logistic regression achieves an overall accuracy of [A]% on test data. The confusion matrix shows that [X]% of actual positives (sensitivity) and [Y]% of actual negatives (specificity) are correctly classified. The threshold of [T] was chosen [because the positive class represents only [Z]% of observations / to maximize accuracy]. [Add comparison if applicable].
+## Optional threshold scan
+
+```{r threshold-scan}
+threshold_tbl <- tibble(threshold = seq(0.05, 0.95, by = 0.05)) |>
+  mutate(
+    pred = map(threshold, ~ if_else(prob_log >= .x, positive_class,
+                                    setdiff(levels(factor(train_data[[target_var]])), positive_class)[1])),
+    accuracy = map_dbl(pred, ~ mean(factor(.x, levels = levels(actual_y)) == actual_y))
+  )
+
+threshold_tbl
+```
+
+**When to lower the threshold:**
+If the positive class is rare and you care more about catching positives than about avoiding false positives, a lower threshold can be justified.
 
 ---
 
-# Task 2d — Random Forest (10p)
+# 7. Random forest comparison
 
 ```{r random-forest}
-library(randomForest)
+rf_mod <- randomForest(
+  formula = as.formula("[REPLACE_TARGET] ~ [REPLACE_PREDICTORS]"),          # use the same response and a reasonable predictor set
+  data = train_data,
+  ntree = 500,                                                               # many trees gives a more stable forest
+  mtry = max(1, floor(sqrt(ncol(train_data) - 1))),                          # common default for classification
+  importance = TRUE
+)
 
-# Ensure target is a factor
-train$target <- as.factor(train$target)
-test$target  <- as.factor(test$target)
-
-rf <- randomForest(target ~ ., data=train,
-                   mtry=floor(sqrt(ncol(train)-1)),
-                   ntree=500,
-                   importance=TRUE)
-rf   # Print summary including OOB error
-
-# Predict
-pred_rf <- predict(rf, newdata=test)
-cm_rf   <- table(Actual=test$target, Predicted=pred_rf)
+rf_mod                                                                       # prints OOB error and class summary
+pred_rf <- predict(rf_mod, newdata = test_data)
+cm_rf <- table(Actual = actual_y, Predicted = pred_rf)
 cm_rf
-prop.table(cm_rf, margin=1)
-acc_rf <- sum(diag(cm_rf)) / sum(cm_rf)
-cat("RF Accuracy:", round(acc_rf, 4))
+prop.table(cm_rf, margin = 1)
+sum(diag(cm_rf)) / sum(cm_rf)
 
-# Variable importance
-varImpPlot(rf)
+varImpPlot(rf_mod)                                                           # use this to discuss which variables matter most
 ```
 
-**Written answer — random forest:**
-The random forest model achieves [accuracy]% accuracy on test data, [better than / similar to / slightly worse than] logistic regression ([logistic accuracy]%). The variable importance plot shows [variable A] is the most important predictor, causing the largest drop in accuracy when permuted. This is consistent with the EDA finding that [A] had the largest group differences. The model [correctly classifies / struggles with] the positive class, achieving [sensitivity]% sensitivity.
+**Written answer starter:**
+“The random forest achieves `[accuracy]` accuracy on the test set. The variable importance plot suggests that `[variable]` is the most important predictor, followed by `[variable]`. Compared with logistic regression, the random forest performs `[better / similarly / worse]`.”
 
 ---
 
-# Task 2e — Boosted Tree (10p)
+# 8. Boosting comparison
 
 ```{r boosting}
-library(gbm)
+# gbm usually wants a numeric 0/1 response for bernoulli classification      # therefore we create a temporary training copy
+train_boost <- train_data |>
+  mutate(boost_target = if_else(.data[[target_var]] == positive_class, 1, 0))
 
-# Target must be 0/1 numeric for bernoulli
-train_bt        <- train
-train_bt$target <- as.numeric(as.character(train$target))
-test_bt         <- test
+test_boost <- test_data |>
+  mutate(boost_target = if_else(.data[[target_var]] == positive_class, 1, 0))
 
-bt <- gbm(target ~ ., data=train_bt,
-          distribution="bernoulli",
-          n.trees=1000,
-          interaction.depth=3,
-          shrinkage=0.01)
+boost_mod <- gbm(
+  formula = as.formula("boost_target ~ [REPLACE_PREDICTORS]"),              # same predictor logic as the earlier models
+  data = train_boost,
+  distribution = "bernoulli",
+  n.trees = 1000,
+  interaction.depth = 3,
+  shrinkage = 0.01,
+  n.minobsinnode = 10,
+  verbose = FALSE
+)
 
-# Predict
-prob_bt  <- predict(bt, newdata=test_bt, n.trees=1000, type="response")
-pred_bt  <- ifelse(prob_bt > threshold, 1, 0)
-cm_bt    <- table(Actual=as.numeric(as.character(test$target)), Predicted=pred_bt)
-cm_bt
-prop.table(cm_bt, margin=1)
-acc_bt <- sum(diag(cm_bt)) / sum(cm_bt)
-cat("Boosting Accuracy:", round(acc_bt, 4))
+prob_boost <- predict(boost_mod, newdata = test_boost, n.trees = 1000, type = "response")
+pred_boost <- if_else(prob_boost >= threshold, 1, 0)                        # reuse the chosen threshold for fairer comparison
+
+cm_boost <- table(Actual = test_boost$boost_target, Predicted = pred_boost)
+cm_boost
+prop.table(cm_boost, margin = 1)
+sum(diag(cm_boost)) / sum(cm_boost)
 ```
 
-**Written answer — boosting:**
-The boosted tree model achieves [accuracy]% accuracy on test data. [Compare to logistic and RF.] Boosting builds trees sequentially, each correcting the errors of previous trees. With shrinkage=0.01, learning is slow but stable. [Conclude which model performs best overall and why.]
+**Written answer starter:**
+“Boosting builds trees sequentially, where later trees focus more on observations that earlier trees handled poorly. In this analysis, the boosted model achieves `[accuracy]` accuracy and performs `[better / similarly / worse]` than the other models.”
 
 ---
 
-# Summary Comparison
+# 9. Final comparison and business-style conclusion
 
-```{r summary-table}
-cat("Model Comparison (Test Accuracy):\n")
-cat("Logistic Regression:", round(acc_logistic, 4), "\n")
-cat("Random Forest:      ", round(acc_rf, 4), "\n")
-cat("Boosted Tree:       ", round(acc_bt, 4), "\n")
+```{r compare-models}
+comparison_tbl <- tibble(
+  model = c("Logistic regression", "Random forest", "Boosting"),
+  accuracy = c(
+    sum(diag(cm_log)) / sum(cm_log),
+    sum(diag(cm_rf)) / sum(cm_rf),
+    sum(diag(cm_boost)) / sum(cm_boost)
+  )
+)
+
+comparison_tbl
 ```
 
-**Final written answer:**
-Across all models, [best model] achieves the highest accuracy of [X]%. The analysis suggests that [key predictors] are the most important drivers of [target]. [Business interpretation: what this means for the company/policy/decision]. [Optional: recommendation for which model to use in practice and why.]
+**What your conclusion should answer:**
+1. Which model performed best?
+2. Which variables looked most important?
+3. What does that mean in the practical context of the dataset?
+4. What action or recommendation follows from the result?
+
+**Written answer starter:**
+“Based on the test-set comparison, `[best model]` performed best with an accuracy of `[value]`. The most important predictors were `[variables]`, which suggests that `[practical interpretation]`. Therefore, if the goal is to improve prediction / reduce churn / identify risk / target interventions, attention should first be directed toward `[actionable conclusion]`.”
