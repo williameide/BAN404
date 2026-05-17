@@ -386,7 +386,7 @@ logit_all <- glm(churn ~ ., data = train, family = binomial())
 summary(logit_all)
 
 # Convert key effects to odds ratios.
-# Suffix \"1\" indicates the level coded as 1 (subscriber/present) versus reference level 0.
+# Suffix "1" indicates the level coded as 1 (subscriber/present) versus reference level 0.
 exp(coef(logit_all)[c("is_tv_subscriber1", "is_movie_package_subscriber1")])
 ```
 
