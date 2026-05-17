@@ -1286,7 +1286,8 @@ ridge_objective_2025 <- function(b1, X, y, la) {        # b1 is the vector of sl
 g_ridge_2025 <- function(X, y, la) {                    # Inputs are predictor matrix, response vector, and lambda.
   q <- ncol(X)                                          # Count how many slope coefficients we must estimate.
   y_centered <- y - mean(y)                             # Center y so the intercept can be handled separately.
-  X_centered <- scale(X, center = TRUE, scale = FALSE)  # Center each predictor, but do not standardize because this BAN404 ridge objective is written for centered raw columns; glmnet and distance-based methods are where scaling is more important.
+  X_centered <- scale(X, center = TRUE, scale = FALSE)  # Center each predictor because the intercept is handled separately in this ridge setup.
+                                                          # Do not standardize here; scaling matters more in glmnet and distance-based methods.
   start_b <- rep(0, q)                                  # Start optimization at zero for a stable neutral starting point.
   opt <- nlminb(start_b, ridge_objective_2025, X = X_centered, y = y_centered, la = la)  # Numerically minimize the ridge criterion.
   opt$par                                               # Return the slope coefficients only.
@@ -1526,7 +1527,7 @@ acc_churn_2023 <- sum(diag(cm_churn_2023)) / sum(cm_churn_2023)  # Classificatio
 # Optional: bootstrap the churn rate itself.  # This shows when bootstrap is used for uncertainty around a proportion, not model tuning.
 set.seed(1)                                               # Reproducible resampling.
 B_churn_2023 <- 1000                                      # Number of bootstrap samples.
-churn_numeric_2023 <- as.numeric(churn_2023$churn == "1")                 # Convert explicitly to 0/1 by checking whether each churn label is the positive class.
+churn_numeric_2023 <- as.numeric(churn_2023$churn == "1")                 # Convert churn factor to 0/1 numeric for bootstrap sampling.
 boot_rate_2023 <- replicate(
   B_churn_2023,                                           # Repeat the resampling many times.
   mean(sample(churn_numeric_2023, size = length(churn_numeric_2023), replace = TRUE))  # Bootstrap sample proportion of churners.
