@@ -1,0 +1,436 @@
+---
+title: "BAN404 Mock Exams — Three Full Practice Exams"
+author: "BAN404 Self-Study"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: flatly
+execute:
+  echo: true
+  eval: false
+  warning: false
+---
+
+# How to Use These Mock Exams
+
+**Instructions:**
+- Use a timer. Treat as real exam conditions.
+- Mock Exam 1 and 2: School exam format (6 hours, ~10 sub-questions)
+- Mock Exam 3: Home exam format (8 hours, more sub-questions, more explanation required)
+- All written materials permitted. Your `snippets/ban404_core_snippets.R` and compendium files are allowed.
+- After finishing, self-grade using `08_self_grading_rubric.md`
+
+---
+
+# MOCK EXAM 1 (School format — 6 hours)
+
+*Style: 2025 exam (school, 6h, one CSV file + one package dataset)*
+
+**Dataset for Task 1:** `creditdata` (simulate below)  
+**Dataset for Task 2:** `OJ` from ISLR2 package
+
+---
+
+## Task 1 (50 points) — Methodological questions
+
+### Setup
+```{r}
+# Simulate Task 1 dataset
+set.seed(42)
+n  <- 80; p <- 10
+X  <- matrix(rnorm(n*p), n, p)
+y  <- X[,1]*2 + X[,3]^2 + rnorm(n, sd=2)
+Xy <- as.data.frame(cbind(y, X))
+names(Xy)[1] <- "y"
+X  <- as.matrix(Xy[,-1])
+y  <- as.matrix(Xy[,1])
+```
+
+### Task 1a (10p) — Explain the function
+
+> Consider the following R function:
+> ```r
+> f <- function(b1, X, y, la) {
+>   fval <- sum((y - X %*% b1)^2) + la * sum(b1^2)
+>   return(fval)
+> }
+> g <- function(X, y, la) {
+>   q  <- ncol(X); b0 <- mean(y); yd <- y - b0
+>   Xd <- X; for(k in 1:q) Xd[,k] <- X[,k] - mean(X[,k])
+>   opt <- nlminb(rep(0,q), f, X=Xd, y=yd, la=la)
+>   return(opt$par)
+> }
+> ```
+> (a) What method do `f` and `g` implement? Identify the key line that tells you.
+> (b) What is `la`? What happens when la=0?
+> (c) Why does `g` subtract the mean from each column of X?
+
+*[Write your answer here. 15 minutes suggested.]*
+
+### Task 1b (10p) — Apply and compare
+
+> Using the dataset above:
+> (a) Fit OLS using `lm()`. Extract and show the coefficients.
+> (b) Fit ridge using `g(X, y, la=100)`. Compare the sum of squared coefficients.
+> (c) Explain why ridge coefficients are smaller in sum.
+
+```{r}
+# Your code here:
+```
+
+*[Write your answer here.]*
+
+### Task 1c (10p) — LOOCV for optimal λ
+
+> Write a LOOCV function and use it to find the optimal λ on the grid `seq(0, 500, length.out=15)`.
+> Plot LOOCV MSE vs λ. What is the optimal λ?
+
+```{r}
+# Your code here:
+```
+
+### Task 1d (10p) — Bootstrap
+
+> Use the bootstrap (B=2000) to estimate the sampling distribution of the **mean** of y.
+> (a) Plot the bootstrap distribution as a histogram.
+> (b) Compute a 95% CI using the percentile method.
+> (c) Compare to the normal-theory CI: `mean(y) ± 1.96 * sd(y)/sqrt(n)`
+
+```{r}
+# Your code here:
+```
+
+### Task 1e (10p) — GAM
+
+> (a) Create scatter plots of y against each of the 10 predictors. Identify any non-linear patterns.
+> (b) Fit an OLS and at least one GAM. Compare training MSE and R².
+> (c) Which model would you prefer? Justify.
+
+```{r}
+# Your code here:
+```
+
+---
+
+## Task 2 (50 points) — OJ dataset classification
+
+```{r}
+library(ISLR2)
+data(OJ)
+# Target: Purchase (CH or MM brand)
+```
+
+### Task 2a (10p) — Data prep and EDA
+
+> (a) Check the data using `str()` and `summary()`. Are there variables to remove?
+> (b) Split 50/50, set.seed(8655).
+> (c) Use descriptive statistics to find useful predictors for Purchase.
+
+```{r}
+# Your code here:
+```
+
+*[Written answer: What did you find? Which predictors look useful?]*
+
+### Task 2b (10p) — Logistic regression
+
+> Fit a logistic regression with promising predictors from 2a. Interpret 2 coefficients.
+
+```{r}
+# Your code here:
+```
+
+### Task 2c (10p) — Evaluate predictions
+
+> Predict on test data. Choose a threshold. Build a confusion matrix. Report accuracy and row proportions.
+
+```{r}
+# Your code here:
+```
+
+### Task 2d (10p) — Random forest
+
+> Fit a random forest. Evaluate predictions. Plot variable importance. Compare to logistic regression.
+
+```{r}
+# Your code here:
+```
+
+### Task 2e (10p) — Boosting
+
+> Fit a boosted tree. Evaluate predictions. Compare with logistic and RF.
+
+```{r}
+# Your code here:
+```
+
+---
+
+# MOCK EXAM 1 — SOLUTIONS
+
+## Task 1 Solutions
+
+### 1a Solution
+**(a)** `f` and `g` implement **ridge regression**. The key line is `la * sum(b1^2)` — squaring the coefficients gives the L2 (ridge) penalty.
+**(b)** `la` is the regularization parameter λ. When la=0, the penalty disappears and `g` returns OLS coefficients.
+**(c)** Subtracting the mean from each column (demeaning) centers the predictors. This is necessary so the intercept equals mean(y) after demeaning y as well. The penalty then only applies to slope coefficients, not the intercept — which is standard practice in ridge regression.
+
+```{r}
+# 1b solution
+f <- function(b1,X,y,la) sum((y-X%*%b1)^2) + la*sum(b1^2)
+g <- function(X,y,la) {
+  q=ncol(X); b0=mean(y); yd=y-b0
+  Xd=X; for(k in 1:q) Xd[,k]=X[,k]-mean(X[,k])
+  nlminb(rep(0,q),f,X=Xd,y=yd,la=la)$par
+}
+b_ols   <- lm(y ~ X)$coef[-1]
+b_r100  <- g(X, y, la=100)
+cat("Sum sq OLS:", round(sum(b_ols^2),4))
+cat("Sum sq Ridge(100):", round(sum(b_r100^2),4))
+```
+
+```{r}
+# 1c solution
+loo_fn <- function(la, X, y) {
+  n=nrow(X); q=ncol(X)
+  yd=y-mean(y); Xd=X; for(k in 1:q) Xd[,k]=X[,k]-mean(X[,k])
+  preds=numeric(n)
+  for(i in 1:n) { b1=g(X[-i,,drop=F],y[-i],la); preds[i]=Xd[i,]%*%b1 }
+  mean((yd-preds)^2)
+}
+lavec <- seq(0, 500, length.out=15)
+mses  <- sapply(lavec, function(la) loo_fn(la, X, y))
+plot(lavec, mses, type="b", main="LOOCV MSE vs lambda")
+cat("Optimal lambda:", lavec[which.min(mses)])
+```
+
+```{r}
+# 1d solution
+set.seed(1); n=length(y); B=2000; res=numeric(B)
+for(b in 1:B) res[b] <- mean(y[sample(1:n,replace=T)])
+hist(res, breaks=50, main="Bootstrap distribution of mean(y)")
+ci_pct <- quantile(res, c(0.025, 0.975))
+ci_norm_theory <- mean(y) + c(-1,1)*1.96*sd(y)/sqrt(n)
+cat("Bootstrap CI:", round(ci_pct,3), "\n")
+cat("Normal-theory CI:", round(ci_norm_theory,3))
+```
+
+```{r}
+# 1e solution
+library(gam)
+# Scan plots
+par(mfrow=c(2,5))
+for(j in 1:10) plot(X[,j], y, main=paste("X",j))
+# Fit OLS and GAM
+ols   <- lm(y ~ ., data=Xy)
+gam1  <- gam(y ~ s(V3) + V1 + V2 + V4 + V5 + V6 + V7 + V8 + V9 + V10, data=Xy)
+MSE_null <- var(y)
+R2_ols   <- 1 - mean(residuals(ols)^2)/MSE_null
+R2_gam   <- 1 - mean(residuals(gam1)^2)/MSE_null
+cat("R2 OLS:", round(R2_ols,4), " | R2 GAM:", round(R2_gam,4))
+```
+
+---
+
+# MOCK EXAM 2 (School format — 6 hours)
+
+*Style: 2024 exam (KNN + backfitting in Task 1, two-perspective Task 2)*
+
+**Dataset for Task 1:** Simulate below  
+**Dataset for Task 2:** `Carseats` from ISLR2
+
+---
+
+## Task 1 (50 points) — Methodological questions
+
+### Task 1a (10p) — Explain the function
+
+> ```r
+> h <- function(x0, x, y, K=5) {
+>   d <- sqrt((x - x0)^2)
+>   o <- order(d)[1:K]
+>   predict(lm(y[o] ~ x[o]), newdata=data.frame(x=x0))
+> }
+> ```
+> What method is this? What does each step do?
+
+### Task 1b (10p) — LOOCV for K
+
+```{r}
+# Use this data
+set.seed(7); n=30
+x <- runif(n, 0, 10)
+y <- sin(x) + rnorm(n, sd=0.3)
+```
+
+> Use LOOCV on x and y to find the optimal K (search K = 1:15). Plot LOOCV MSE vs K.
+
+### Task 1c (10p) — Plot with optimal K
+
+> Plot y vs x. Add a smooth line showing KNN predictions for the optimal K.
+
+### Task 1d (10p) — Multi-predictor extension
+
+> How would you extend h to 2 predictors? Write the modified distance formula.
+
+### Task 1e (10p) — Backfitting explanation
+
+> Without code: Explain the backfitting algorithm. When is it equivalent to OLS regression? When is it not?
+
+---
+
+## Task 2 (50 points) — Carseats dataset
+
+```{r}
+library(ISLR2)
+data(Carseats)
+# Target: create binary variable High = (Sales > 8)
+Carseats$High <- as.factor(ifelse(Carseats$Sales > 8, "Yes", "No"))
+Carseats <- Carseats[, names(Carseats) != "Sales"]
+```
+
+### Task 2a (8p) — EDA and prep
+
+> Examine the data. Is any variable inappropriate to include? Split 70/30, set.seed(100).
+> Use EDA to find predictors of `High`.
+
+### Task 2b (7p) — Logistic regression
+
+> Fit logistic regression. Interpret two coefficients. Evaluate on test data.
+
+### Task 2c (7p) — Classification tree
+
+> Fit a classification tree. Plot it. Interpret one branch. Compare accuracy to logistic regression.
+
+### Task 2d (10p) — Random forest
+
+> Fit a random forest. Evaluate and plot variable importance. Compare to previous models.
+
+### Task 2e (8p) — Threshold CV
+
+> Use cross-validation to find the threshold that maximises accuracy for the logistic regression model.
+
+### Task 2f (10p) — Business answer
+
+> Based on all analysis: What predicts high sales? What would you recommend to the store manager?
+
+---
+
+## Mock Exam 2 — Key Solutions
+
+```{r}
+# Task 1b: LOOCV for KNN
+h <- function(x0, x, y, K=5) {
+  o <- order((x-x0)^2)[1:K]
+  predict(lm(y[o]~x[o]), newdata=data.frame(x=x0))
+}
+Kgr  <- 1:15
+mseK <- sapply(Kgr, function(K)
+  mean(sapply(1:n, function(i) (y[i]-h(x[i],x[-i],y[-i],K))^2))
+)
+K_opt <- Kgr[which.min(mseK)]
+plot(Kgr, mseK, type="b", main="LOOCV MSE vs K"); abline(v=K_opt, col="red")
+cat("Optimal K:", K_opt)
+
+# Task 2 pipeline
+library(ISLR2); data(Carseats)
+Carseats$High <- as.factor(ifelse(Carseats$Sales > 8, "Yes", "No"))
+Carseats <- Carseats[, names(Carseats)!="Sales"]
+set.seed(100); idx <- sample(1:nrow(Carseats), floor(0.7*nrow(Carseats)))
+train <- Carseats[idx,]; test <- Carseats[-idx,]
+logreg <- glm(High ~ ., data=train, family=binomial()); summary(logreg)
+prob   <- predict(logreg, test, type="response")
+pred   <- ifelse(prob>0.5, "Yes", "No")
+table(Actual=test$High, Pred=pred)
+
+library(randomForest)
+rf <- randomForest(High ~ ., data=train, ntree=300, importance=TRUE)
+varImpPlot(rf)
+```
+
+---
+
+# MOCK EXAM 3 (Home exam format — 8 hours)
+
+*Style: 2023 exam (two tasks, both with regression + classification, more explanation required)*
+
+**Dataset:** `Churn.csv` from the repo — available at `Previous Exam/2023/Churn.csv` relative to the repository root.
+
+---
+
+## Task 1 (50 points) — Predict average bill (regression)
+
+```{r}
+# Adjust path if needed; file is at Previous Exam/2023/Churn.csv in the repo
+Churn <- read.csv("../Previous Exam/2023/Churn.csv")
+```
+
+### 1a — Data cleaning and split (10p)
+> Remove variables not suitable as predictors. Convert factors. Split 50/50, `set.seed(86554354)`. Explain your choices.
+
+### 1b — EDA for bill_avg (10p)
+> Find useful predictors for `bill_avg` using plots and tables. Write which R functions you used.
+
+### 1c — OLS regression (8p)
+> Fit OLS. Motivate variable choices. Evaluate test MSE.
+
+### 1d — Lasso (10p)
+> Fit lasso using `cv.glmnet`. Find optimal λ. Compare selected variables to OLS. Evaluate test MSE.
+
+### 1e — Regression tree (5p)
+> Fit, plot, and interpret a regression tree. Evaluate test MSE.
+
+### 1f-1i — Random forest (7p)
+> Fit RF. Variable importance plot + interpretation. Evaluate test MSE. Final: which customers have high/low bills?
+
+---
+
+## Task 2 (50 points) — Predict churn (classification)
+
+### 2a — EDA for churn (8p)
+> Use tables, plots, common sense to find promising predictors. Motivate variable removal.
+
+### 2b — Bootstrap CI (10p)
+> Let p = P(churn=1). Use first 50 observations. Bootstrap 95% CI for p.
+> Compare to normal approximation: `p_hat ± 1.96 * sqrt(p_hat*(1-p_hat)/n)`.
+
+### 2c — Logistic regression (8p)
+> Fit logistic on all variables. Interpret `is_tv_subscriber` and `is_movie_package_subscriber`. Evaluate.
+
+### 2d — Predict and evaluate logistic (7p)
+> Predict churn on test data. Build confusion matrix. Improve by removing variables?
+
+### 2e — Random forest (7p)
+> Fit RF. Evaluate. Compare to logistic.
+
+### 2f — Final answer (10p)
+> What are the typical features of customers who churn?
+
+---
+
+## Mock Exam 3 — Key Solutions for Task 2b Bootstrap
+
+```{r}
+# Task 2b: Bootstrap CI for p = P(churn=1)
+# Adjust path if needed; file is at Previous Exam/2023/Churn.csv in the repo
+Churn <- read.csv("../Previous Exam/2023/Churn.csv")
+churn50 <- Churn$churn[1:50]   # First 50 observations
+
+B <- 10000; pboot <- numeric(B); set.seed(1)
+for(b in 1:B) pboot[b] <- mean(sample(churn50, replace=TRUE))
+
+# Bootstrap CI (percentile)
+ci_boot <- quantile(pboot, c(0.025, 0.975))
+
+# Normal approximation
+p_hat  <- mean(churn50)
+n_s    <- length(churn50)
+ci_norm <- p_hat + c(-1,1)*1.96*sqrt(p_hat*(1-p_hat)/n_s)
+
+cat("Bootstrap CI:", round(ci_boot, 4), "\n")
+cat("Normal approx CI:", round(ci_norm, 4))
+
+# The bootstrap CI is preferred when p is close to 0 or 1 (skewed distribution)
+# or when n is small (normality assumption weaker)
+```

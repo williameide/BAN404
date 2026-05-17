@@ -1,0 +1,434 @@
+---
+title: "BAN404 Drill Book — Timed Practice by Topic"
+author: "BAN404 Self-Study"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    theme: flatly
+execute:
+  echo: true
+  eval: false
+  warning: false
+---
+
+# How to Use This Drill Book
+
+**Rules:**
+1. Set a timer before starting each drill
+2. Write your answer (code + text) without looking at the solution
+3. Only then check the solution
+4. Score yourself using the rubric (0, 5, 8, or 10 points)
+
+**Drill types:**
+- **⚡ Quick (5 min):** Single concept, code or explain
+- **🔥 Standard (10 min):** Explain + code + one extension
+- **💪 Full (20 min):** Full sub-question as it appears on exam
+
+---
+
+# TOPIC 1: Bootstrap
+
+## ⚡ Drill 1-A (5 min) — Recognize and Name
+
+> Look at this code. What method is it? What does `replace=TRUE` mean?
+> ```r
+> for(b in 1:B) {
+>   idx <- sample(1:n, size=n, replace=TRUE)
+>   res[b] <- mean(y[idx])
+> }
+> ```
+
+**Your answer (write before looking):**
+
+---
+
+**Solution:**
+This is the **bootstrap** method. `replace=TRUE` means observations are sampled **with replacement**: each draw is independent, so the same observation can appear multiple times in a bootstrap sample while others may not appear at all. This is what simulates "drawing a new dataset from the population."
+
+**Score yourself:** 0=missed it | 5=named it | 8=named it + explained replace=TRUE | 10=perfect + mentioned sampling distribution
+
+---
+
+## 🔥 Drill 1-B (10 min) — Bootstrap for Volatility (2021 style)
+
+> Using the `Smarket` dataset (from ISLR2), compute a bootstrap standard error for the standard deviation of `Today` returns. Use B=1000. Then compute a 95% percentile CI.
+
+```{r}
+# Your code here:
+
+```
+
+**Solution:**
+```{r}
+library(ISLR2)
+data(Smarket)
+set.seed(1)
+y <- Smarket$Today
+n <- length(y)
+B <- 1000
+res <- numeric(B)
+for(b in 1:B) {
+  yb    <- y[sample(1:n, replace=TRUE)]
+  res[b] <- sd(yb)
+}
+se_boot <- sd(res)
+ci_pct  <- quantile(res, c(0.025, 0.975))
+hist(res, breaks=40, main="Bootstrap distribution of volatility (sd)")
+cat("Bootstrap SE:", round(se_boot, 4), "\n")
+cat("95% CI:", round(ci_pct, 4), "\n")
+```
+
+---
+
+## 💪 Drill 1-C (20 min) — Bootstrap CI (2025 exam format)
+
+> Consider a variable y (generate with `set.seed(1); y <- rnorm(100, mean=1000, sd=1200)`).
+> (a) Use bootstrap (B=10000) to estimate the sampling distribution of `var(y)`. Show as a histogram.
+> (b) Compute a 95% CI using the normal approximation method.
+> (c) Compute a 95% CI using the percentile method.
+> (d) In words: when is the percentile method preferred over the normal approximation?
+
+**Solution:**
+```{r}
+set.seed(1); y <- rnorm(100, mean=1000, sd=1200)
+n <- length(y); B <- 10000
+vboot <- numeric(B)
+set.seed(123)
+for(b in 1:B) vboot[b] <- var(y[sample(1:n, replace=TRUE)])
+hist(vboot, breaks=60, main="Bootstrap distribution of Var(y)", xlab="Variance")
+# (b) Normal approximation
+ci_norm <- mean(vboot) + c(-1,1)*1.96*sd(vboot)
+# (c) Percentile
+ci_pct <- quantile(vboot, c(0.025, 0.975))
+cat("Normal CI:", round(ci_norm, 0), "\n")
+cat("Percentile CI:", round(ci_pct, 0), "\n")
+```
+**(d)** The percentile method is preferred when the bootstrap distribution is **skewed** or not approximately normal, as it does not assume symmetry.
+
+---
+
+# TOPIC 2: LOOCV and Lambda Tuning
+
+## ⚡ Drill 2-A (5 min) — Recognize LOOCV
+
+> What does `X[-i, ]` mean in this context?
+> ```r
+> for(i in 1:n) {
+>   b <- fit(X[-i, ], y[-i])
+>   pred[i] <- X[i, ] %*% b
+> }
+> ```
+
+**Solution:**
+`X[-i, ]` removes the i-th row from matrix X, creating a training set of n-1 rows. This is **LOOCV**: the model is trained on all data except observation i, then used to predict observation i. The `-i` means "all rows except row i."
+
+---
+
+## 🔥 Drill 2-B (10 min) — LOOCV vs K-fold: When to use which?
+
+> Answer in writing (no code needed):
+> (a) What is the difference between LOOCV and 5-fold CV?
+> (b) When is LOOCV preferred?
+> (c) When is 5-fold preferred?
+
+**Solution:**
+**(a)** LOOCV is K-fold CV with K=n: each observation is left out once. 5-fold CV splits data into 5 equal groups, each used as test set once.
+
+**(b)** LOOCV is preferred when n is small (< 100) — it wastes less data for training and gives a nearly unbiased test error estimate. Also preferred when computational cost allows.
+
+**(c)** 5-fold is preferred when n is large (less computational cost) or when LOOCV shows high variance between folds. 5-fold has slightly more bias but much lower variance than LOOCV.
+
+---
+
+## 💪 Drill 2-C (20 min) — LOOCV to tune λ for Ridge (2025 style)
+
+> Given the ridge functions `f` and `g` from the 2025 exam, and a dataset with 50 observations and 5 predictors:
+> (a) Write a LOOCV function that takes λ as input and returns test MSE
+> (b) Use it to search for the optimal λ on a grid from 0 to 2000
+> (c) Which λ do you choose and why?
+
+**Solution:**
+```{r}
+# Assume f, g are defined as in the 2025 exam (see Task1_comp.qmd)
+# Simulate data
+set.seed(1); n=50; p=5
+X <- matrix(rnorm(n*p), n, p); y <- matrix(X[,1] + rnorm(n), n, 1)
+
+f <- function(b1,X,y,la) sum((y-X%*%b1)^2) + la*sum(b1^2)
+g <- function(X,y,la) {
+  q=ncol(X); b0=mean(y); yd=y-b0
+  Xd=X; for(k in 1:q) Xd[,k]=X[,k]-mean(X[,k])
+  opt=nlminb(rep(0,q),f,X=Xd,y=yd,la=la); opt$par
+}
+
+loo_fn <- function(la, X, y) {
+  n=nrow(X); q=ncol(X)
+  yd=y-mean(y); Xd=X; for(k in 1:q) Xd[,k]=X[,k]-mean(X[,k])
+  preds=numeric(n)
+  for(i in 1:n) {
+    b1=g(X[-i,,drop=FALSE], y[-i], la)
+    preds[i]=Xd[i,]%*%b1
+  }
+  mean((yd-preds)^2)
+}
+
+lavec <- seq(0, 2000, length.out=20)
+mses  <- sapply(lavec, function(la) loo_fn(la, X, y))
+plot(lavec, mses, type="l", main="LOOCV MSE vs lambda", ylab="MSE")
+la_opt <- lavec[which.min(mses)]
+cat("Optimal lambda:", la_opt)
+```
+**(c)** We choose the λ that minimizes LOOCV test MSE because it gives the best estimated generalization performance. Larger λ reduces variance but increases bias; the optimal λ balances these.
+
+---
+
+# TOPIC 3: Ridge and Lasso
+
+## ⚡ Drill 3-A (5 min) — Ridge vs Lasso
+
+> Without code: What is the key difference between ridge and lasso penalties? What can lasso do that ridge cannot?
+
+**Solution:**
+- **Ridge penalty:** λ · Σ β² (L2 norm — squares the coefficients)
+- **Lasso penalty:** λ · Σ |β| (L1 norm — absolute values of coefficients)
+- Key difference: The lasso penalty can set coefficients to **exactly zero**, performing variable selection. Ridge only shrinks them toward zero but never exactly. Ridge is better when all predictors are relevant; Lasso is better when only a few predictors matter.
+
+---
+
+## 🔥 Drill 3-B (10 min) — OLS vs Ridge comparison
+
+> Run this code (or imagine running it):
+> ```r
+> X <- matrix(rnorm(100*20), 100, 20); y <- X[,1] + rnorm(100)
+> b_ols <- lm(y~X)$coef[-1]
+> b_ridge <- g(X, y, la=500)   # use g from 2025 exam
+> ```
+> (a) What do you expect when comparing sum(b_ols^2) vs sum(b_ridge^2)?
+> (b) What happens to the ridge coefficients as λ → ∞?
+> (c) What happens to the ridge coefficients when λ = 0?
+
+**Solution:**
+**(a)** `sum(b_ridge^2)` will be smaller — ridge shrinks the coefficients, reducing the sum of squared coefficients.
+
+**(b)** As λ → ∞, all ridge coefficients → 0. The penalty overwhelms the fit term.
+
+**(c)** When λ = 0, ridge reduces to OLS: `g(X, y, la=0)` gives the same coefficients as `lm(y~X)$coef[-1]`.
+
+---
+
+# TOPIC 4: GAM and Non-Linearity
+
+## ⚡ Drill 4-A (5 min) — Backfitting Recognition
+
+> What algorithm does this implement? What is `y - f2`?
+> ```r
+> f1 <- rep(0, n)
+> f2 <- rep(0, n)
+> for(i in 1:20) {
+>   f1 <- smooth.spline(x1, y - f2)$y
+>   f2 <- smooth.spline(x2, y - f1)$y
+> }
+> ```
+
+**Solution:**
+This is **backfitting** for a **Generalized Additive Model (GAM)**. `y - f2` is the **partial residual**: the response after removing the contribution of f2. Fitting f1 on partial residuals estimates f1's unique contribution to y while holding f2 fixed. The algorithm alternates until both smooth functions stabilize.
+
+---
+
+## 🔥 Drill 4-B (10 min) — GAM vs OLS: When does GAM help?
+
+> Given a dataset where x2 has a U-shaped relationship with y, but x1 is linear:
+> (a) Write code to compare OLS vs GAM
+> (b) Compute R² for both
+> (c) Should you always use GAM over OLS?
+
+**Solution:**
+```{r}
+library(gam)
+set.seed(1)
+n  <- 200
+x1 <- rnorm(n); x2 <- runif(n, -3, 3)
+y  <- 2*x1 + x2^2 + rnorm(n)
+df <- data.frame(y, x1, x2)
+
+ols <- lm(y ~ x1 + x2, data=df)
+gam1 <- gam(y ~ x1 + s(x2), data=df)
+
+MSE_null <- var(y)
+R2_ols   <- 1 - mean(residuals(ols)^2) / MSE_null
+R2_gam   <- 1 - mean(residuals(gam1)^2) / MSE_null
+cat("R² OLS:", round(R2_ols,4), " | R² GAM:", round(R2_gam,4))
+plot(gam1, se=TRUE)
+```
+**(c)** No. GAM should be used when EDA or residual plots suggest a non-linear relationship. Adding `s()` terms increases model complexity (risk of overfitting) and reduces interpretability. If the relationship is linear, GAM and OLS give similar R².
+
+---
+
+# TOPIC 5: Classification
+
+## 🔥 Drill 5-A (10 min) — Logistic coefficient interpretation
+
+> After fitting `glm(churn ~ age + monthly_bill, data=train, family=binomial())`:
+> - `age` coefficient: −0.04
+> - `monthly_bill` coefficient: 0.03
+> Write an interpretation of both coefficients.
+
+**Solution:**
+- **age:** A one-year increase in age is associated with a decrease of 0.04 in the log-odds of churn, holding monthly_bill constant. The odds ratio is exp(−0.04) = 0.961, meaning each additional year of age reduces the odds of churning by 3.9%.
+- **monthly_bill:** A one-unit increase in monthly bill is associated with an increase of 0.03 in the log-odds of churn. The odds ratio is exp(0.03) = 1.030, meaning a 1-unit higher bill increases the odds of churning by 3%.
+
+---
+
+## 🔥 Drill 5-B (10 min) — Threshold choice
+
+> A dataset has 3% positive class (churn=1) and 97% negative (churn=0).
+> (a) What happens if you use threshold=0.5?
+> (b) How do you choose a better threshold?
+> (c) Write code to evaluate multiple thresholds and select the best.
+
+**Solution:**
+**(a)** With 3% positive rate, almost all predicted probabilities are < 0.5. Almost everything is classified as "no churn" — sensitivity is near 0. Accuracy looks high (~97%) but the model is useless for detecting churners.
+
+**(b)** Use a threshold that balances sensitivity (catching true churners) and specificity. Try thresholds between 0.01 and 0.1 and pick based on the business goal.
+
+```{r}
+thresholds <- seq(0.01, 0.3, by=0.01)
+results <- sapply(thresholds, function(th) {
+  pred <- ifelse(prob > th, 1, 0)
+  cm   <- table(Actual=test$churn, Pred=pred)
+  if(all(dim(cm)==c(2,2))) {
+    sens <- cm[2,2]/sum(cm[2,])   # True positive rate
+    spec <- cm[1,1]/sum(cm[1,])   # True negative rate
+    acc  <- sum(diag(cm))/sum(cm)
+    c(sensitivity=sens, specificity=spec, accuracy=acc)
+  } else NA
+})
+# Pick threshold that maximises balanced accuracy = mean(sensitivity, specificity)
+```
+
+---
+
+# TOPIC 6: Random Forest and Boosting
+
+## 🔥 Drill 6-A (10 min) — RF vs Bagging vs Boosting: Explain the Difference
+
+> Without any code, explain in plain English:
+> (a) How does bagging work?
+> (b) How does random forest improve on bagging?
+> (c) How is boosting fundamentally different from both?
+
+**Solution:**
+**(a) Bagging:** Fit many trees on bootstrap samples of the training data. Average their predictions. This reduces **variance** (the instability of a single tree).
+
+**(b) Random Forest:** Same as bagging, but at each split, only consider a random subset of `mtry` predictors (instead of all p). This **decorrelates** the trees — if one predictor dominates, it won't always be picked, so trees differ more and averaging improves further.
+
+**(c) Boosting:** Builds trees **sequentially** (not independently). Each tree fits the **residuals** of all previous trees. Boosting reduces **bias** by repeatedly correcting errors, rather than averaging independent trees. It is slower to compute but often more accurate.
+
+---
+
+## 💪 Drill 6-B (20 min) — Full RF + Boosting mini-pipeline
+
+> Using the `Churn.csv` dataset (or simulate one):
+> Fit a random forest and a boosted tree. Compare their test accuracy.
+> Interpret the variable importance from the RF.
+
+```{r}
+# Simulate or load data
+set.seed(1)
+n  <- 500; p <- 5
+X  <- matrix(rnorm(n*p), n, p)
+y  <- factor(ifelse(X[,1] + X[,2]^2 + rnorm(n) > 1, 1, 0))
+df <- data.frame(y, X)
+n_train <- floor(n*0.5)
+train <- df[1:n_train,]; test <- df[(n_train+1):n,]
+
+# RF
+library(randomForest)
+rf  <- randomForest(y ~ ., data=train, ntree=300, importance=TRUE)
+prf <- predict(rf, test)
+cat("RF accuracy:", mean(prf==test$y))
+varImpPlot(rf)
+
+# Boosting
+library(gbm)
+train_bt <- train; train_bt$y <- as.numeric(as.character(train$y))
+bt <- gbm(y~., data=train_bt, distribution="bernoulli",
+          n.trees=500, interaction.depth=3, shrinkage=0.05)
+pbt <- ifelse(predict(bt, test, n.trees=500, type="response") > 0.5, 1, 0)
+cat("Boosting accuracy:", mean(pbt==as.numeric(as.character(test$y))))
+```
+
+---
+
+# MIXED DRILLS — Exam Conditions
+
+## 🔥 Mixed Drill M-1 (15 min)
+
+> You are given code that includes `sum(abs(b))` in a penalty term. The function also includes a loop that does `X[-i,]`.
+> (a) Name the two methods used.
+> (b) What is the full pipeline trying to accomplish?
+> (c) Write the LOOCV error loop to find the optimal λ for this method.
+
+**Solution:**
+**(a)** `sum(abs(b))` = **Lasso** (L1 penalty). `X[-i,]` = **LOOCV**.
+
+**(b)** The pipeline is using LOOCV to find the optimal λ for lasso regression.
+
+```{r}
+f_lasso <- function(b1, X, y, la) sum((y-X%*%b1)^2) + la*sum(abs(b1))
+g_lasso <- function(X, y, la) {
+  q=ncol(X); b0=mean(y); yd=y-b0
+  Xd=X; for(k in 1:q) Xd[,k]=X[,k]-mean(X[,k])
+  opt=nlminb(rep(0,q), f_lasso, X=Xd, y=yd, la=la); opt$par
+}
+loo_lasso <- function(la, X, y) {
+  n=nrow(X); q=ncol(X)
+  yd=y-mean(y); Xd=X; for(k in 1:q) Xd[,k]=X[,k]-mean(X[,k])
+  preds=numeric(n)
+  for(i in 1:n) { b1=g_lasso(X[-i,,drop=FALSE],y[-i],la); preds[i]=Xd[i,]%*%b1 }
+  mean((yd-preds)^2)
+}
+lavec <- seq(0, 200, length.out=15)
+mses  <- sapply(lavec, loo_lasso, X=X, y=y)
+cat("Optimal lambda:", lavec[which.min(mses)])
+```
+
+---
+
+## 💪 Mixed Drill M-2 (25 min) — Full Task 1 simulation
+
+> You are given this function:
+> ```r
+> h <- function(x0, x, y, K=5) {
+>   d <- (x - x0)^2
+>   o <- order(d)[1:K]
+>   mean(y[o])
+> }
+> ```
+> (a) What method is this? How is it different from a version using `lm(yl ~ xl)`?
+> (b) Write LOOCV to find optimal K using x=1:20, y=x^2 + rnorm(20)
+> (c) Plot y vs x and add predictions for optimal K
+> (d) How would you extend h to use 2 predictors?
+
+**Solution:**
+**(a)** This is **KNN regression** (simple average version, not local linear). The version using `lm(yl~xl)` fits a local linear regression through the K neighbors, which is smoother and can extrapolate within the neighborhood. The simple average version just predicts the mean of the K nearest y values.
+
+```{r}
+set.seed(1); n=20; x=1:20; y=x^2+rnorm(20,sd=5)
+
+h <- function(x0, x, y, K=5) { mean(y[order((x-x0)^2)[1:K]]) }
+
+Kgr  <- 1:10
+mseK <- sapply(Kgr, function(K)
+  mean(sapply(1:n, function(i) (y[i] - h(x[i], x[-i], y[-i], K))^2))
+)
+K_opt <- Kgr[which.min(mseK)]
+cat("Optimal K:", K_opt)
+
+plot(x, y, main=paste("KNN K=", K_opt))
+xs <- seq(1, 20, by=0.2)
+lines(xs, sapply(xs, function(x0) h(x0, x, y, K_opt)), col="blue", lwd=2)
+```
+
+**(d)** Replace `d <- (x - x0)^2` with Euclidean distance: `d <- rowSums((X - matrix(x0, nrow(X), ncol(X), byrow=TRUE))^2)` where X is the n×2 matrix of two predictors.
