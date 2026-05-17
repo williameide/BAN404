@@ -344,10 +344,10 @@ numeric_screen
 
 This is useful when you want a compact table to support statements like:
 
-If the table becomes too wide, keep only the few variables you actually want to discuss, or reshape it after summarising so it is easier to read under exam pressure.
-
 - “manual cars have higher average `hp`”
 - “automatic cars have higher average `wt`”
+
+If the table becomes too wide, keep only the few variables you actually want to discuss, or reshape it after summarising so it is easier to read under exam pressure.
 
 ---
 
