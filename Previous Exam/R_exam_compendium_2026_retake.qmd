@@ -174,6 +174,62 @@ glimpse(df)
 | `glmnet` with factors | create dummy variables using `model.matrix()` |
 | Distance-based method | standardize predictors before KNN/PCA/SVM/k-means |
 
+## Typical exam wrangling questions → what they are really asking
+
+| If the exam says... | What they really want you to do |
+|---|---|
+| "Recode variables as needed" | find characters/binaries/ordinal codes that should become factors |
+| "Remove unreasonable variables" | remove IDs, leakage variables, and unrealistic future-only variables |
+| "Use descriptive statistics to find useful predictors" | compare outcome groups with tables, proportions, boxplots, and grouped summaries |
+| "Motivate your preprocessing" | explain every removal or recode in business terms, not only in R terms |
+| "Create a binary target" | turn counts or text labels into a factor with explicit levels like `c("no", "yes")` |
+| "Use the dataset documentation" | inspect `help(dataset_name)` and translate variable meanings into modeling decisions |
+
+## Dataset-type clues that should shape your first thoughts
+
+| If the dataset looks like... | Likely response type | Early warning sign | Usual first thought |
+|---|---|---|---|
+| churn / claim / default / fraud | binary classification | class imbalance + threshold choice | logistic baseline, confusion matrix, sensitivity/specificity |
+| satisfaction / yes-no survey outcome | binary classification | leakage from post-experience variables | separate explanatory vs operational questions |
+| price / bill / cost / score | continuous regression | skewness, nonlinearity, outliers | OLS baseline, then ridge/lasso/GAM/tree if needed |
+| count of events | count or engineered binary | many zeros | consider whether BAN404 wants a binary engineered target |
+| many service ratings + final outcome | mixed predictors | redundant highly related predictors | baseline interpretable model, then flexible improvement model |
+
+If you get a **loan default** or **loan approval** dataset, think very similarly to churn or insurance claims:
+
+- the response is often **binary** (`default` / `no default`, `approved` / `rejected`),  
+- the positive class may be **rare**, so plain accuracy can mislead,  
+- variables measured **after** the decision or after the loan period are likely leakage,  
+- threshold choice matters because false negatives and false positives may have different business costs.
+
+## How to read the help page for common BAN404 functions
+
+In an exam, the help file often tells you **what the first inputs mean**, which is enough to rescue you even if you forget the full syntax.
+
+| Function | First important inputs | What they mean in plain English |
+|---|---|---|
+| `read_csv(file, ...)` | `file` | the path to the csv you want to import |
+| `read_csv2(file, ...)` | `file` | same idea, but meant for semicolon-style csv files |
+| `mutate(.data, ...)` | `.data` | the data frame you are modifying |
+| `select(.data, ...)` | `.data` | the data frame you are keeping/removing columns from |
+| `lm(formula, data)` | `formula`, `data` | what to predict from what, and which data frame to use |
+| `glm(formula, data, family)` | `formula`, `data`, `family` | same as `lm`, plus which response-model family to use |
+| `predict(object, newdata, type)` | `object`, `newdata`, `type` | fitted model, data to predict on, and prediction scale |
+| `cv.glmnet(x, y, ...)` | `x`, `y` | predictor matrix and response vector |
+| `randomForest(formula, data, ...)` | `formula`, `data` | model formula and training data |
+| `gbm(formula, data, distribution, ...)` | `formula`, `data`, `distribution` | what to predict, from what data, and whether the task is regression or classification |
+| `sample(x, size, replace)` | `x`, `size`, `replace` | what to sample from, how many draws, and whether resampling is allowed |
+
+```{r}
+# Open the documentation page for a dataset or function.  # This is often enough to recover the variable meanings or argument order during the exam.
+help(dataOhlsson)  # Shows what the insurance variables mean, which helps with leakage and modeling choices.
+
+# Ask R to print the argument names for a function.  # This is a fast way to remember the important inputs without reading the full help page.
+args(glm)          # Shows that glm mainly wants a formula, a data frame, and a family.
+args(predict)      # Shows that predict mainly wants a fitted object and newdata.
+args(randomForest) # Helpful when you forget where mtry or ntree belongs.
+```
+
 ---
 
 # Universal wrangling and split templates
@@ -304,6 +360,53 @@ error_rate <- 1 - accuracy  # Lower is better.
 | PCA | variance explained | scree plot + cumulative explained variance |
 | K-means | within-cluster sum of squares | elbow plot |
 
+## If the histogram, QQ-plot, or scatterplot does not look nice
+
+Do **not** panic and do **not** assume the whole method is impossible.
+
+- If a **predictor histogram** is not normal, that alone does **not** kill OLS or logistic regression.
+- For **logistic regression**, the predictors do **not** need to be normally distributed.
+- For **OLS**, what matters more is whether the **mean relationship looks roughly linear** and whether the **residual behavior** is acceptable for the task.
+- If the response or residuals are strongly skewed, you can often still:
+  - keep OLS as a baseline,
+  - try `log(y)` if that makes business sense,
+  - use bootstrap for uncertainty instead of relying too heavily on normal approximations,
+  - move to GAM, trees, random forest, or boosting if nonlinearity is the real issue.
+- If a histogram shows a **huge pile at zero** and a **small positive class**, think claim/default/churn-style classification logic, not "force normality."
+
+```{r}
+# Inspect a variable with a histogram.  # Histograms help us understand shape, skewness, and zero-inflation.
+hist(df$x)  # A weird shape is a clue about the data, not an automatic reason to stop.
+
+# Inspect residuals for an OLS model.  # Residual diagnostics matter more than predictor normality.
+hist(residuals(ols_fit))  # If this is skewed, OLS can still be a baseline, but you may discuss transforms or flexible models.
+
+# Compare a linear and nonlinear fit visually.  # Curvature suggests GAM or tree-based models may help.
+df %>%
+  ggplot(aes(x = x, y = y)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  geom_smooth(se = FALSE, color = "red")  # Big gap between blue and red suggests the linear form may be too rigid.
+```
+
+## BAN404-safe model building ladder
+
+### If the response is continuous
+
+1. Start with **OLS** as the clean benchmark.  
+2. If predictors are many/correlated, compare with **ridge** or **LASSO**.  
+3. If scatterplots show curvature, compare with **GAM**.  
+4. If interactions/nonlinearity seem strong, compare with **tree**, **random forest**, or **boosting**.  
+5. Evaluate all candidates with the **same split and same regression metric**.
+
+### If the response is binary
+
+1. Start with **logistic regression** as the interpretable baseline.  
+2. Check **class balance** before trusting accuracy.  
+3. Tune the **threshold** on training/CV data if positives are rare or costs are asymmetric.  
+4. Compare with **classification tree**, **random forest**, and **boosting** if prediction can likely improve through nonlinearities.  
+5. Evaluate with **confusion matrix, sensitivity, specificity, and accuracy** in a way that matches the exam question.
+
 ---
 
 # High-probability method playbooks
@@ -321,6 +424,21 @@ Use OLS when the response is continuous and you want the cleanest baseline model
 
 ### Core theory in easy words
 OLS draws the line or hyperplane that makes the residual sum of squares as small as possible.
+
+### Assumptions and weaknesses
+
+- `y` should be **continuous**, not binary.
+- The **average relationship** should be roughly linear unless you deliberately upgrade the model.
+- Observations should be reasonably **independent**.
+- Strong multicollinearity can make coefficients unstable.
+- OLS does **not** require every predictor to look normal in a histogram.
+
+### If OLS looks too simple, what should I try next?
+
+- If coefficients look unstable because predictors overlap heavily → try **ridge** or **LASSO**.
+- If plots suggest curvature → try **GAM**.
+- If you suspect interactions or threshold effects → try **tree-based models**.
+- If the residual distribution looks ugly but the task is mainly predictive → still keep OLS as a baseline, then compare with more flexible models using the same test metric.
 
 ### Full runnable template
 
@@ -369,6 +487,38 @@ r2_ols <- 1 - sum((test$y - y_pred)^2) / sum((test$y - mean(test$y))^2)  # Highe
 ### Core theory in easy words
 Logistic regression predicts the **probability** that an observation belongs to class 1. Then you convert that probability into a class label using a threshold, often 0.5 unless the question suggests otherwise.
 
+### Assumptions and weaknesses
+
+- The response should be **binary**.
+- Observations should be reasonably **independent**.
+- Numeric predictors are assumed to have a roughly **linear effect on the log-odds**, not necessarily on the raw probability.
+- Very strong multicollinearity can make coefficients unstable.
+- Perfect or near-perfect separation can break or distort the fit.
+- Logistic regression does **not** require the predictors to be normally distributed.
+
+### What to check before trusting the model
+
+```{r}
+# Check class balance first.  # Rare positives often mean accuracy alone is misleading.
+prop.table(table(train$y))  # This tells us whether the problem is balanced or rare-event style.
+
+# Fit the logistic model.  # We inspect the summary for coefficient direction and possible warnings.
+logit_fit <- glm(y ~ ., data = train, family = binomial())  # Standard binary-response model.
+summary(logit_fit)  # Watch for huge standard errors, warnings, or suspicious coefficient magnitudes.
+
+# Look at predicted probabilities.  # If nearly all are tiny, a 0.5 threshold may be inappropriate.
+pred_prob_train <- predict(logit_fit, newdata = train, type = "response")  # Training probabilities for threshold thinking.
+hist(pred_prob_train)  # Rare-event data often produces many small fitted probabilities.
+```
+
+### Base logistic → improved logistic → flexible classifier
+
+1. Fit a **baseline logistic regression**.  
+2. Check whether the data are **imbalanced**.  
+3. Tune the **threshold** if 0.5 is unrealistic.  
+4. If the exam asks for better prediction, compare with **classification tree**, **random forest**, or **boosting**.  
+5. If the exam asks "why", lean on the logistic coefficients; if it asks "who should we flag", lean more on threshold choice and predictive metrics.
+
 ### Full runnable template
 
 ```{r}
@@ -391,6 +541,34 @@ pred_class <- if_else(pred_prob > threshold, "yes", "no") %>%
 # Evaluate predictions.  # Confusion matrix plus accuracy is the standard BAN404 output.
 cm_logit <- table(actual = test$y, predicted = pred_class)  # Shows true/false positives and negatives.
 acc_logit <- sum(diag(cm_logit)) / sum(cm_logit)            # Share classified correctly.
+```
+
+### Threshold tuning template for rare-event classification
+
+```{r}
+# Create a small grid of candidate thresholds.  # Rare-event data often needs a threshold far below 0.5.
+threshold_grid <- seq(0.01, 0.50, by = 0.01)  # Search from very low to standard threshold values.
+
+# Score each threshold on training data.  # Threshold choice should happen before touching final test performance.
+threshold_scores <- purrr::map_dfr(threshold_grid, function(th) {
+  pred_class_train <- if_else(pred_prob_train > th, levels(train$y)[2], levels(train$y)[1]) %>%
+    factor(levels = levels(train$y))  # Convert probabilities to classes using one candidate threshold.
+  cm_train <- table(actual = train$y, predicted = pred_class_train)  # Training confusion matrix for that threshold.
+  tibble(
+    threshold = th,  # Candidate threshold value.
+    sensitivity = cm_train[2, 2] / sum(cm_train[2, ]),  # True positive rate.
+    specificity = cm_train[1, 1] / sum(cm_train[1, ])   # True negative rate.
+  )
+})
+
+# Add balanced accuracy as a simple summary.  # This is often more informative than plain accuracy in imbalanced problems.
+threshold_scores <- threshold_scores %>%
+  mutate(balanced_accuracy = (sensitivity + specificity) / 2)  # Average of the two class-wise hit rates.
+
+# Choose the best threshold by your chosen criterion.  # Balanced accuracy is a safe exam-friendly default.
+best_threshold <- threshold_scores %>%
+  slice_max(order_by = balanced_accuracy, n = 1) %>%
+  pull(threshold)  # Extract the winning threshold value.
 ```
 
 ### Typical BAN404 variations
@@ -985,6 +1163,38 @@ km_fit$tot.withinss
 
 ---
 
+## 15 code lines that rescue you in BAN404
+
+| Code line | Why it matters |
+|---|---|
+| `glimpse(df)` | fastest way to see classes, names, and obvious import mistakes |
+| `janitor::clean_names()` | makes ugly column names easier to use safely |
+| `mutate(across(where(is.character), as.factor))` | converts character categories into model-ready factors |
+| `select(-id)` | removes identifiers that usually do not generalize |
+| `select(-antskad, -skadkost)` | classic leakage removal in 2025 insurance-style tasks |
+| `set.seed(123)` | makes your split or resampling reproducible |
+| `idx <- sample(seq_len(nrow(df)), size = floor(nrow(df) / 2))` | standard 50/50 train/test split pattern |
+| `model.matrix(y ~ ., data = train)[, -1]` | creates dummy variables for `glmnet` |
+| `lm(y ~ ., data = train)` | baseline regression model |
+| `glm(y ~ ., data = train, family = binomial())` | baseline binary classification model |
+| `predict(fit, newdata = test, type = "response")` | gets probabilities from logistic/boosting-style models |
+| `table(actual = y_test, predicted = y_pred)` | standard confusion matrix pattern |
+| `mean((y_test - y_pred)^2)` | standard regression error metric |
+| `sample(y, size = length(y), replace = TRUE)` | the one-line tell for bootstrap resampling |
+| `cv.glmnet(X_train, y_train, alpha = 1)` | safe LASSO tuning pattern |
+
+## Base model → improvement model → interpretation guide
+
+| Model family | Safe base model | Natural improvement step | What to interpret first |
+|---|---|---|---|
+| continuous `y` with mostly linear story | OLS | ridge / LASSO | coefficients, test MSE, R-squared |
+| continuous `y` with curvature | OLS | GAM | shape of the smooth term and fit improvement |
+| continuous `y` with strong interactions | OLS | tree / random forest / boosting | test MSE and variable importance |
+| binary `y` with explanation goal | logistic regression | reduced logistic / threshold tuning | coefficient signs, odds, class balance |
+| binary `y` with prediction goal | logistic regression | tree / random forest / boosting | confusion matrix, sensitivity, specificity |
+| many correlated predictors | OLS or logistic | ridge / LASSO | shrinkage, stability, zeroed coefficients |
+| unstable single tree | tree | bagging / random forest | whether predictive performance improves |
+
 # Written answer templates
 
 ## Why ridge differs from OLS
@@ -1336,6 +1546,247 @@ quantile(boot_rate_2023, c(0.025, 0.975))                # Bootstrap confidence 
 ### Ready-to-use written explanation
 
 > I first identified the response type before choosing the model family. For `bill_avg`, which is continuous, I used regression methods and evaluated them with test MSE. For `churn`, which is binary, I used logistic regression and evaluated the predictions with a confusion matrix and accuracy. I used LASSO as a natural extension of OLS because it can shrink weak coefficients and, in some cases, improve generalization. I used the bootstrap only when the target was the uncertainty of a statistic such as the churn rate, not when the task was parameter tuning or final predictive evaluation.
+
+---
+
+## Example 4 — 2025 Task 2 style: `insuranceData::dataOhlsson`
+
+### Why this is one of the most important examples
+
+This is the **best current stand-in** for a whole family of BAN404 Task 2 datasets:
+
+- insurance claims,  
+- churn,  
+- loan default,  
+- fraud detection,  
+- any other **rare-event binary classification** problem.
+
+It teaches four crucial exam habits:
+
+1. engineer the binary target carefully,  
+2. remove leakage aggressively,  
+3. do **not** trust a 0.5 threshold automatically,  
+4. separate **explanatory** and **operational** thinking.
+
+### How the exam might ask this kind of question
+
+- "Create a binary target and remove unreasonable variables."
+- "Which variables are associated with claim/default?"
+- "Fit a logistic regression and evaluate predictions."
+- "Choose a threshold and justify it."
+- "Can random forest or boosting improve predictions?"
+- "Which model would you recommend if false negatives are costly?"
+- "Which variables can be used at prediction time?"
+
+### What you should immediately think when you see a dataset like this
+
+- The response is probably **binary** or should be made binary.  
+- The positive class may be **rare**, so raw accuracy may be misleading.  
+- Variables measured **after** a claim/default/event are likely leakage.  
+- A lower threshold may be needed if the task is to **catch positives**, not just maximize plain accuracy.  
+- Logistic regression is usually the safest **base model**, and random forest / boosting are the natural **improvement models**.
+
+### Full worked code skeleton
+
+```{r}
+# Load the package and open the help page.  # The help file tells us what the variables mean before we start removing or keeping them.
+library(insuranceData)                                  # dataOhlsson lives in this package.
+help(dataOhlsson)                                       # Read this first in the exam if you are unsure what a variable means.
+
+# Load the raw dataset into a tibble.  # Tibbles print more cleanly and work naturally with tidyverse verbs.
+data("dataOhlsson")                                     # Pull the dataset into the R session.
+ohlsson_raw <- as_tibble(dataOhlsson)                   # Convert to tibble for tidyverse-friendly work.
+
+# Inspect the raw structure.  # We want to see variable names, classes, and whether the response must be engineered.
+glimpse(ohlsson_raw)                                    # Fast structural overview of the dataset.
+
+# Create a binary claim target.  # BAN404 often turns a count variable into a yes/no event variable for classification.
+ohlsson <- ohlsson_raw %>%
+  mutate(claim = if_else(antskad >= 1, "yes", "no")) %>%           # Any observation with at least one claim becomes the positive class.
+  mutate(claim = factor(claim, levels = c("no", "yes")))           # Explicit level order keeps the negative and positive classes clear.
+
+# Remove variables that leak future information.  # The exam usually expects a business explanation, not only a code explanation.
+ohlsson <- ohlsson %>%
+  select(-antskad, -skadkost)                                      # antskad defines claim directly; skadkost is only known after a claim occurs.
+
+# Recode categorical variables as factors.  # These are categories, not numeric distances.
+ohlsson <- ohlsson %>%
+  mutate(
+    zon = as.factor(zon),                                          # Geographic zone is categorical.
+    bonuskl = as.factor(bonuskl),                                  # Bonus class is ordinal/categorical in use.
+    mcklass = as.factor(mcklass),                                  # Motorcycle class is categorical.
+    kon = as.factor(kon)                                           # Gender is categorical.
+  )
+
+# Create a reproducible train/test split.  # We keep the test set untouched until the final evaluation.
+set.seed(123)                                                      # Fixed seed makes the exam answer reproducible.
+idx_ohlsson <- sample(seq_len(nrow(ohlsson)), size = floor(nrow(ohlsson) / 2))  # Standard BAN404 half-split.
+train_ohlsson <- ohlsson[idx_ohlsson, ]                            # Training set for modeling and threshold tuning.
+test_ohlsson <- ohlsson[-idx_ohlsson, ]                            # Test set for honest final evaluation.
+
+# Check the rare-event rate.  # This single line often explains why 0.5 is a bad threshold.
+claim_rate_train <- mean(train_ohlsson$claim == "yes")             # Positive-class frequency in the training data.
+claim_rate_train                                                    # If this is very small, discuss imbalance immediately.
+
+# Build a naive baseline.  # This shows why accuracy alone can be deceptive in rare-event problems.
+naive_pred <- factor(rep("no", nrow(test_ohlsson)), levels = levels(test_ohlsson$claim))  # Predict no claim for everyone.
+cm_naive <- table(actual = test_ohlsson$claim, predicted = naive_pred)                     # Confusion matrix for the naive rule.
+acc_naive <- sum(diag(cm_naive)) / sum(cm_naive)                                           # Naive accuracy can look high even when the model is useless.
+
+# Use descriptive summaries before modeling.  # This supports variable selection and gives material for written interpretation.
+train_ohlsson %>%
+  group_by(claim) %>%
+  summarise(
+    mean_owner_age = mean(agarald, na.rm = TRUE),                  # Owner age by claim status.
+    mean_vehicle_age = mean(fordald, na.rm = TRUE),                # Vehicle age by claim status.
+    mean_duration = mean(duration, na.rm = TRUE)                   # Policy duration by claim status.
+  )
+
+train_ohlsson %>%
+  count(kon, claim) %>%                                            # Count observations by gender and claim outcome.
+  group_by(kon) %>%
+  mutate(prop = n / sum(n))                                        # Convert counts into within-gender claim proportions.
+
+# Fit the baseline full logistic regression.  # Logistic regression is the natural first model for a binary response.
+logit_full_ohlsson <- glm(claim ~ ., data = train_ohlsson, family = binomial())  # Full explanatory/predictive baseline.
+summary(logit_full_ohlsson)                                        # Use this for coefficient direction, significance, and narrative interpretation.
+
+# Fit a reduced logistic model.  # The exam sometimes asks for a more parsimonious model based on significance or business logic.
+logit_reduced_ohlsson <- glm(
+  claim ~ agarald + kon + zon + fordald + duration,                # Keep variables that are usually among the more informative ones.
+  data = train_ohlsson,
+  family = binomial()
+)                                                                  # Smaller model that is easier to explain and compare.
+
+# Predict probabilities on the training data.  # We tune the threshold here, not on the final test set.
+prob_train_ohlsson <- predict(logit_reduced_ohlsson, newdata = train_ohlsson, type = "response")  # Logistic fitted probabilities.
+
+# Search a low-threshold grid.  # Rare-event data often needs thresholds far below 0.5.
+threshold_grid_ohlsson <- seq(0.005, 0.050, by = 0.005)            # Search a narrow low-threshold range first.
+
+# Score each threshold with sensitivity and specificity.  # This is more informative than accuracy when claims are rare.
+threshold_scores_ohlsson <- purrr::map_dfr(threshold_grid_ohlsson, function(th) {
+  pred_train_th <- if_else(prob_train_ohlsson > th, "yes", "no") %>%
+    factor(levels = levels(train_ohlsson$claim))                   # Convert training probabilities to class labels at threshold th.
+  cm_train_th <- table(actual = train_ohlsson$claim, predicted = pred_train_th)  # Training confusion matrix for that threshold.
+  tibble(
+    threshold = th,                                                # Candidate threshold.
+    sensitivity = cm_train_th["yes", "yes"] / sum(cm_train_th["yes", ]),  # Hit rate on actual claims.
+    specificity = cm_train_th["no", "no"] / sum(cm_train_th["no", ]),     # Hit rate on actual non-claims.
+    balanced_accuracy = (sensitivity + specificity) / 2           # Simple summary that respects both classes.
+  )
+})
+
+# Choose the threshold that best balances the two classes.  # This is an exam-safe default unless the task says positives are much more important.
+best_threshold_ohlsson <- threshold_scores_ohlsson %>%
+  slice_max(order_by = balanced_accuracy, n = 1) %>%
+  pull(threshold)                                                  # Final chosen threshold.
+
+# Evaluate the reduced logistic model on test data.  # This is the honest out-of-sample result.
+prob_test_ohlsson <- predict(logit_reduced_ohlsson, newdata = test_ohlsson, type = "response")  # Test-set probabilities.
+pred_test_ohlsson <- if_else(prob_test_ohlsson > best_threshold_ohlsson, "yes", "no") %>%
+  factor(levels = levels(test_ohlsson$claim))                     # Final class predictions using the chosen threshold.
+cm_logit_ohlsson <- table(actual = test_ohlsson$claim, predicted = pred_test_ohlsson)  # Logistic test confusion matrix.
+acc_logit_ohlsson <- sum(diag(cm_logit_ohlsson)) / sum(cm_logit_ohlsson)                # Logistic test accuracy.
+sens_logit_ohlsson <- cm_logit_ohlsson["yes", "yes"] / sum(cm_logit_ohlsson["yes", ])   # Logistic sensitivity.
+spec_logit_ohlsson <- cm_logit_ohlsson["no", "no"] / sum(cm_logit_ohlsson["no", ])      # Logistic specificity.
+
+# Fit a random forest improvement model.  # This is the natural next step if the exam asks whether predictions can be improved.
+rf_ohlsson <- randomForest(claim ~ ., data = train_ohlsson, ntree = 300)                 # Flexible nonlinear classifier.
+prob_rf_ohlsson <- predict(rf_ohlsson, newdata = test_ohlsson, type = "prob")[, "yes"]   # Random forest positive-class probabilities.
+pred_rf_ohlsson <- if_else(prob_rf_ohlsson > best_threshold_ohlsson, "yes", "no") %>%
+  factor(levels = levels(test_ohlsson$claim))                     # Use the same threshold logic for fair comparison.
+cm_rf_ohlsson <- table(actual = test_ohlsson$claim, predicted = pred_rf_ohlsson)         # Random forest confusion matrix.
+acc_rf_ohlsson <- sum(diag(cm_rf_ohlsson)) / sum(cm_rf_ohlsson)                          # Random forest accuracy.
+sens_rf_ohlsson <- cm_rf_ohlsson["yes", "yes"] / sum(cm_rf_ohlsson["yes", ])             # Random forest sensitivity.
+spec_rf_ohlsson <- cm_rf_ohlsson["no", "no"] / sum(cm_rf_ohlsson["no", ])                # Random forest specificity.
+
+# Fit a boosted tree improvement model.  # Boosting is another standard BAN404 challenger model for binary outcomes.
+train_boost_ohlsson <- train_ohlsson %>%
+  mutate(claim_num = if_else(claim == "yes", 1, 0))               # gbm likes an explicit numeric Bernoulli target.
+test_boost_ohlsson <- test_ohlsson %>%
+  mutate(claim_num = if_else(claim == "yes", 1, 0))               # Same coding on the test set.
+
+boost_ohlsson <- gbm(
+  claim_num ~ . - claim,                                           # Predict numeric claim status from the available predictors.
+  data = train_boost_ohlsson,                                      # Training data only.
+  distribution = "bernoulli",                                      # Binary classification setup.
+  n.trees = 1000,                                                  # Number of boosting steps.
+  interaction.depth = 2,                                           # Simple interaction structure.
+  shrinkage = 0.01,                                                # Small learning rate for stability.
+  verbose = FALSE                                                  # Cleaner output.
+)
+
+prob_boost_ohlsson <- predict(boost_ohlsson, newdata = test_boost_ohlsson, n.trees = 1000, type = "response")  # Boosted probabilities.
+pred_boost_ohlsson <- if_else(prob_boost_ohlsson > best_threshold_ohlsson, "yes", "no") %>%
+  factor(levels = levels(test_ohlsson$claim))                     # Thresholded boosted predictions.
+cm_boost_ohlsson <- table(actual = test_ohlsson$claim, predicted = pred_boost_ohlsson)   # Boosting confusion matrix.
+
+# Compare the candidate models in one table.  # A compact comparison table strengthens the final written recommendation.
+tibble(
+  model = c("Naive all-no", "Reduced logistic", "Random forest", "Boosting"),
+  accuracy = c(
+    acc_naive,
+    acc_logit_ohlsson,
+    acc_rf_ohlsson,
+    sum(diag(cm_boost_ohlsson)) / sum(cm_boost_ohlsson)
+  ),
+  sensitivity = c(
+    0,
+    sens_logit_ohlsson,
+    sens_rf_ohlsson,
+    cm_boost_ohlsson["yes", "yes"] / sum(cm_boost_ohlsson["yes", ])
+  ),
+  specificity = c(
+    cm_naive["no", "no"] / sum(cm_naive["no", ]),
+    spec_logit_ohlsson,
+    spec_rf_ohlsson,
+    cm_boost_ohlsson["no", "no"] / sum(cm_boost_ohlsson["no", ])
+  )
+)                                                                   # Fair comparison on the same test set and same metric family.
+```
+
+### How to think about likely exam variants
+
+#### If the question asks: "Why are some policyholders more likely to claim?"
+
+- Use **descriptive summaries** plus **logistic regression coefficients**.
+- Focus on **direction**, **significance**, and business interpretation.
+- You may use the training data or all data if the question is explanatory rather than predictive.
+
+#### If the question asks: "Which customers should the insurer flag in advance?"
+
+- Remove future-only variables first.
+- Use a **train/test split**.
+- Tune the **threshold** on training data.
+- Report **sensitivity and specificity**, not only raw accuracy.
+
+#### If the question asks: "Can a more advanced model improve prediction?"
+
+- Keep logistic regression as the **baseline**.
+- Compare with **random forest** and **boosting** on the **same split**.
+- Use the **same threshold logic** and the **same evaluation metrics**.
+
+#### If the question asks: "Which model should the company choose?"
+
+- If missing claims is very costly → prefer the model/threshold with stronger **sensitivity**.
+- If false alarms are very costly → prefer stronger **specificity**.
+- If explanation is important → logistic regression is often easier to defend.
+- If pure prediction matters most → random forest or boosting may win.
+
+### How this also helps with loan-default datasets
+
+If tomorrow's data turns out to be about **loans**, **defaults**, or **credit risk**, think almost exactly like this Ohlsson example:
+
+- create or confirm a **binary target**,  
+- identify **post-decision leakage** variables,  
+- check whether defaults are **rare**,  
+- do **not** trust a 0.5 threshold automatically,  
+- start with **logistic regression**, then compare with **random forest** or **boosting**.
+
+### Ready-to-use written explanation
+
+> I treated the insurance problem as a rare-event binary classification task. I first created a binary claim variable and removed `antskad` and `skadkost` because they either define the outcome directly or are only observed after the event. I then checked the base claim rate, because a very low positive-class frequency means that plain accuracy and a default threshold of 0.5 can be misleading. I used logistic regression as the baseline because it is the safest interpretable classification model, and I tuned the threshold on the training data to balance sensitivity and specificity. After that, I compared the logistic model with random forest and boosting on the same test set. The final model recommendation depends on whether the company values interpretability, sensitivity, or overall predictive performance most.
 
 ---
 
