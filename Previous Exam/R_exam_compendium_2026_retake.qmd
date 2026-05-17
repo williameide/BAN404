@@ -1510,7 +1510,7 @@ mse_bill_lasso_2023 <- mean((test_2023$bill_avg - pred_bill_lasso_2023)^2)      
 
 # ----- Part B: binary response -> classification -----
 
-# Remove bill_avg when predicting churn if you judge it unrealistic or too close to the business outcome.  # This is a modeling judgment you should justify explicitly.
+# Remove bill_avg when predicting churn if you judge it unrealistic or too close to the business outcome.  # For example, bill level may be partly determined after churn behavior emerges, so you should justify whether it is truly available at prediction time.
 train_churn_2023 <- train_2023 %>% select(-bill_avg)      # Use a cleaner predictor set for churn classification.
 test_churn_2023 <- test_2023 %>% select(-bill_avg)        # Match the same columns on the test set.
 
@@ -1527,7 +1527,7 @@ acc_churn_2023 <- sum(diag(cm_churn_2023)) / sum(cm_churn_2023)  # Classificatio
 # Optional: bootstrap the churn rate itself.  # This shows when bootstrap is used for uncertainty around a proportion, not model tuning.
 set.seed(1)                                               # Reproducible resampling.
 B_churn_2023 <- 1000                                      # Number of bootstrap samples.
-churn_numeric_2023 <- as.numeric(churn_2023$churn == "1")                 # Convert churn factor to 0/1 numeric for bootstrap sampling.
+churn_numeric_2023 <- as.numeric(churn_2023$churn == "1")                 # Use the full churn sample here because the bootstrap target is the overall churn rate, not split-sample model performance.
 boot_rate_2023 <- replicate(
   B_churn_2023,                                           # Repeat the resampling many times.
   mean(sample(churn_numeric_2023, size = length(churn_numeric_2023), replace = TRUE))  # Bootstrap sample proportion of churners.
