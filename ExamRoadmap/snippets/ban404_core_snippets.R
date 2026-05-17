@@ -125,15 +125,18 @@ g_ridge <- function(X, y, lambda) {
 loo_ridge <- function(lambda, X, y) {
   n <- nrow(X)                                                              # one loop per observation
   preds <- numeric(n)                                                       # store prediction for each left-out row
-  y_centered <- y - mean(y)                                                 # target used in the test error formula
-  X_centered <- scale(X, center = TRUE, scale = FALSE)                      # test rows must be centered in the same spirit
 
   for (i in seq_len(n)) {
-    b1 <- g_ridge(X = X[-i, , drop = FALSE], y = y[-i], lambda = lambda)            # fit ridge on n - 1 observations
-    preds[i] <- X_centered[i, ] %*% b1                                      # predict the left-out row
+    X_train <- X[-i, , drop = FALSE]                                        # training predictors for this split
+    y_train <- y[-i]                                                        # training response for this split
+    x_test_centered <- X[i, ] - colMeans(X_train)                           # center the left-out row using the training means only
+    y_train_mean <- mean(y_train)                                           # same intercept logic as inside g_ridge
+
+    b1 <- g_ridge(X = X_train, y = y_train, lambda = lambda)                # fit ridge on the n - 1 training observations
+    preds[i] <- y_train_mean + x_test_centered %*% b1                       # add back the training intercept for the left-out prediction
   }
 
-  mean((y_centered - preds)^2)                                              # LOOCV MSE for this lambda
+  mean((y - preds)^2)                                                       # LOOCV MSE for this lambda on the original y scale
 }
 
 X_ridge <- cars_reg |>
