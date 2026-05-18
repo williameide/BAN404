@@ -18,40 +18,132 @@ execute:
 - **Duration:** 6 hours
 - **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
+- **Important exam expectation:** In every subquestion, combine **method choice + runnable code + interpretation + theory/business reasoning**. A strong BAN404 answer explains not only what result you obtained, but **why the validation setup is credible**, **why the comparison is fair**, and **how the final churn recommendation remains usable in a real decision setting**.
+
+# How to use this mock exam
+
+This mock exam is written to work both as a **full practice exam** and as a **lookup tool for disciplined BAN404 reasoning**. Each subquestion therefore tells you what to compute, what conceptual distinction matters most, and what kind of written interpretation the examiner is likely to reward. If you use it properly, you should practice not only **running code**, but also **justifying preprocessing choices, defending resampling logic, and translating model output into an actionable deployment rule**.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
-## (a) Theory: LOOCV vs K-fold (10 points)
+## Context for Task 1
 
-Discuss bias-variance-computation tradeoff between LOOCV and K-fold CV for n = 5000.
+This task is centered on **validation discipline, preprocessing fairness, and conservative model reporting**. In BAN404, a good answer is not only about finding one model with low error, but about showing that the workflow is **leakage-aware**, that the tuning evidence is **trustworthy**, and that any nonlinear upgrade is **worth the extra complexity**. You should therefore connect **cross-validation design**, **preprocessing placement**, **penalty choice**, **bootstrap uncertainty**, and **GAM interpretation** into one coherent Task 1 discussion.
 
-## (b) Leakage-safe preprocessing (10 points)
+## (a) Explain which validation strategy is easiest to defend when preprocessing matters (10 points)
 
-Implement scaling inside CV folds for regularized regression and compare with naive scaling.
+Suppose you must evaluate a predictive regression workflow on a moderately large dataset where scaling and tuning are both required.
+
+What to do:
+
+- Explain the practical difference between **LOOCV**, **ordinary K-fold CV**, and **repeated K-fold CV**.
+- Explain why preprocessing location matters just as much as fold choice.
+- State where leakage can occur if scaling or feature screening is done too early.
+- Explain why repeated K-fold CV is often easier to defend than one single split.
+- State one reason LOOCV can still be unattractive even though it uses almost all data for training in each iteration.
+
+What the examiner wants to see:
+
+- correct understanding of the bias-variance-computation trade-off,
+- clear explanation of **information leakage**,
+- awareness that preprocessing belongs inside the resampling workflow,
+- theory-grounded wording about fairness and generalization rather than a number-only answer.
 
 ```{r}
 # Your code here
 ```
 
-## (c) Ridge and LASSO tuning (10 points)
+## (b) Demonstrate why preprocessing outside the folds is optimistic (10 points)
 
-Tune both models and compare best CV-MSE values.
+Build a small experiment that contrasts a **naive scaling workflow** with a **leakage-safe scaling workflow**.
+
+What to do:
+
+- Use one shared fold assignment.
+- Compare a workflow where predictors are standardized using the full dataset before validation with a workflow where scaling is learned inside each training fold.
+- Use the same model form and the same penalty setting in both workflows.
+- Summarize the difference in fold-wise MSE.
+- Explain why the naive result can look slightly too good.
+- State how you would describe this issue in an exam answer.
+
+What the examiner wants to see:
+
+- a concrete demonstration of leakage rather than only a definition,
+- correct understanding that the unfair advantage comes from information flow,
+- clear interpretation of why the safer workflow is more believable,
+- BAN404-style reasoning about optimistic validation.
 
 ```{r}
 # Your code here
 ```
 
-## (d) Bootstrap CI for SD(y) (10 points)
+## (c) Build a same-fold penalty comparison and decide how conservative to be (10 points)
 
-Compute normal and percentile CIs for SD(y) with B = 1000.
+Compare **OLS**, **Ridge**, **LASSO**, and **Elastic Net** under one shared fold design.
+
+What to do:
+
+- Fit OLS as an interpretable baseline.
+- Tune Ridge, LASSO, and Elastic Net on the same fold structure.
+- Report `lambda.min` and `lambda.1se` for the penalized models.
+- Compare validation performance and coefficient behavior.
+- Explain what changes when the answer emphasizes `lambda.1se` instead of `lambda.min`.
+- State which version of the analysis is easiest to defend if the examiner values stability.
+
+What the examiner wants to see:
+
+- a fair same-fold comparison,
+- awareness that Ridge emphasizes shrinkage, LASSO emphasizes sparsity, and Elastic Net compromises between the two,
+- discussion of **performance + coefficient behavior + defendability**,
+- a clear recommendation rather than disconnected outputs.
 
 ```{r}
 # Your code here
 ```
 
-## (e) OLS vs GAM fit quality (10 points)
+## (d) Use the bootstrap to discuss uncertainty in the response scale (10 points)
 
-Compare models and explain whether added flexibility is justified.
+Study uncertainty in `SD(y)` and explain why that matters for interpretation.
+
+What to do:
+
+- Bootstrap the response many times.
+- Estimate the sampling distribution of `SD(y)`.
+- Report a percentile CI and a normal approximation CI.
+- Compare whether the intervals look similar or different.
+- Explain why bootstrap distributions are not guaranteed to be symmetric.
+- Connect the uncertainty in response spread to how carefully you should talk about predictive quality.
+
+What the examiner wants to see:
+
+- correct bootstrap logic,
+- awareness that interval shape matters,
+- interpretation tied to uncertainty rather than only interval endpoints,
+- theory-grounded wording about caution and model realism.
+
+```{r}
+# Your code here
+```
+
+## (e) Decide whether extra flexibility improves the answer enough to report (10 points)
+
+Compare a simple linear story to more flexible nonlinear alternatives.
+
+What to do:
+
+- Fit a linear baseline.
+- Fit a spline-style benchmark.
+- Fit a GAM with smooth terms for plausible nonlinear predictors.
+- Compare MSE and an R²-style fit measure.
+- Interpret the GAM using EDF values.
+- End with a short examiner-ready Task 1 recommendation paragraph.
+
+What the examiner wants to see:
+
+- correct interpretation of nonlinear model evidence,
+- awareness that extra flexibility must be justified,
+- explicit discussion of clarity versus fit,
+- a concise final recommendation written in BAN404 language.
 
 ```{r}
 # Your code here
@@ -59,41 +151,110 @@ Compare models and explain whether added flexibility is justified.
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
-## (a) Data prep and split (8 points)
+## Context for Task 2
 
-Prepare a strict train/test process with no peeking.
+This task focuses on **robust churn prediction under an operational guardrail**. You should keep separate the ideas of **descriptive churn patterns**, **probability ranking quality**, and **final deployment policy**. In this mock exam, assume that the company wants **high recall** because missing likely churners is costly, but it also wants enough specificity that the retention team does not waste too much effort on low-risk customers.
 
-```{r}
-# Your code here
-```
+## (a) Build a churn table that is realistic for deployment and honest for testing (8 points)
 
-## (b) EDA and candidate predictors (8 points)
+Prepare the churn data so later modeling can be defended as both practical and leakage-safe.
 
-Summarize churn patterns and identify predictors likely to survive multivariate modeling.
+What to do:
 
-```{r}
-# Your code here
-```
+- Read and clean the data.
+- Recode key categorical variables appropriately.
+- Remove deterministic or duplicated predictors.
+- Remove or justify fields that are weak from a realistic intervention perspective.
+- Perform an 80/20 train/test split with a fixed seed.
+- Explain why the test set must stay untouched until the end.
 
-## (c) Logistic model diagnostics (12 points)
+What the examiner wants to see:
 
-Evaluate metrics at different thresholds and discuss trade-offs.
-
-```{r}
-# Your code here
-```
-
-## (d) Random forest (12 points)
-
-Tune `mtry`, evaluate AUC, and compare with logistic.
+- sensible factor handling,
+- awareness of duplicated information,
+- awareness of deployment realism,
+- correct separation between model development and final testing.
 
 ```{r}
 # Your code here
 ```
 
-## (e) Boosting and final choice (10 points)
+## (b) Use EDA to form risk stories before multivariate modeling (8 points)
 
-Use staged evaluation to choose tree count and justify final model for production.
+Turn the training data into **clear churn hypotheses** rather than only descriptive summaries.
+
+What to do:
+
+- Quantify class imbalance.
+- Build grouped churn summaries for meaningful customer profiles.
+- Produce at least two informative plots.
+- Describe one higher-risk profile and one lower-risk profile.
+- Suggest at least two plausible retention actions linked to the patterns.
+- State one limitation of relying too heavily on persona-style EDA.
+
+This is not only a plotting question. It is a reasoning question where visible patterns become **candidate model stories** and **candidate interventions**.
+
+```{r}
+# Your code here
+```
+
+## (c) Build a logistic model under a recall-first operating rule (12 points)
+
+Fit logistic regression and choose a threshold that favors catching churners while keeping specificity above a workable level.
+
+What to do:
+
+- Fit logistic regression on the training data.
+- Predict churn probabilities on the hold-out test data.
+- Report a ranking metric such as AUC.
+- Evaluate a threshold grid.
+- Choose a threshold using a **recall-first rule with a specificity guardrail**.
+- Interpret at least three coefficients in odds-ratio language.
+- Explain why the final threshold is a policy choice rather than a built-in model feature.
+
+A strong answer should clearly separate **discrimination quality** from **deployment policy**.
+
+```{r}
+# Your code here
+```
+
+## (d) Test whether flexible tree models improve the churn solution (12 points)
+
+Use **Random Forest** and **boosting** to see whether extra flexibility adds practically useful signal.
+
+What to do:
+
+- Tune Random Forest using only the training data.
+- Fit a boosting model and choose the number of trees using staged validation logic.
+- Compare both flexible models with logistic regression on the untouched test set.
+- Apply the same operating-rule logic to all models.
+- Report variable importance or staged performance evidence where relevant.
+- Explain what flexible models may capture that logistic regression may miss.
+
+What the examiner wants to see:
+
+- fair tuning discipline,
+- awareness that flexible models may capture thresholds and interactions,
+- awareness of the trade-off between performance and explainability,
+- a comparison that remains tied to the business rule rather than only to raw AUC.
+
+```{r}
+# Your code here
+```
+
+## (e) Write the final deployment recommendation memo (10 points)
+
+End Task 2 with a short management-facing recommendation.
+
+What to include:
+
+- which model you recommend,
+- which threshold you would deploy,
+- why the chosen operating rule is appropriate,
+- what trade-off the company is accepting,
+- what should be monitored after deployment.
+
+The best answers sound like the closing paragraph of a polished BAN404 submission rather than a loose summary of outputs.
 
 ```{r}
 # Your code here
