@@ -256,7 +256,8 @@ Use when asked for variable selection with cross-validated LASSO.
 suppressPackageStartupMessages(library(glmnet))
 
 CV_FOLDS <- 10
-set.seed(123)
+SEED_VALUE <- 123
+set.seed(SEED_VALUE)
 
 cv_lasso <- cv.glmnet(x_train, y_train, alpha = 1, nfolds = CV_FOLDS)
 lasso_fit <- glmnet(x_train, y_train, alpha = 1, lambda = cv_lasso$lambda.min)
@@ -315,9 +316,10 @@ suppressPackageStartupMessages(library(randomForest))
 TARGET_VAR <- "Y_VAR"
 rf_formula <- as.formula(paste(TARGET_VAR, "~ ."))
 NTREE <- 500
-MTRY <- NULL # set e.g. 3 if requested
+MTRY <- NULL # NULL uses default mtry; set an explicit integer only if the exam asks you to tune/specify it
 
-set.seed(123)
+SEED_VALUE <- 123
+set.seed(SEED_VALUE)
 rf_fit <- randomForest(rf_formula, data = train_df, ntree = NTREE, mtry = MTRY, importance = TRUE)
 rf_pred <- predict(rf_fit, newdata = test_df)
 rf_mse <- mean((y_test - rf_pred)^2)
@@ -347,7 +349,8 @@ N_TREES <- 1000
 INTERACTION_DEPTH <- 3
 SHRINKAGE <- 0.01
 
-set.seed(123)
+SEED_VALUE <- 123
+set.seed(SEED_VALUE)
 boost_fit <- gbm(
   formula = boost_formula,
   data = train_df,
@@ -436,7 +439,8 @@ B <- 1000
 BOOT_FORMULA <- as.formula("Y_VAR ~ X_VAR")
 COEF_NAME <- "X_VAR"
 
-set.seed(123)
+SEED_VALUE <- 123
+set.seed(SEED_VALUE)
 boot_vals <- numeric(B)
 n <- nrow(train_df)
 
@@ -470,7 +474,8 @@ Use when exam explicitly asks penalty comparison (L1 vs L2).
 #| label: task1_16_ridge_vs_lasso
 suppressPackageStartupMessages(library(glmnet))
 
-set.seed(123)
+SEED_VALUE <- 123
+set.seed(SEED_VALUE)
 cv_ridge <- cv.glmnet(x_train, y_train, alpha = 0)
 ridge_fit <- glmnet(x_train, y_train, alpha = 0, lambda = cv_ridge$lambda.min)
 
@@ -500,7 +505,8 @@ DEGREE_A <- 2
 DEGREE_B <- 3
 K <- 5
 
-set.seed(123)
+SEED_VALUE <- 123
+set.seed(SEED_VALUE)
 fold_id <- sample(rep(1:K, length.out = nrow(train_df)))
 err_a <- numeric(K)
 err_b <- numeric(K)
