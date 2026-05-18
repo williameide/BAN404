@@ -38,12 +38,21 @@ execute:
 - **Duration:** 6 hours
 - **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
+- **Important exam expectation:** In every subquestion, combine **method choice + runnable code + interpretation + business/theory reasoning**. A BAN404 answer is stronger when it explains *why* a step is taken, not only *what* was computed.
+
+# How to use this mock exam
+
+This mock exam is designed to function as both a **practice exam** and a **lookup tool for method reasoning**. Each subquestion therefore tells you what to calculate, what kind of written interpretation is expected, and which theoretical distinctions the examiner is likely to reward. When you solve it, imagine that you are writing an answer that should still make sense when you reread it quickly the night before the exam.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
+## Context for Task 1
+
+This task is centered on **LASSO**, which means you are expected to discuss not only predictive performance, but also **sparsity**, **variable selection**, and the bias-variance trade-off created by regularization. The task also asks you to compare alternative ways of handling nonlinearity and uncertainty, so your written answers should connect code to theory in a structured way.
+
 ## (a) Decode LASSO optimization code (10 points)
 
-Explain why this objective can perform variable selection:
+You are given the following function:
 
 ```{r}
 f <- function(beta, X, y, lambda) {
@@ -51,9 +60,34 @@ f <- function(beta, X, y, lambda) {
 }
 ```
 
+Write a theory-grounded answer that explains all of the following:
+
+1. **Which method this objective corresponds to** and how you can identify it.
+2. **Why the absolute-value penalty matters**, and how it differs from Ridge.
+3. **Why this objective can set some coefficients exactly to zero**.
+4. **What happens as `lambda` increases** to fit quality, bias, variance, and model complexity.
+5. **Why LASSO may be attractive in an exam/business setting** where simpler models are valued.
+
+Your answer should read like a short BAN404 theory paragraph, not just a label.
+
 ## (b) OLS vs LASSO coefficient path analysis (10 points)
 
-Fit OLS and LASSO over a lambda grid and identify predictors that shrink to zero earliest.
+Read `task1_data.csv` and compare an **OLS model** with a **LASSO path**.
+
+What to do:
+
+- Fit OLS using all predictors.
+- Fit LASSO over a lambda grid using `glmnet`.
+- Build a coefficient table at a common lambda for comparison.
+- Identify which predictors are driven to zero earliest along the path.
+- Explain what “driven to zero earliest” means in terms of variable importance and redundancy.
+
+What the examiner wants to see:
+
+- clear distinction between unpenalized and penalized regression,
+- correct use of the LASSO path,
+- correct interpretation of sparsity,
+- awareness that zero coefficients are a model-selection consequence of the L1 penalty.
 
 ```{r}
 # Your code here
@@ -61,15 +95,36 @@ Fit OLS and LASSO over a lambda grid and identify predictors that shrink to zero
 
 ## (c) Repeated K-fold tuning and LOOCV discussion (10 points)
 
-Use repeated 5-fold CV for lambda tuning and explain why this can be more stable than a single fold split.
+Tune LASSO using **repeated 5-fold cross-validation**.
+
+What to do:
+
+- Use repeated 5-fold CV to study the stability of the chosen `lambda`.
+- Report the average / variability of the selected lambda across repetitions.
+- Explain why repeated K-fold can be more stable than one random split.
+- Briefly discuss how **LOOCV** differs from repeated 5-fold CV.
+- State which approach you would trust more in a realistic BAN404 answer and why.
+
+A strong answer should mention the **bias-variance/computation trade-off** between repeated K-fold CV and LOOCV.
 
 ```{r}
 # Your code here
 ```
 
-## (d) Bootstrap uncertainty for SD(y) (10 points)
+## (d) Bootstrap uncertainty for `SD(y)` (10 points)
 
-Bootstrap SD(y) with `B = 1200` and compare normal and percentile CIs.
+Use the bootstrap to estimate uncertainty for the standard deviation of `y`.
+
+What to do:
+
+- Set a seed.
+- Use `B = 1200` bootstrap resamples.
+- Store `SD(y)` for each resample.
+- Show the bootstrap distribution in a histogram.
+- Compute both a **percentile CI** and a **normal approximation CI**.
+- Explain when the percentile interval is easier to defend.
+
+Your interpretation should explicitly connect the shape of the bootstrap distribution to the interval choice.
 
 ```{r}
 # Your code here
@@ -77,7 +132,17 @@ Bootstrap SD(y) with `B = 1200` and compare normal and percentile CIs.
 
 ## (e) Polynomial vs GAM flexibility check (10 points)
 
-Compare a polynomial regression with a GAM and discuss bias-variance tradeoff.
+Compare a **polynomial regression** with a **GAM**.
+
+What to do:
+
+- Fit a polynomial model with nonlinear terms for the most plausible predictors.
+- Fit a GAM with smooth terms.
+- Compare fit using MSE and an R²-style measure.
+- Explain whether the additional flexibility seems justified.
+- Discuss the **bias-variance trade-off** and **interpretability trade-off** between the two approaches.
+
+A strong answer should explain not only which model fits better, but also whether the extra flexibility is worth the added complexity.
 
 ```{r}
 # Your code here
@@ -85,9 +150,29 @@ Compare a polynomial regression with a GAM and discuss bias-variance tradeoff.
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
+## Context for Task 2
+
+This task focuses on **cost-sensitive churn prediction**. That means you should keep separating three ideas throughout the solution: **descriptive insight**, **statistical prediction quality**, and **business decision quality**. A good BAN404 answer makes it explicit that a model with good AUC is not automatically the best operational model if the cost of missing churners is much higher than the cost of targeting safe customers.
+
 ## (a) Leakage-safe preprocessing and split (8 points)
 
-Prepare factors, remove duplicated and non-actionable fields, and perform an 80/20 split.
+Prepare the churn data for realistic prediction.
+
+What to do:
+
+- Read and clean the data.
+- Recode variables into suitable types.
+- Remove duplicated / deterministic predictors.
+- Remove clearly non-actionable fields if you argue they are not useful for targeted intervention.
+- Explain why your preprocessing is leakage-safe.
+- Perform an 80/20 train/test split with a fixed seed.
+
+What the examiner wants:
+
+- sensible factor handling,
+- awareness of redundant predictors,
+- awareness of deployment realism,
+- a clean split before EDA/model tuning.
 
 ```{r}
 # Your code here
@@ -95,7 +180,18 @@ Prepare factors, remove duplicated and non-actionable fields, and perform an 80/
 
 ## (b) Class imbalance and churn profile EDA (8 points)
 
-Quantify imbalance and describe high-risk segments using both grouped tables and plots.
+Use the training data to build a first churn story.
+
+What to do:
+
+- Quantify class imbalance.
+- Create grouped churn summaries for meaningful customer segments.
+- Produce at least two explanatory plots.
+- Describe which segments look high-risk.
+- State at least three plausible churn hypotheses.
+- Mention one limitation of this descriptive stage.
+
+This is not only a visualization task. It is a reasoning task where you translate observed patterns into later model expectations.
 
 ```{r}
 # Your code here
@@ -103,7 +199,18 @@ Quantify imbalance and describe high-risk segments using both grouped tables and
 
 ## (c) Logistic threshold by expected cost (12 points)
 
-Choose threshold minimizing expected cost where FN cost is 4x FP cost. Report sensitivity/specificity/AUC.
+Fit a logistic regression model and choose a threshold when a **false negative costs 4 times as much as a false positive**.
+
+What to do:
+
+- Fit the model on the training set.
+- Predict probabilities on the test set.
+- Evaluate a grid of thresholds.
+- Report sensitivity, specificity, AUC, and expected cost.
+- Choose one threshold and defend it in business language.
+- Interpret a few coefficients as odds / odds ratios.
+
+A strong answer should clearly explain why the best threshold is not automatically `0.5`.
 
 ```{r}
 # Your code here
@@ -111,7 +218,18 @@ Choose threshold minimizing expected cost where FN cost is 4x FP cost. Report se
 
 ## (d) Random forest vs logistic interpretation (12 points)
 
-Tune RF, evaluate test performance, and compare variable-importance ranking to logistic odds-ratio signals.
+Fit and tune a Random Forest model, then compare it with logistic regression.
+
+What to do:
+
+- Tune `mtry` using CV on the training data only.
+- Fit the final Random Forest.
+- Evaluate on the test set.
+- Show the most important predictors.
+- Compare the RF importance ranking with the logistic odds-ratio story.
+- Explain why the two methods may agree on some variables but differ on others.
+
+Your written answer should mention that tree ensembles can capture nonlinearities and interactions that logistic regression does not include by default.
 
 ```{r}
 # Your code here
@@ -119,7 +237,22 @@ Tune RF, evaluate test performance, and compare variable-importance ranking to l
 
 ## (e) Gradient boosting for campaign targeting (10 points)
 
-Tune boosting rounds and recommend a final targeting model with business-metric justification.
+Fit a boosting model and recommend a final targeting approach.
+
+What to do:
+
+- Fit a boosting model on the training data.
+- Evaluate staged performance over the number of trees.
+- Choose a suitable number of boosting rounds.
+- Compare logistic regression, Random Forest, and boosting.
+- Give a final business recommendation for campaign targeting.
+
+Your final paragraph should clearly state:
+
+1. which model you recommend,
+2. which metric matters most for this task,
+3. what trade-off the company accepts,
+4. why the recommendation is aligned with the 4:1 false-negative cost structure.
 
 ```{r}
 # Your code here

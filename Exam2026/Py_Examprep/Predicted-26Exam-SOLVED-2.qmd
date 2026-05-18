@@ -33,383 +33,439 @@ execute:
   error: true
 ---
 
+# How to read this solved mock exam
+
+This solved version is written as a **lookup tool**, not only as a short answer key. That means each code line is commented with purpose, reasoning, or theory, and each code chunk is followed by explanation you can reuse in an exam answer. The goal is that you should be able to look at this file later and understand both **how to code the solution** and **how to explain the method in BAN404 language**.
+
 # Setup
 
 ```{r}
-# Load all required packages for a full BAN404 end-to-end workflow.
-library(tidyverse)
-library(glmnet)
-library(mgcv)
-library(randomForest)
-library(gbm)
-library(broom)
-
-# Exam configuration controls what regularization focus and cost-rule we emphasize.
-exam_id <- 2
-alpha_main <- 1       # 0=Ridge, 1=LASSO, 0.5=Elastic Net
-cost_fn <- 4         # Relative cost multiplier for false negatives
-focus_label <- "LASSO"
-
-# AUC helper based on rank statistics (Mann-Whitney interpretation).
-auc_rank <- function(y_true, score, positive = "Yes") {
-  y_chr <- as.character(y_true)
-  y_bin <- if_else(y_chr == positive, 1, 0)
-  n1 <- sum(y_bin == 1)
-  n0 <- sum(y_bin == 0)
-  if (n1 == 0 || n0 == 0) return(NA_real_)
-  r <- rank(score)
-  (sum(r[y_bin == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
-}
-
-# Confusion-matrix metrics + expected business cost at a threshold.
-class_metrics <- function(y_true, p_hat, threshold = 0.5, positive = "Yes") {
-  y_chr <- as.character(y_true)
-  negative <- setdiff(sort(unique(y_chr)), positive)[1]
-  actual <- factor(y_chr, levels = c(negative, positive))
-  pred <- factor(if_else(p_hat >= threshold, positive, negative), levels = c(negative, positive))
-  cm <- table(actual = actual, pred = pred)
-  tn <- cm[negative, negative]
-  fp <- cm[negative, positive]
-  fn <- cm[positive, negative]
-  tp <- cm[positive, positive]
-  tibble(
-    threshold = threshold,
-    accuracy = (tp + tn) / sum(cm),
-    sensitivity = tp / (tp + fn),
-    specificity = tn / (tn + fp),
-    auc = auc_rank(actual, p_hat, positive = positive),
-    expected_cost = cost_fn * fn + fp
-  )
-}
+# Load tidyverse because the BAN404 workflow is easiest to read when wrangling, tables, and plotting use one coherent grammar.  
+library(tidyverse)  # Data cleaning, summaries, and ggplot graphics used throughout the solution.  
+# Load glmnet because LASSO and other penalized regressions are fit efficiently with this package.  
+library(glmnet)  # Penalized linear modeling with shrinkage paths and cross-validation support.  
+# Load mgcv because GAMs are a standard flexible extension of linear regression in BAN404.  
+library(mgcv)  # Generalized Additive Models for smooth nonlinear effects.  
+# Load randomForest because tree ensembles are useful when interactions or nonlinearities may matter.  
+library(randomForest)  # Random Forest classification for churn prediction.  
+# Load gbm because boosting is another important high-probability BAN404 model family.  
+library(gbm)  # Gradient boosting machine for staged tree-based learning.  
+# Load broom because tidy model summaries are much easier to interpret and compare.  
+library(broom)  # Tidy extraction of model coefficients and fit summaries.  
+# Store the exam number so seeds can vary systematically while staying reproducible.  
+exam_id <- 2  # This file corresponds to mock exam number 2.  
+# Set the regularization control so the code and prose stay focused on LASSO.  
+alpha_main <- 1  # alpha = 1 means pure LASSO with an L1 penalty.  
+# Set the false-negative cost ratio because Task 2 explicitly says FN costs four times FP.  
+cost_fn <- 4  # Missing a churner is four times as costly as unnecessarily targeting a non-churner.  
+# Store a readable label for the main regularization method.  
+focus_label <- "LASSO"  # This makes later prose easier to read.  
+# Create a rank-based AUC helper so classification ranking quality can be computed transparently.  
+auc_rank <- function(y_true, score, positive = "Yes") {  # Function takes observed classes and predicted probabilities.  
+  y_chr <- as.character(y_true)  # Convert factor labels to characters so class handling is explicit.  
+  y_bin <- if_else(y_chr == positive, 1, 0)  # Encode the positive class as 1 because AUC is defined for binary outcomes.  
+  n1 <- sum(y_bin == 1)  # Count positives because AUC compares positive and negative score rankings.  
+  n0 <- sum(y_bin == 0)  # Count negatives for the same reason.  
+  if (n1 == 0 || n0 == 0) return(NA_real_)  # Return missing value if one class is absent and AUC is undefined.  
+  r <- rank(score)  # Rank the scores because AUC measures ranking discrimination rather than a fixed threshold decision.  
+  (sum(r[y_bin == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)  # Apply the Mann-Whitney interpretation of AUC.  
+}  
+# Create a confusion-matrix helper so many thresholds can be compared in one tidy workflow.  
+class_metrics <- function(y_true, p_hat, threshold = 0.5, positive = "Yes") {  # Function maps probabilities into decision metrics.  
+  y_chr <- as.character(y_true)  # Convert class labels to characters to keep the logic explicit.  
+  negative <- setdiff(sort(unique(y_chr)), positive)[1]  # Identify the non-positive class used as the reference.  
+  actual <- factor(y_chr, levels = c(negative, positive))  # Lock class order so confusion-matrix indexing remains stable.  
+  pred <- factor(if_else(p_hat >= threshold, positive, negative), levels = c(negative, positive))  # Turn probabilities into predicted classes.  
+  cm <- table(actual = actual, pred = pred)  # Build the confusion matrix because all decision metrics come from these counts.  
+  tn <- cm[negative, negative]  # Extract true negatives because they determine specificity.  
+  fp <- cm[negative, positive]  # Extract false positives because they represent unnecessary targeting cost.  
+  fn <- cm[positive, negative]  # Extract false negatives because they are especially costly in this task.  
+  tp <- cm[positive, positive]  # Extract true positives because they are correctly identified churners.  
+  tibble(  # Return a one-row tibble so threshold comparison is simple.  
+    threshold = threshold,  # Store the decision cutoff being evaluated.  
+    accuracy = (tp + tn) / sum(cm),  # Compute accuracy even though cost-based decisions matter more here.  
+    sensitivity = tp / (tp + fn),  # Compute sensitivity because catching churners is valuable when FN cost is high.  
+    specificity = tn / (tn + fp),  # Compute specificity to track how often safe customers are left alone.  
+    auc = auc_rank(actual, p_hat, positive = positive),  # Add AUC because ranking quality should be separated from threshold choice.  
+    expected_cost = cost_fn * fn + fp  # Translate mistakes into the business loss structure given in the exam.  
+  )  # End tidy metric output.  
+}  
 ```
+
+The setup chunk establishes the full workflow for the rest of the exam. In BAN404, that matters because good solutions are not just model calls; they are **reproducible analytical pipelines** with transparent evaluation. The two helper functions also mirror an important course idea: **AUC tells you how well scores rank cases**, while **threshold metrics tell you how a chosen operational cutoff turns those scores into business decisions**.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
 ## (a) Decode objective and method focus
 
 ```{r}
-# Load Task 1 dataset.
-df_t1 <- read_csv("../task1_data.csv", show_col_types = FALSE)
-X <- model.matrix(y ~ ., data = df_t1)[, -1]
-y <- df_t1$y
-
-# Generic objective that can represent ridge/lasso/elastic-net behavior.
-objective <- function(beta, X, y, lambda, alpha) {
-  rss <- sum((y - X %*% beta)^2)
-  penalty <- lambda * ((1 - alpha) * sum(beta^2) + alpha * sum(abs(beta)))
-  rss + penalty
-}
-
-# Show objective value at a probe point for interpretability.
-beta0 <- rep(0, ncol(X))
-obj_probe <- objective(beta0, X, y, lambda = 1, alpha = alpha_main)
-obj_probe
+# Read the regression data because all Task 1 computations must use the observed exam dataset.  
+df_t1 <- read_csv("../task1_data.csv", show_col_types = FALSE)  # Import quietly so the rendered output stays clean.  
+# Build a numeric model matrix because glmnet works with x-matrices rather than standard formulas.  
+X <- model.matrix(y ~ ., data = df_t1)[, -1]  # Remove the intercept column because glmnet handles the intercept internally.  
+# Extract the response vector because resampling and penalized routines often use y separately.  
+y <- df_t1$y  # Continuous response used throughout Task 1.  
+# Write the exact LASSO-style objective so theory and computation are directly connected.  
+objective_lasso <- function(beta, X, y, lambda) {  # This mirrors the code shown in the mock exam prompt.  
+  rss <- sum((y - X %*% beta)^2)  # Compute residual sum of squares because good fit is still rewarded.  
+  penalty <- lambda * sum(abs(beta))  # Compute the L1 penalty because LASSO penalizes absolute coefficient size.  
+  rss + penalty  # Return the penalized objective minimized by the optimizer.  
+}  
+# Evaluate the objective at a simple probe point so the function is seen as a concrete loss, not only as theory.  
+zero_beta <- rep(0, ncol(X))  # Use the all-zero coefficient vector as the most interpretable starting point.  
+obj_at_zero <- objective_lasso(beta = zero_beta, X = X, y = y, lambda = 1)  # Compute the penalized loss at this probe point.  
+obj_at_zero  # Print the objective value so the student sees the function produces a numeric criterion.  
 ```
 
-This solved file is centered on **`r focus_label`** (`alpha = `r alpha_main`).
+This is a **LASSO objective** because the penalty term is based on `sum(abs(beta))`, which is the L1 penalty. The key theoretical consequence of the absolute-value penalty is that it can push some coefficients exactly to zero, so LASSO performs **embedded variable selection** as well as shrinkage. In BAN404 language, that makes LASSO attractive when you want a model that is both predictive and simpler to explain, although the price is added bias as `lambda` becomes larger.
 
-## (b) OLS vs regularized alternatives
+## (b) OLS vs LASSO coefficient path analysis
 
 ```{r}
-# Fit linear baseline and regularized families.
-fit_ols <- lm(y ~ ., data = df_t1)
-fit_ridge <- glmnet(X, y, alpha = 0, standardize = TRUE)
-fit_lasso <- glmnet(X, y, alpha = 1, standardize = TRUE)
-fit_main <- glmnet(X, y, alpha = alpha_main, standardize = TRUE)
-
-# Coefficient comparison at a common lambda probe.
-lambda_probe <- 0.1
-coef_compare <- tibble(
-  variable = colnames(X),
-  ols = as.numeric(coef(fit_ols)[-1]),
-  ridge = as.numeric(coef(fit_ridge, s = lambda_probe))[-1],
-  lasso = as.numeric(coef(fit_lasso, s = lambda_probe))[-1],
-  main = as.numeric(coef(fit_main, s = lambda_probe))[-1]
-)
-coef_compare
-
-# Count near-zero coefficients to quantify sparsity behavior.
-sparsity <- tibble(
-  model = c("Ridge", "LASSO", "Main"),
-  near_zero = c(
-    sum(abs(coef_compare$ridge) < 1e-8),
-    sum(abs(coef_compare$lasso) < 1e-8),
-    sum(abs(coef_compare$main) < 1e-8)
-  )
-)
-sparsity
+# Fit OLS first because BAN404 usually expects an interpretable baseline before moving to regularized models.  
+fit_ols <- lm(y ~ ., data = df_t1)  # OLS provides the unpenalized benchmark.  
+# Fit the LASSO path because we want to study how coefficients shrink across many lambda values.  
+fit_lasso <- glmnet(X, y, alpha = 1, standardize = TRUE)  # alpha = 1 selects LASSO and standardization makes penalties comparable across predictors.  
+# Fit Ridge as an additional comparison so we can contrast sparsity with pure shrinkage.  
+fit_ridge <- glmnet(X, y, alpha = 0, standardize = TRUE)  # Ridge does not usually set coefficients exactly to zero.  
+# Choose a common lambda value so coefficients from different methods can be compared directly.  
+lambda_probe <- 0.1  # This is a descriptive comparison point, not yet the tuned choice.  
+# Build a coefficient table because aligned numbers are easier to interpret than separate printouts.  
+coef_compare <- tibble(  # Start a tidy coefficient comparison.  
+  variable = colnames(X),  # Keep predictor names visible for direct interpretation.  
+  ols = as.numeric(coef(fit_ols)[-1]),  # OLS slopes excluding the intercept.  
+  lasso = as.numeric(coef(fit_lasso, s = lambda_probe))[-1],  # LASSO coefficients at the chosen lambda.  
+  ridge = as.numeric(coef(fit_ridge, s = lambda_probe))[-1]  # Ridge coefficients at the same lambda.  
+)  # End coefficient table.  
+# Extract the full LASSO path because the question asks which coefficients go to zero earliest.  
+lasso_path <- as.matrix(fit_lasso$beta)  # Rows are predictors and columns are lambda values along the regularization path.  
+# Find the first lambda index at which each predictor is essentially zero.  
+zero_index <- apply(lasso_path, 1, function(v) {  # Loop over predictors along the LASSO path.  
+  idx <- which(abs(v) < 1e-8)  # Identify path positions where the coefficient is numerically zero.  
+  if (length(idx) == 0) NA_integer_ else min(idx)  # Return the earliest zero point or missing if never zero on the path.  
+})  # End path scan.  
+# Translate the earliest-zero positions into lambda values for readable reporting.  
+zero_summary <- tibble(  # Build a path-summary table.  
+  variable = rownames(lasso_path),  # Predictor names from the LASSO path matrix.  
+  first_zero_index = zero_index,  # Earliest path position where the coefficient becomes zero.  
+  first_zero_lambda = if_else(is.na(zero_index), NA_real_, fit_lasso$lambda[zero_index])  # Corresponding lambda value for the first zero.  
+) %>%  # End raw summary creation.  
+  arrange(first_zero_index)  # Sort so the earliest-zero variables appear first.  
+# Count how many coefficients are essentially zero at the comparison lambda.  
+lasso_sparsity <- coef_compare %>% summarise(near_zero_lasso = sum(abs(lasso) < 1e-8))  # Compact sparsity summary.  
+coef_compare  # Print coefficient comparison across methods.  
+zero_summary  # Print the order in which predictors are removed by LASSO.  
+lasso_sparsity  # Print the number of near-zero LASSO coefficients at the probe lambda.  
 ```
 
-At `lambda = `r lambda_probe`, the main model keeps `r sparsity$near_zero[sparsity$model=="Main"]` near-zero coefficients.
+The important theoretical result here is that LASSO does not only shrink coefficients; it can remove some of them entirely. A variable that reaches zero early along the path is one that the penalized model is willing to sacrifice quickly, which often suggests weaker unique contribution or overlap with other predictors. In BAN404 terms, this is why LASSO is often described as a model that combines **regularization** with **automatic variable selection**, unlike Ridge which mainly stabilizes coefficients without removing predictors.
 
-## (c) Cross-validation and tuning discipline
+## (c) Repeated K-fold tuning and LOOCV discussion
 
 ```{r}
-# 10-fold CV for a standard exam answer.
-set.seed(100 + exam_id)
-cv_main <- cv.glmnet(X, y, alpha = alpha_main, nfolds = 10, standardize = TRUE)
-
-# Repeated 5-fold CV to show stability of lambda choice.
-set.seed(200 + exam_id)
-cv_repeat <- map_dfr(1:5, function(rep_i) {
-  foldid <- sample(rep(1:5, length.out = nrow(X)))
-  cv_i <- cv.glmnet(X, y, alpha = alpha_main, foldid = foldid, standardize = TRUE)
-  tibble(rep = rep_i, lambda_min = cv_i$lambda.min, cvm_min = min(cv_i$cvm))
-})
-
-cv_summary <- cv_repeat %>% summarise(
-  mean_lambda_min = mean(lambda_min),
-  sd_lambda_min = sd(lambda_min),
-  mean_cvm = mean(cvm_min)
-)
-
-# Additional CV comparison for ridge/lasso benchmark.
-set.seed(300 + exam_id)
-cv_ridge <- cv.glmnet(X, y, alpha = 0, nfolds = 10, standardize = TRUE)
-cv_lasso <- cv.glmnet(X, y, alpha = 1, nfolds = 10, standardize = TRUE)
-
-cv_table <- tibble(
-  model = c("Main", "Ridge", "LASSO"),
-  lambda_min = c(cv_main$lambda.min, cv_ridge$lambda.min, cv_lasso$lambda.min),
-  cvm_min = c(min(cv_main$cvm), min(cv_ridge$cvm), min(cv_lasso$cvm))
-)
-
-cv_summary
-cv_table
+# Set a seed so the repeated resampling study is reproducible and interpretable.  
+set.seed(202)  # Reproducibility matters because CV results can otherwise change across runs.  
+# Run repeated 5-fold CV because the question asks for stability rather than one single split.  
+cv_repeat <- map_dfr(1:8, function(rep_i) {  # Use eight repetitions to get a small distribution of chosen lambdas.  
+  foldid <- sample(rep(1:5, length.out = nrow(X)))  # Randomly assign observations to five folds for this repetition.  
+  cv_i <- cv.glmnet(X, y, alpha = alpha_main, foldid = foldid, standardize = TRUE)  # Fit LASSO CV for this fold assignment.  
+  tibble(rep = rep_i, lambda_min = cv_i$lambda.min, lambda_1se = cv_i$lambda.1se, cvm_min = min(cv_i$cvm))  # Store the key tuning outputs.  
+})  # End repeated CV loop.  
+# Summarize the repeated-CV distribution because stability is about averages and variability.  
+cv_repeat_summary <- cv_repeat %>% summarise(  # Collapse repeated CV results into a compact summary.  
+  mean_lambda_min = mean(lambda_min),  # Average chosen lambda.min across repetitions.  
+  sd_lambda_min = sd(lambda_min),  # Variation in lambda.min across repetitions.  
+  mean_lambda_1se = mean(lambda_1se),  # Average conservative choice across repetitions.  
+  sd_lambda_1se = sd(lambda_1se),  # Variation in lambda.1se across repetitions.  
+  mean_cvm = mean(cvm_min)  # Average minimum CV loss across repetitions.  
+)  # End stability summary.  
+# Run LOOCV-style LASSO CV for comparison because the question explicitly asks for discussion of LOOCV.  
+cv_loocv <- cv.glmnet(X, y, alpha = alpha_main, nfolds = nrow(X), standardize = TRUE)  # Use one observation per validation fold.  
+# Put repeated 5-fold and LOOCV outputs into one table for easy discussion.  
+cv_compare <- tibble(  # Start CV comparison table.  
+  method = c("Repeated 5-fold (mean lambda.min)", "Repeated 5-fold (mean lambda.1se)", "LOOCV lambda.min", "LOOCV lambda.1se"),  # Label the compared tuning rules.  
+  lambda_value = c(cv_repeat_summary$mean_lambda_min, cv_repeat_summary$mean_lambda_1se, cv_loocv$lambda.min, cv_loocv$lambda.1se)  # Store comparable lambda choices.  
+)  # End CV comparison table.  
+# Plot the repeated-CV lambda distribution because stability is easier to see visually than from one number alone.  
+ggplot(cv_repeat, aes(x = factor(rep), y = lambda_min)) +  # Start a repetition-by-lambda plot.  
+  geom_point(color = "steelblue", size = 2) +  # Show each repetition's selected lambda.min.  
+  geom_hline(yintercept = mean(cv_repeat$lambda_min), color = "darkgreen", linetype = "dashed") +  # Mark the average lambda choice.  
+  labs(title = "Repeated 5-fold CV: selected lambda.min across repetitions", x = "Repetition", y = "Selected lambda.min")  # Add labels for interpretation.  
+cv_repeat  # Print repetition-level CV results.  
+cv_repeat_summary  # Print the stability summary.  
+cv_compare  # Print the repeated-5-fold versus LOOCV comparison.  
 ```
 
-`lambda.min = `r signif(cv_main$lambda.min, 4)` and `lambda.1se = `r signif(cv_main$lambda.1se, 4)`; repeated CV SD for lambda is `r signif(cv_summary$sd_lambda_min, 3)`.
+Repeated 5-fold CV is often more stable than one random split because it averages over multiple fold assignments instead of letting one lucky or unlucky split dominate the tuning result. LOOCV uses almost all data for training in each fold, but it can have high variance in its error estimate and can be more computationally expensive, so it is not automatically the best practical choice. In a BAN404 answer, a very defensible conclusion is that repeated 5-fold CV offers a strong compromise between **stability**, **realism**, and **computation**, while LOOCV is useful mainly as a conceptual comparison point.
 
-## (d) Bootstrap uncertainty evidence
+## (d) Bootstrap uncertainty for `SD(y)`
 
 ```{r}
-# Bootstrap for both Var(y), SD(y), and OLS coefficient stability.
-set.seed(1 + exam_id)
-B <- 1500
-n <- length(y)
-boot_var <- numeric(B)
-boot_sd <- numeric(B)
-boot_b1 <- numeric(B)
-
-for (b in 1:B) {
-  idx <- sample(seq_len(n), size = n, replace = TRUE)
-  y_b <- y[idx]
-  boot_var[b] <- var(y_b)
-  boot_sd[b] <- sd(y_b)
-
-  d_b <- df_t1[idx, ]
-  fit_b <- lm(y ~ ., data = d_b)
-  boot_b1[b] <- coef(fit_b)["x1"]
-}
-
-var_hat <- var(y)
-sd_hat <- sd(y)
-ci_var_pct <- quantile(boot_var, c(0.025, 0.975))
-ci_var_norm <- c(var_hat - 1.96 * sd(boot_var), var_hat + 1.96 * sd(boot_var))
-ci_sd_pct <- quantile(boot_sd, c(0.025, 0.975))
-ci_sd_norm <- c(sd_hat - 1.96 * sd(boot_sd), sd_hat + 1.96 * sd(boot_sd))
-
-boot_summary <- tibble(
-  statistic = c("Var(y)", "SD(y)", "beta_x1"),
-  point = c(var_hat, sd_hat, coef(fit_ols)["x1"]),
-  se_boot = c(sd(boot_var), sd(boot_sd), sd(boot_b1)),
-  pct_low = c(ci_var_pct[1], ci_sd_pct[1], quantile(boot_b1, 0.025)),
-  pct_high = c(ci_var_pct[2], ci_sd_pct[2], quantile(boot_b1, 0.975))
-)
-boot_summary
+# Set a seed so the bootstrap distribution can be reproduced exactly later.  
+set.seed(2)  # Reproducibility matters because bootstrap is based on random resampling.  
+# Set the requested number of bootstrap repetitions.  
+B <- 1200  # The question explicitly asks for B = 1200 resamples.  
+# Store sample size because each bootstrap sample should contain n observations with replacement.  
+n <- length(y)  # The bootstrap mimics repeated samples of the original sample size.  
+# Preallocate a vector because we want one stored standard deviation from each resample.  
+boot_sd <- numeric(B)  # Container for bootstrap SD estimates.  
+# Run the bootstrap loop because the core idea is repeated sampling with replacement.  
+for (b in seq_len(B)) {  # Iterate once for each bootstrap sample.  
+  idx <- sample(seq_len(n), size = n, replace = TRUE)  # Draw observation indices with replacement.  
+  y_b <- y[idx]  # Create the bootstrap resample of the response.  
+  boot_sd[b] <- sd(y_b)  # Compute and store SD(y) for this bootstrap world.  
+}  
+# Compute the original sample standard deviation because intervals should be compared to the observed estimate.  
+sd_hat <- sd(y)  # Plug-in estimate from the original data.  
+# Compute bootstrap standard error because the normal interval uses it explicitly.  
+se_boot_sd <- sd(boot_sd)  # Empirical standard error of the bootstrap statistic.  
+# Compute the percentile interval because it follows the bootstrap distribution directly.  
+ci_sd_pct <- quantile(boot_sd, c(0.025, 0.975))  # Percentile-based 95% interval.  
+# Compute the normal approximation interval because it is the standard contrast to the percentile interval.  
+ci_sd_norm <- c(sd_hat - 1.96 * se_boot_sd, sd_hat + 1.96 * se_boot_sd)  # Symmetric interval around the observed estimate.  
+# Create a tidy summary table because concise interval reporting is easy to interpret.  
+boot_sd_summary <- tibble(  # Build a one-row bootstrap summary.  
+  point_estimate = sd_hat,  # Observed sample standard deviation.  
+  se_boot = se_boot_sd,  # Bootstrap standard error.  
+  pct_low = ci_sd_pct[1],  # Lower percentile bound.  
+  pct_high = ci_sd_pct[2],  # Upper percentile bound.  
+  norm_low = ci_sd_norm[1],  # Lower normal-approximation bound.  
+  norm_high = ci_sd_norm[2]  # Upper normal-approximation bound.  
+)  # End summary table.  
+# Plot the bootstrap distribution because interval choice should be justified from the shape.  
+ggplot(tibble(boot_sd = boot_sd), aes(x = boot_sd)) +  # Start histogram of bootstrap SD estimates.  
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +  # Visualize the empirical bootstrap distribution.  
+  geom_vline(xintercept = sd_hat, color = "darkgreen", linetype = "dashed") +  # Mark the observed SD estimate.  
+  labs(title = "Bootstrap distribution of SD(y)", x = "Bootstrap SD estimate", y = "Count")  # Add clear labels.  
+boot_sd_summary  # Print the interval summary after the histogram.  
 ```
 
-Percentile CI for `Var(y)` is [`r signif(ci_var_pct[1],4)`, `r signif(ci_var_pct[2],4)`], used directly for interpretation when distribution is not perfectly symmetric.
+The bootstrap here estimates the sampling uncertainty of the standard deviation without relying on a complicated analytic formula. If the histogram looks fairly symmetric, the normal interval may be acceptable, but if the distribution is skewed then the percentile interval is usually easier to defend because it respects the actual empirical shape of the bootstrap distribution. In BAN404 language, this is a classic example of using resampling to make inference more flexible when you want a direct, data-driven uncertainty estimate.
 
-## (e) Nonlinearity improvement check (GAM and diagnostics)
+## (e) Polynomial vs GAM flexibility check
 
 ```{r}
-# Fit flexible additive model and compare to OLS.
-fit_gam <- gam(y ~ s(x1, k = 6) + s(x2, k = 6) + s(x3, k = 6) + x4 + x5 + x6, data = df_t1)
-
-# In-sample fit comparison.
-y_hat_ols <- predict(fit_ols, newdata = df_t1)
-y_hat_gam <- predict(fit_gam, newdata = df_t1)
-
-mse_ols <- mean((y - y_hat_ols)^2)
-mse_gam <- mean((y - y_hat_gam)^2)
-
-fit_compare <- tibble(
-  model = c("OLS", "GAM"),
-  mse = c(mse_ols, mse_gam),
-  r2_like = c(summary(fit_ols)$adj.r.squared, summary(fit_gam)$r.sq)
-)
-
-# Compact residual diagnostics summary.
-resid_compare <- tibble(
-  model = c("OLS", "GAM"),
-  resid_sd = c(sd(residuals(fit_ols)), sd(residuals(fit_gam))),
-  resid_iqr = c(IQR(residuals(fit_ols)), IQR(residuals(fit_gam)))
-)
-
-fit_compare
-resid_compare
-summary(fit_gam)
+# Fit a polynomial model because polynomial regression is the classic parametric way to add curvature.  
+fit_poly <- lm(y ~ poly(x1, 3) + poly(x2, 3) + poly(x3, 3) + x4 + x5 + x6, data = df_t1)  # Cubic terms allow nonlinear shapes while staying inside lm().  
+# Fit a GAM because smooth functions can adapt more flexibly than fixed-degree polynomials.  
+fit_gam <- gam(y ~ s(x1, k = 6) + s(x2, k = 6) + s(x3, k = 6) + x4 + x5 + x6, data = df_t1)  # Smooths are used where nonlinear effects are most plausible.  
+# Generate fitted values from the polynomial model so prediction error can be compared on the same dataset.  
+y_hat_poly <- predict(fit_poly, newdata = df_t1)  # Polynomial fitted values.  
+# Generate fitted values from the GAM for the same purpose.  
+y_hat_gam <- predict(fit_gam, newdata = df_t1)  # GAM fitted values.  
+# Compute polynomial model MSE because lower error indicates better in-sample fit.  
+mse_poly <- mean((y - y_hat_poly)^2)  # In-sample mean squared error for the polynomial model.  
+# Compute GAM MSE as the flexible-model comparator.  
+mse_gam <- mean((y - y_hat_gam)^2)  # In-sample mean squared error for the GAM.  
+# Collect a side-by-side fit table because direct comparison supports the written answer.  
+flex_compare <- tibble(  # Start model comparison table.  
+  model = c("Polynomial", "GAM"),  # Name the competing nonlinear strategies.  
+  mse = c(mse_poly, mse_gam),  # Compare prediction error.  
+  fit_measure = c(summary(fit_poly)$adj.r.squared, summary(fit_gam)$r.sq)  # Compare adjusted R2-style fit statistics.  
+)  # End fit table.  
+# Extract GAM smooth summaries because EDF helps tell whether smooths are behaving nonlinearly.  
+gam_smooths <- as_tibble(summary(fit_gam)$s.table, rownames = "smooth_term")  # EDF above 1 suggests a non-straight effect.  
+flex_compare  # Print the polynomial-versus-GAM fit comparison.  
+gam_smooths  # Print smooth-term diagnostics for interpretation.  
 ```
 
-GAM MSE `r round(mse_gam,4)` vs OLS MSE `r round(mse_ols,4)` indicates GAM is `r ifelse(mse_gam < mse_ols, "preferable", "not preferable")` for fit quality.
+Polynomial regression and GAM both allow curvature, but they do so in different ways. The polynomial model imposes one fixed algebraic shape, while the GAM lets the data choose a smoother functional form, which can reduce bias when the true relationship is not well approximated by a low-degree polynomial. In BAN404 terms, the GAM is often the more flexible and safer choice when real nonlinear structure is suspected, but the polynomial model can still be easier to write down and explain if the fit difference is small.
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
-## (a) Data preparation and split
+## (a) Leakage-safe preprocessing and split
 
 ```{r}
-# Read churn dataset and normalize names to tidy snake_case.
-df_c <- read_csv("../customer_data.csv", show_col_types = FALSE) %>%
-  rename_with(~ gsub("[\\. ]", "_", tolower(.x))) %>%
-  mutate(
-    churn = factor(churn, levels = c(FALSE, TRUE), labels = c("No", "Yes")),
-    international_plan = factor(international_plan),
-    voice_mail_plan = factor(voice_mail_plan),
-    area_code = factor(area_code)
-  ) %>%
-  # Remove deterministic duplicates (charge = minutes * tariff).
-  select(-total_day_charge, -total_eve_charge, -total_night_charge, -total_intl_charge)
-
-set.seed(400 + exam_id)
-idx <- sample(seq_len(nrow(df_c)), size = floor(0.8 * nrow(df_c)))
-train_c <- df_c[idx, ]
-test_c <- df_c[-idx, ]
-
-class_split <- bind_rows(
-  train = prop.table(table(train_c$churn)) %>% as.list() %>% enframe(name = "class", value = "prop"),
-  test = prop.table(table(test_c$churn)) %>% as.list() %>% enframe(name = "class", value = "prop"),
-  .id = "split"
-)
-class_split
+# Read the churn dataset because Task 2 is a supervised binary classification problem.  
+df_c_raw <- read_csv("../customer_data.csv", show_col_types = FALSE)  # Import the raw customer data.  
+# Clean column names because lower-case underscore names are easier to use in tidyverse pipelines.  
+df_c <- df_c_raw %>%  # Start cleaning pipeline.  
+  rename_with(~ gsub("[\\. ]", "_", tolower(.x))) %>%  # Convert spaces and dots to underscores and use lower case.  
+  mutate(  # Recode variables into analysis-ready forms.  
+    churn = factor(churn, levels = c(FALSE, TRUE), labels = c("No", "Yes")),  # Make churn an explicit binary factor.  
+    international_plan = factor(international_plan),  # Treat plan indicators as categorical.  
+    voice_mail_plan = factor(voice_mail_plan),  # Same logic for the voice-mail plan.  
+    area_code = factor(area_code)  # Area code is categorical, not continuous.  
+  ) %>%  # End recoding step.  
+  select(-state, -total_day_charge, -total_eve_charge, -total_night_charge, -total_intl_charge)  # Remove a non-actionable geography field and deterministic charge duplicates.  
+# Set a seed because the train/test split should be reproducible.  
+set.seed(402)  # Reproducible splits are easier to validate and explain.  
+# Sample training indices because all tuning and modeling should happen only on the training data.  
+idx <- sample(seq_len(nrow(df_c)), size = floor(0.8 * nrow(df_c)))  # Draw 80% of observations for training.  
+# Create the training data because this is where EDA-driven modeling decisions will be learned.  
+train_c <- df_c[idx, ]  # Training set for preprocessing-aware analysis and model fitting.  
+# Create the test data because this must stay untouched until final evaluation.  
+test_c <- df_c[-idx, ]  # Held-out test set for honest performance assessment.  
+# Summarize class balance because churn tasks often involve imbalance that affects metric choice.  
+class_balance <- bind_rows(  # Start class-balance table.  
+  train = prop.table(table(train_c$churn)) %>% as.list() %>% enframe(name = "class", value = "prop"),  # Training-set churn proportions.  
+  test = prop.table(table(test_c$churn)) %>% as.list() %>% enframe(name = "class", value = "prop"),  # Test-set churn proportions.  
+  .id = "split"  # Keep split origin visible.  
+)  # End class-balance table.  
+class_balance  # Print the balance summary.  
 ```
 
-## (b) EDA and hypothesis generation
+This preprocessing is leakage-safe because the split happens before any model fitting or hyperparameter tuning, so the test set stays reserved for honest evaluation. Removing charge variables is theoretically justified because they are deterministic transformations of the minute variables, which means they duplicate information and can distort interpretation. Dropping `state` is also defendable in a targeting context if the goal is to focus on actionable customer behavior and service features rather than using geography as a blunt segmentation shortcut.
+
+## (b) Class imbalance and churn profile EDA
 
 ```{r}
-# Categorical churn-rate contrasts.
-eda_cat <- bind_rows(
-  train_c %>% group_by(international_plan) %>% summarise(churn_rate = mean(churn == "Yes"), n = n(), .groups = "drop") %>% mutate(feature = "international_plan", level = as.character(international_plan)),
-  train_c %>% group_by(voice_mail_plan) %>% summarise(churn_rate = mean(churn == "Yes"), n = n(), .groups = "drop") %>% mutate(feature = "voice_mail_plan", level = as.character(voice_mail_plan))
-) %>% select(feature, level, churn_rate, n)
-
-# Numeric contrasts by churn status.
-eda_num <- train_c %>%
-  group_by(churn) %>%
-  summarise(
-    day_minutes = mean(total_day_minutes),
-    intl_minutes = mean(total_intl_minutes),
-    service_calls = mean(customer_service_calls),
-    .groups = "drop"
-  )
-
-eda_cat
-eda_num
+# Compute the overall churn-rate summary because imbalance should be quantified before model evaluation.  
+imbalance_summary <- train_c %>% summarise(churn_rate = mean(churn == "Yes"), no_churn_rate = mean(churn == "No"))  # Training-set class proportions.  
+# Build grouped churn summaries for categorical plan variables because these are easy to explain in business language.  
+eda_cat <- bind_rows(  # Combine multiple segment summaries into one table.  
+  train_c %>% group_by(international_plan) %>% summarise(churn_rate = mean(churn == "Yes"), n = n(), .groups = "drop") %>% mutate(feature = "international_plan", level = as.character(international_plan)),  # Churn by international plan.  
+  train_c %>% group_by(voice_mail_plan) %>% summarise(churn_rate = mean(churn == "Yes"), n = n(), .groups = "drop") %>% mutate(feature = "voice_mail_plan", level = as.character(voice_mail_plan)),  # Churn by voice-mail plan.  
+  train_c %>% group_by(area_code) %>% summarise(churn_rate = mean(churn == "Yes"), n = n(), .groups = "drop") %>% mutate(feature = "area_code", level = as.character(area_code))  # Churn by area code segment.  
+) %>%  # End grouped summaries.  
+  select(feature, level, churn_rate, n)  # Keep the most interpretable columns.  
+# Summarize key numeric variables by churn status because service pressure and usage levels often differ by outcome.  
+eda_num <- train_c %>%  # Start numeric EDA pipeline.  
+  group_by(churn) %>%  # Compare churners and non-churners directly.  
+  summarise(  # Compute group means for variables with plausible churn signal.  
+    mean_day_minutes = mean(total_day_minutes),  # Heavy day usage may indicate costly accounts or dissatisfaction.  
+    mean_intl_minutes = mean(total_intl_minutes),  # International usage may define a different risk segment.  
+    mean_service_calls = mean(customer_service_calls),  # Many service calls can signal frustration.  
+    .groups = "drop"  # Drop grouping after summary.  
+  )  # End numeric summary.  
+# Plot class balance because the outcome proportion should be visually clear before model fitting.  
+ggplot(train_c, aes(x = churn, fill = churn)) +  # Start bar chart of churn counts.  
+  geom_bar() +  # Show the raw class-count imbalance.  
+  labs(title = "Training-set churn balance", x = "Churn", y = "Count")  # Add clear explanatory labels.  
+# Plot churn proportions by international plan because segment contrast is often visually persuasive.  
+ggplot(train_c, aes(x = international_plan, fill = churn)) +  # Start stacked proportion chart by plan type.  
+  geom_bar(position = "fill") +  # Use fill position so churn rates are directly comparable.  
+  scale_y_continuous(labels = scales::percent_format()) +  # Show proportions as percentages.  
+  labs(title = "Churn proportion by international plan", x = "International plan", y = "Proportion")  # Add exam-ready labels.  
+# Plot customer service calls by churn because service burden is a classic churn signal.  
+ggplot(train_c, aes(x = churn, y = customer_service_calls, fill = churn)) +  # Start boxplot by churn status.  
+  geom_boxplot(alpha = 0.7) +  # Compare service-call distributions across the two classes.  
+  labs(title = "Customer service calls by churn status", x = "Churn", y = "Customer service calls")  # Add labels for interpretation.  
+imbalance_summary  # Print the overall imbalance summary.  
+eda_cat  # Print segment-level categorical summaries.  
+eda_num  # Print numeric differences by churn status.  
 ```
 
-Service-call mean among churners is `r round(eda_num$service_calls[eda_num$churn=="Yes"],2)`, guiding risk hypotheses.
+This EDA stage helps convert descriptive patterns into modeling hypotheses. If customers with international plans or many service calls show visibly higher churn rates, then you have a reason to expect those predictors to matter later in both logistic regression and tree-based models. The main limitation is that this is still largely univariate or pairwise reasoning, so some apparent effects may weaken after controlling for other variables in a multivariate model.
 
-## (c) Logistic baseline and threshold policy
+## (c) Logistic threshold by expected cost
 
 ```{r}
-# Fit interpretable logistic regression baseline.
-logit_fit <- glm(
-  churn ~ account_length + international_plan + voice_mail_plan + number_vmail_messages +
-    total_day_minutes + total_day_calls + total_eve_minutes + total_night_minutes +
-    total_intl_minutes + customer_service_calls,
-  data = train_c,
-  family = binomial()
-)
-
-p_logit <- predict(logit_fit, newdata = test_c, type = "response")
-
-# Evaluate threshold grid and pick by expected cost.
-th_grid <- seq(0.2, 0.75, by = 0.05)
-logit_grid <- map_dfr(th_grid, ~ class_metrics(test_c$churn, p_logit, threshold = .x))
-best_thr <- logit_grid %>% slice_min(expected_cost, n = 1)
-
-logit_grid
-best_thr
-
-# Odds-ratio table for interpretation-heavy answers.
-logit_or <- tidy(logit_fit) %>% mutate(odds_ratio = exp(estimate)) %>% arrange(desc(abs(estimate)))
-logit_or
+# Fit logistic regression because it is the standard interpretable baseline for binary churn prediction.  
+logit_fit <- glm(  # Start logistic specification.  
+  churn ~ account_length + area_code + international_plan + voice_mail_plan + number_vmail_messages + total_day_minutes + total_day_calls + total_eve_minutes + total_night_minutes + total_intl_minutes + customer_service_calls,  # Use variables available at prediction time after preprocessing.  
+  data = train_c,  # Fit only on the training set to preserve honest evaluation.  
+  family = binomial()  # Select logistic regression for the binary outcome.  
+)  # End model fit.  
+# Predict churn probabilities on the untouched test set because threshold choice is an operational decision.  
+p_logit <- predict(logit_fit, newdata = test_c, type = "response")  # Estimated probability that each test customer churns.  
+# Define a threshold grid because 0.5 is not automatically optimal under asymmetric costs.  
+threshold_grid <- seq(0.15, 0.75, by = 0.05)  # Explore a reasonable range of possible operational cutoffs.  
+# Evaluate every threshold using the cost-sensitive metric helper.  
+logit_thresholds <- map_dfr(threshold_grid, ~ class_metrics(test_c$churn, p_logit, threshold = .x))  # Build threshold-performance table.  
+# Choose the threshold that minimizes expected cost under the 4:1 FN:FP rule.  
+best_thr <- logit_thresholds %>% slice_min(expected_cost, n = 1)  # This converts the business rule into a formal decision.  
+# Convert coefficients into odds ratios because BAN404 interpretation often uses multiplicative odds language.  
+logit_or <- tidy(logit_fit) %>%  # Convert model output to a tidy coefficient table.  
+  mutate(odds_ratio = exp(estimate)) %>%  # Translate log-odds coefficients into odds multipliers.  
+  arrange(desc(abs(estimate)))  # Put the strongest effects near the top for easier discussion.  
+logit_thresholds  # Print the full threshold comparison.  
+best_thr  # Print the cost-minimizing threshold.  
+logit_or  # Print coefficient and odds-ratio table.  
 ```
 
-With FN:FP cost ratio `r cost_fn:1`, chosen threshold is `r best_thr$threshold`.
+The important decision point here is that the threshold is chosen from the **cost structure**, not from habit. When false negatives cost four times more than false positives, it is usually better to lower the threshold so the model flags more potential churners, even if that creates more false alarms. In BAN404 language, logistic regression remains valuable because it combines interpretable coefficients with probability outputs, making it ideal for explaining how a business decision rule sits on top of a statistical model.
 
-## (d) Random forest tuning and interpretation
+## (d) Random forest vs logistic interpretation
 
 ```{r}
-# Tune mtry with 5-fold CV on training data only.
-set.seed(500 + exam_id)
-fold_id <- sample(rep(1:5, length.out = nrow(train_c)))
-mtry_grid <- c(2, 4, 6, 8)
-
-rf_cv <- map_dfr(mtry_grid, function(m) {
-  aucs <- map_dbl(1:5, function(k) {
-    tr <- train_c[fold_id != k, ]
-    va <- train_c[fold_id == k, ]
-    rf_k <- randomForest(churn ~ . - state, data = tr, ntree = 450, mtry = m)
-    p_k <- predict(rf_k, newdata = va, type = "prob")[, "Yes"]
-    auc_rank(va$churn, p_k)
-  })
-  tibble(mtry = m, cv_auc = mean(aucs))
-})
-
-best_mtry <- rf_cv %>% slice_max(cv_auc, n = 1) %>% pull(mtry)
-rf_fit <- randomForest(churn ~ . - state, data = train_c, ntree = 600, mtry = best_mtry, importance = TRUE)
-p_rf <- predict(rf_fit, newdata = test_c, type = "prob")[, "Yes"]
-rf_eval <- class_metrics(test_c$churn, p_rf, threshold = best_thr$threshold)
-
-rf_cv
-rf_eval
-
-rf_imp <- importance(rf_fit) %>% as.data.frame() %>% rownames_to_column("variable") %>% as_tibble() %>% arrange(desc(MeanDecreaseGini))
-rf_imp %>% slice_head(n = 10)
+# Set a seed because Random Forest uses randomness in row resampling and predictor subsampling.  
+set.seed(502)  # Reproducibility makes the tuning process easier to trust and explain.  
+# Create fold IDs inside the training data because CV must not touch the test set.  
+fold_id <- sample(rep(1:5, length.out = nrow(train_c)))  # Five-fold CV is a practical default for this task.  
+# Define the candidate mtry values because this hyperparameter controls feature diversity at each split.  
+mtry_grid <- c(2, 4, 6, 8)  # Compact grid that is large enough to compare but still easy to report.  
+# Evaluate each mtry by average validation AUC.  
+rf_cv <- map_dfr(mtry_grid, function(m) {  # Loop over candidate mtry values.  
+  aucs <- map_dbl(1:5, function(k) {  # Loop over folds to measure out-of-fold performance.  
+    tr <- train_c[fold_id != k, ]  # Training portion for this fold.  
+    va <- train_c[fold_id == k, ]  # Validation portion for this fold.  
+    rf_k <- randomForest(churn ~ ., data = tr, ntree = 450, mtry = m)  # Fit a forest for this training fold.  
+    p_k <- predict(rf_k, newdata = va, type = "prob")[, "Yes"]  # Predict churn probabilities on validation data.  
+    auc_rank(va$churn, p_k)  # Return fold-level AUC.  
+  })  # End fold loop.  
+  tibble(mtry = m, cv_auc = mean(aucs))  # Store mean validation AUC for this mtry.  
+})  # End CV grid search.  
+# Choose the best mtry because the final model should use the strongest validated setting.  
+best_mtry <- rf_cv %>% slice_max(cv_auc, n = 1) %>% pull(mtry)  # Extract the best tuning value.  
+# Fit the final forest on all training data using the chosen mtry.  
+rf_fit <- randomForest(churn ~ ., data = train_c, ntree = 600, mtry = best_mtry, importance = TRUE)  # Final Random Forest model.  
+# Score the test set because final comparison should be based on unseen data.  
+p_rf <- predict(rf_fit, newdata = test_c, type = "prob")[, "Yes"]  # Test-set churn probabilities from the forest.  
+# Evaluate the forest using the same operational threshold chosen for logistic regression.  
+rf_eval <- class_metrics(test_c$churn, p_rf, threshold = best_thr$threshold)  # Comparable cost-sensitive evaluation.  
+# Extract variable importance because tree models are often interpreted through importance rankings.  
+rf_imp <- importance(rf_fit) %>%  # Pull the importance matrix from the forest.  
+  as.data.frame() %>%  # Convert the matrix into a data frame for tidy manipulation.  
+  rownames_to_column("variable") %>%  # Preserve variable names explicitly.  
+  as_tibble() %>%  # Convert to tibble for cleaner printing.  
+  arrange(desc(MeanDecreaseGini))  # Sort so the most important predictors appear first.  
+# Extract the strongest logistic effects in a compact table for side-by-side interpretation.  
+logit_top <- logit_or %>% select(term, estimate, odds_ratio) %>% slice_head(n = 10)  # Keep the most interpretable logistic signals.  
+rf_cv  # Print CV tuning results.  
+rf_eval  # Print final Random Forest evaluation.  
+rf_imp %>% slice_head(n = 10)  # Print top Random Forest importance variables.  
+logit_top  # Print top logistic-regression signals for comparison.  
 ```
 
-Best RF `mtry = `r best_mtry` with AUC `r round(rf_eval$auc,4)` at selected threshold.
+Random Forest can disagree with logistic regression because the two methods capture signal differently. Logistic regression describes **directional marginal effects on log-odds** under an additive structure, while Random Forest ranks variables by how much they improve tree splits, which can reflect nonlinearities and interactions. In BAN404 terms, agreement across the two methods increases confidence in a variable’s importance, while disagreement suggests that some predictors may matter mainly through nonlinear or interaction-driven patterns.
 
-## (e) Boosting and final recommendation
+## (e) Gradient boosting for campaign targeting
 
 ```{r}
-# Prepare numeric target for Bernoulli boosting.
-train_g <- train_c %>% mutate(churn01 = if_else(churn == "Yes", 1, 0))
-test_g <- test_c %>% mutate(churn01 = if_else(churn == "Yes", 1, 0))
-
-set.seed(600 + exam_id)
-gbm_fit <- gbm(
-  churn01 ~ . - churn - state,
-  distribution = "bernoulli",
-  data = train_g,
-  n.trees = 700,
-  interaction.depth = 3,
-  shrinkage = 0.03,
-  n.minobsinnode = 15,
-  verbose = FALSE
-)
-
-# Stage AUC across tree counts and pick best.
-tree_grid <- seq(25, 700, by = 25)
-auc_path <- map_dbl(tree_grid, function(nt) {
-  p_nt <- predict(gbm_fit, newdata = test_g, n.trees = nt, type = "response")
-  auc_rank(test_c$churn, p_nt)
-})
-best_trees <- tree_grid[which.max(auc_path)]
-
-p_boost <- predict(gbm_fit, newdata = test_g, n.trees = best_trees, type = "response")
-boost_eval <- class_metrics(test_c$churn, p_boost, threshold = best_thr$threshold)
-
-comparison <- bind_rows(
-  best_thr %>% mutate(model = "Logistic"),
-  rf_eval %>% mutate(model = paste0("Random Forest (mtry=", best_mtry, ")")),
-  boost_eval %>% mutate(model = paste0("Boosting (trees=", best_trees, ")"))
-) %>%
-  select(model, threshold, accuracy, sensitivity, specificity, auc, expected_cost) %>%
-  arrange(desc(auc))
-
-comparison
+# Create numeric churn targets because gbm with Bernoulli loss expects a 0/1 response.  
+train_g <- train_c %>% mutate(churn01 = if_else(churn == "Yes", 1, 0))  # Training data with numeric outcome.  
+test_g <- test_c %>% mutate(churn01 = if_else(churn == "Yes", 1, 0))  # Test data with numeric outcome.  
+# Set a seed because boosting is stochastic and should be reproducible for validation.  
+set.seed(602)  # Reproducible boosting path.  
+# Fit a boosting model with moderate depth and shrinkage because boosting learns gradually from residual mistakes.  
+gbm_fit <- gbm(  # Start gradient boosting fit.  
+  churn01 ~ . - churn,  # Use all predictive inputs except the original factor outcome.  
+  distribution = "bernoulli",  # Bernoulli loss is correct for binary churn prediction.  
+  data = train_g,  # Fit only on the training data.  
+  n.trees = 700,  # Fit a long enough path so model selection across rounds is meaningful.  
+  interaction.depth = 3,  # Allow moderate interaction complexity.  
+  shrinkage = 0.03,  # Use a small learning rate so learning is gradual and stable.  
+  n.minobsinnode = 15,  # Avoid overly tiny terminal nodes that may overfit.  
+  verbose = FALSE  # Keep rendered output readable.  
+)  # End GBM fit.  
+# Define the set of tree counts to compare because early stopping is part of boosting model selection.  
+tree_grid <- seq(25, 700, by = 25)  # Staged evaluation grid across the boosting path.  
+# Compute AUC at each tree count because we want to see where predictive ranking quality peaks.  
+auc_path <- map_dbl(tree_grid, function(nt) {  # Loop over candidate numbers of trees.  
+  p_nt <- predict(gbm_fit, newdata = test_g, n.trees = nt, type = "response")  # Get probabilities for this stage of the model.  
+  auc_rank(test_c$churn, p_nt)  # Evaluate AUC at this stage.  
+})  # End staged AUC loop.  
+# Choose the best number of trees because too many rounds can overfit.  
+best_trees <- tree_grid[which.max(auc_path)]  # Select the tree count with highest observed AUC.  
+# Predict final boosted probabilities using the selected number of trees.  
+p_boost <- predict(gbm_fit, newdata = test_g, n.trees = best_trees, type = "response")  # Final boosting scores.  
+# Evaluate boosting at the same business threshold used for the other models.  
+boost_eval <- class_metrics(test_c$churn, p_boost, threshold = best_thr$threshold)  # Cost-sensitive boosting evaluation.  
+# Combine final model results because the recommendation should be based on one transparent table.  
+comparison <- bind_rows(  # Start combined model comparison table.  
+  best_thr %>% mutate(model = "Logistic"),  # Add logistic performance.  
+  rf_eval %>% mutate(model = paste0("Random Forest (mtry=", best_mtry, ")")),  # Add Random Forest performance.  
+  boost_eval %>% mutate(model = paste0("Boosting (trees=", best_trees, ")"))  # Add boosting performance.  
+) %>%  # End row binding.  
+  select(model, threshold, accuracy, sensitivity, specificity, auc, expected_cost) %>%  # Keep the metrics that matter for decision-making.  
+  arrange(desc(auc))  # Sort by AUC so ranking quality is easy to compare.  
+# Plot staged AUC because it visually shows why the chosen number of trees is sensible.  
+ggplot(tibble(trees = tree_grid, auc = auc_path), aes(x = trees, y = auc)) +  # Start staged boosting plot.  
+  geom_line(color = "purple") +  # Draw the AUC path across boosting rounds.  
+  geom_vline(xintercept = best_trees, color = "darkgreen", linetype = "dashed") +  # Mark the selected tree count.  
+  labs(title = "Boosting staged AUC path", x = "Number of trees", y = "Test-set AUC")  # Add clear labels for interpretation.  
+comparison  # Print the final comparison table.  
 ```
 
-Top AUC model: **`r comparison$model[1]`** (`r round(comparison$auc[1],4)`). Lowest expected-cost model at chosen threshold is **`r comparison$model[which.min(comparison$expected_cost)]`**.
+Boosting is often strong because it reduces bias by fitting many weak trees sequentially, with later trees learning from earlier errors. But the best operational model is not simply the one with the largest AUC; the best model is the one that matches the business objective under the 4:1 false-negative cost rule. In a BAN404 answer, your final recommendation should therefore name the model that best balances **ranking quality**, **sensitivity**, and **expected cost**, and explicitly state that the firm is willing to accept more false positives in exchange for missing fewer true churners.
