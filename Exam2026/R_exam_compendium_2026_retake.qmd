@@ -1670,8 +1670,8 @@ This section is the **first live-data pivot** for the 2026 retake. The goal is t
 
 | Dataset | File path from this compendium | Rows × columns | Response type | First BAN404 instinct |
 |---|---|---:|---|---|
-| `task1_data.csv` | `task1_data.csv` | 5000 × 7 | continuous `y` | Task 1 regression, regularization, nonlinearity checks, LOOCV/CV |
-| `customer_data.csv` | `customer_data.csv` | 2666 × 20 | binary `churn` | Task 2 classification, threshold choice, leakage/redundancy discussion, tree ensembles |
+| `task1_data.csv` | `./task1_data.csv` | 5000 × 7 | continuous `y` | Task 1 regression, regularization, nonlinearity checks, LOOCV/CV |
+| `customer_data.csv` | `./customer_data.csv` | 2666 × 20 | binary `churn` | Task 2 classification, threshold choice, leakage/redundancy discussion, tree ensembles |
 
 ## Dataset 1 — `task1_data.csv`
 
@@ -2001,7 +2001,7 @@ This section builds the generic method playbooks into **fuller, more exam-shaped
 | `Churn.csv` | `../Previous Exam/2023/Churn.csv` | 2023 mixed regression + classification practice | OLS, LASSO, tree, random forest, logistic, bootstrap |
 | `OJ` | package dataset via `ISLR` / `ISLR2` | 2022 classification practice | logistic, classification tree, threshold CV |
 
-All file paths in this section are **relative to this compendium file inside `Exam2026/`**. So `../Previous Exam/2025/data_task1.csv` means "go up one folder from `Exam2026/`, then into `Previous Exam/2025/`".
+All file paths in this section are **relative to this compendium file inside `Exam2026/`**. So `../Previous Exam/2025/data_task1.csv` means "go up one folder from `Exam2026/`, then into `Previous Exam/2025/`". Because the folder name contains a space, keep the whole path inside quotes exactly as shown in the code examples.
 
 ## Example 1 — 2025 Task 1 style: `data_task1.csv`
 
