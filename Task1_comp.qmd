@@ -41,27 +41,27 @@ execute:
 
 ## QUICK LOOKUP TABLE (TELL → METHOD)
 
-| If you see this in code…              | It is almost certainly… | Section |
-|---------------------------------------|-------------------------|---------|
-| `sample(..., replace=TRUE)`           | Bootstrap / Bagging     | 1 / 14  |
-| `for(i in 1:n)` + `X[-i,]`            | LOOCV                   | 3       |
-| `for(i in 1:K)` + `folds == i`        | K‑Fold CV               | 2       |
-| `sum((y - X%*%b)^2) + la*sum(b^2)`    | Ridge                   | 4       |
-| `sum((y - X%*%b)^2) + la*sum(abs(b))` | Lasso                   | 6       |
-| `solve(t(X)%*%X)`                     | OLS closed‑form         | 7       |
-| `abs(x-x0)` + `order(d)[1:K]`         | KNN                     | 8       |
-| `y - f2` / `y - f1` in loop           | Backfitting (GAM)       | 10      |
-| `table(y[o])`                         | KNN classification      | 9       |
-| `exp(eta)/(1+exp(eta))`               | Logistic sigmoid        | 17      |
-| `log(p/(1-p))`                        | Log‑odds                | 18      |
-| `for(s in candidates)` + RSS/Gini     | Tree split              | 12      |
-| `mincut` / pruning loop               | Tree tuning             | 13      |
-| `mtry` in randomForest                | Random forest           | 15      |
-| `` `r <- y - fhat` `` in loop               | Boosting                | 16      |
-| nested loops over `cost`/`gamma`      | SVM tuning              | 21      |
-| `prcomp()` + `pca$x`                  | PCR                     | 23      |
-| `ROC` / `AUC` code                    | ROC/AUC                 | 24      |
-| cluster assignment + centroid update  | K‑means                 | 25      |
+| If you see this in code…             | It is almost certainly… | Section |
+|--------------------------------------|-------------------------|---------|
+| sample(..., replace=TRUE)            | Bootstrap / Bagging     | 1 / 14  |
+| for(i in 1:n) + X\[-i,\]             | LOOCV                   | 3       |
+| for(i in 1:K) + folds == i           | K‑Fold CV               | 2       |
+| sum((y - X%*%b)\^2) + la*sum(b\^2)   | Ridge                   | 4       |
+| sum((y - X%*%b)\^2) + la*sum(abs(b)) | Lasso                   | 6       |
+| solve(t(X)%\*%X)                     | OLS closed‑form         | 7       |
+| abs(x-x0) + order(d)\[1:K\]          | KNN                     | 8       |
+| y - f2 / y - f1 in loop              | Backfitting (GAM)       | 10      |
+| table(y\[o\])                        | KNN classification      | 9       |
+| exp(eta)/(1+exp(eta))                | Logistic sigmoid        | 17      |
+| log(p/(1-p))                         | Log‑odds                | 18      |
+| for(s in candidates) + RSS/Gini      | Tree split              | 12      |
+| mincut / pruning loop                | Tree tuning             | 13      |
+| mtry in randomForest                 | Random forest           | 15      |
+| r \<- y - fhat in loop               | Boosting                | 16      |
+| nested loops over cost/gamma         | SVM tuning              | 21      |
+| prcomp() + pca\$x                    | PCR                     | 23      |
+| ROC / AUC code                       | ROC/AUC                 | 24      |
+| cluster assignment + centroid update | K‑means                 | 25      |
 
 ------------------------------------------------------------------------
 
@@ -629,7 +629,7 @@ boost <- function(X, y, B=100, nu=0.1) {
 }
 ```
 
-**The Tell:** Residual update each loop (`` `r <- y - fhat` ``).
+**The Tell:** Residual update each loop (r <- y - fhat).
 
 **Plug-and-Play Answer:** \> "This function implements **boosting**. It starts with predictions 0, computes residuals, fits a weak learner to the residuals, and updates the prediction by adding a shrunken version of the new tree's predictions."
 
