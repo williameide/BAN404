@@ -18,40 +18,132 @@ execute:
 - **Duration:** 6 hours
 - **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
+- **Important exam expectation:** In every subquestion, combine **method choice + runnable code + interpretation + theory/business reasoning**. A strong BAN404 answer does not only report output; it explains **why the chosen workflow is fair**, **why the model comparison is defensible**, and **how the final recommendation would work under realistic operational constraints**.
+
+# How to use this mock exam
+
+This mock exam is designed to work both as a **full final rehearsal** and as a **lookup tool for polished BAN404 writing**. Each subquestion therefore tells you what to calculate, what theoretical distinction matters most, and what kind of written interpretation the examiner is likely to reward. If you use it carefully, you should practice not only **running the analysis**, but also **defending diagnostics, explaining uncertainty, and converting predictions into a practical decision rule**.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
-## (a) Read algorithm from code and describe assumptions (10 points)
+## Context for Task 1
 
-Given custom penalized objective + optimizer, identify method and assumptions.
+This task is centered on **final-model defendability, diagnostic caution, and the tension between simplicity and flexibility**. In BAN404, a strong Task 1 answer does not only fit several models and pick the lowest error number. It explains whether the simple linear story is **credible enough to trust**, whether penalty-based simplification is **stable enough to report**, and whether nonlinear alternatives produce **substantive improvement** or merely **extra complexity**. You should therefore connect **objective-function interpretation**, **OLS diagnostics**, **same-fold penalized comparison**, **bootstrap stability**, and **GAM reasoning** into one coherent story.
 
-## (b) OLS baseline and diagnostics (10 points)
+## (a) Decode a penalized objective and explain what it implies for model behaviour (10 points)
 
-Fit OLS, evaluate assumptions, and identify signs of nonlinearity.
+You are shown a penalized least-squares criterion and asked to explain what kind of model it represents and how it should be interpreted in practice.
+
+What to do:
+
+- Identify what kind of penalized model the criterion corresponds to.
+- Explain how the penalty changes the bias-variance trade-off relative to OLS.
+- Explain why standardization matters before penalization.
+- Distinguish between a penalty that mainly **shrinks** coefficients and one that can also **remove** coefficients.
+- State what kind of BAN404 wording would make the explanation sound theory-grounded rather than purely mechanical.
+
+What the examiner wants to see:
+
+- correct reading of the objective function,
+- awareness that penalty choice changes both prediction behaviour and interpretability,
+- awareness that standardization is part of fair penalization,
+- theory-grounded language about shrinkage, sparsity, and stability.
 
 ```{r}
 # Your code here
 ```
 
-## (c) Penalized alternatives + tuning (10 points)
+## (b) Build an OLS benchmark and diagnose whether the simple linear story is credible (10 points)
 
-Tune Ridge/LASSO/Elastic Net and select model by cross-validated error and simplicity.
+Fit an OLS model and study whether the simplest regression answer looks trustworthy enough to serve as the main baseline.
+
+What to do:
+
+- Fit OLS on `task1_data.csv`.
+- Summarize coefficients and overall fit.
+- Study residual behaviour to look for signs of nonlinearity or heteroskedasticity.
+- Produce at least one diagnostic plot.
+- Explain which patterns would make you cautious about relying only on a simple linear story.
+- End with a short judgment about whether OLS is still a strong benchmark.
+
+What the examiner wants to see:
+
+- correct use of OLS as a baseline,
+- awareness that diagnostics affect how confidently the model can be defended,
+- interpretation of residual patterns rather than only a coefficient table,
+- BAN404-style caution when assumptions look imperfect.
 
 ```{r}
 # Your code here
 ```
 
-## (d) Bootstrap uncertainty (10 points)
+## (c) Compare Ridge, LASSO, and Elastic Net under one common validation design (10 points)
 
-Bootstrap variance and provide confidence interval interpretation suitable for exam write-up.
+Build a fair same-fold comparison among the main penalized regression options.
+
+What to do:
+
+- Reuse one common fold assignment across methods.
+- Tune Ridge, LASSO, and Elastic Net under that shared structure.
+- Report `lambda.min` and `lambda.1se`.
+- Compare prediction error and coefficient behaviour.
+- Explain what changes when a more conservative reporting rule uses `lambda.1se` instead of `lambda.min`.
+- State which penalized answer is easiest to defend if the examiner values both stability and clarity.
+
+What the examiner wants to see:
+
+- fair same-fold tuning logic,
+- awareness that Ridge, LASSO, and Elastic Net solve different practical problems,
+- interpretation of both validation evidence and active-coefficient behaviour,
+- a final recommendation rather than isolated tuning output.
 
 ```{r}
 # Your code here
 ```
 
-## (e) GAM enhancement (10 points)
+## (d) Use the bootstrap to study both coefficient stability and response-scale uncertainty (10 points)
 
-Fit GAM and assess whether it improves enough to justify lower interpretability.
+Use resampling to decide how confidently the regression story can be reported.
+
+What to do:
+
+- Bootstrap the OLS model many times.
+- Summarize how much key coefficients vary across plausible resamples.
+- Identify at least one comparatively stable and one comparatively unstable coefficient.
+- Bootstrap `SD(y)` and report both a percentile CI and a normal approximation CI.
+- Explain why bootstrap distributions do not have to be symmetric.
+- State how these uncertainty results should influence the wording of an exam answer.
+
+What the examiner wants to see:
+
+- correct bootstrap logic,
+- awareness that coefficient size and coefficient stability are not the same thing,
+- awareness that uncertainty in `SD(y)` says something about how noisy the response is,
+- interpretation grounded in resampling evidence rather than only interval reporting.
+
+```{r}
+# Your code here
+```
+
+## (e) Decide whether spline or GAM flexibility changes the final Task 1 answer (10 points)
+
+Test whether richer functional form evidence is strong enough to replace the simpler linear story.
+
+What to do:
+
+- Fit a linear benchmark.
+- Fit a spline-style nonlinear benchmark.
+- Fit a GAM with smooth terms for plausible nonlinear predictors.
+- Compare MSE and an R²-style fit summary.
+- Use EDF values to interpret whether the smooth terms are doing real work.
+- End with a short Task 1 recommendation paragraph written in exam-ready language.
+
+What the examiner wants to see:
+
+- correct interpretation of nonlinear fit evidence,
+- awareness that additional flexibility must earn its place,
+- discussion of fit, interpretability, and defendability together,
+- a concise final recommendation rather than a model dump.
 
 ```{r}
 # Your code here
@@ -59,41 +151,116 @@ Fit GAM and assess whether it improves enough to justify lower interpretability.
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
-## (a) Data prep strategy (8 points)
+## Context for Task 2
 
-Design prediction-ready dataset and explain each exclusion choice.
+This task focuses on **churn targeting under a realistic contact-capacity constraint**. You should keep separate the ideas of **descriptive churn patterns**, **probability ranking quality**, and **final intervention policy**. In this mock exam, assume the company can actively contact only a limited share of customers each period, so the final decision rule must balance **recall of true churners** against **capacity limits and campaign efficiency**.
 
-```{r}
-# Your code here
-```
+## (a) Build a churn table that is ready for intervention and honest for testing (8 points)
 
-## (b) EDA and business framing (8 points)
+Prepare the churn dataset so later modeling can be defended as both realistic and leakage-safe.
 
-Link patterns to retention actions and define what model errors are most costly.
+What to do:
 
-```{r}
-# Your code here
-```
+- Read and clean the data.
+- Recode the main categorical variables appropriately.
+- Remove deterministic or duplicated predictors.
+- Remove or justify fields that are weak from an intervention perspective.
+- Perform an 80/20 train/test split with a fixed seed.
+- Explain why the hold-out test set must remain untouched until the final comparison.
 
-## (c) Logistic model (12 points)
+What the examiner wants to see:
 
-Train and evaluate logistic model with threshold sweep.
-
-```{r}
-# Your code here
-```
-
-## (d) Random forest (12 points)
-
-Tune and evaluate RF, interpret importance, and compare to logistic coefficients.
+- sensible factor handling,
+- awareness of duplicated information,
+- awareness of intervention realism,
+- correct separation between model building and final testing.
 
 ```{r}
 # Your code here
 ```
 
-## (e) Boosting and final recommendation (10 points)
+## (b) Turn EDA into practical churn-priority stories (8 points)
 
-Tune boosting, compare all candidates, and provide final justified deployment choice.
+Use the training data to create descriptive risk stories that could guide both modeling and retention action.
+
+What to do:
+
+- Quantify class imbalance.
+- Create grouped churn summaries for meaningful customer profiles.
+- Produce at least two informative plots.
+- Describe one clearly higher-risk profile and one lower-risk profile.
+- Suggest at least two plausible actions linked to the patterns.
+- Explain one limitation of taking persona-style EDA too literally.
+
+This is not only a plotting question. It is a reasoning question where descriptive patterns become **candidate model hypotheses** and **candidate intervention ideas**.
+
+```{r}
+# Your code here
+```
+
+## (c) Build a logistic model under a capacity-aware deployment rule (12 points)
+
+Fit logistic regression and choose a threshold under the assumption that only a limited share of customers can be contacted.
+
+What to do:
+
+- Fit logistic regression on the training data.
+- Predict churn probabilities on the untouched test set.
+- Report a ranking metric such as AUC.
+- Evaluate a threshold grid.
+- Include a measure of the share of customers that would be targeted at each threshold.
+- Choose a final threshold using a **capacity-aware rule** rather than defaulting to `0.5`.
+- Interpret at least three coefficients in odds-ratio language.
+
+What the examiner wants to see:
+
+- correct separation of ranking quality and decision policy,
+- awareness that the best threshold depends on operational constraints,
+- correct odds-ratio interpretation,
+- a clearly justified final policy choice.
+
+```{r}
+# Your code here
+```
+
+## (d) Test whether Random Forest adds enough signal to justify weaker interpretability (12 points)
+
+Use Random Forest to see whether a more flexible churn model produces practically useful gains.
+
+What to do:
+
+- Tune Random Forest using only the training data.
+- Compare its performance to logistic regression on the untouched test set.
+- Apply the same capacity-aware operating logic used for the logistic model.
+- Report the most important predictors.
+- Explain what kinds of thresholds, interactions, or nonlinearities Random Forest may detect.
+- State whether the performance gain seems large enough to justify the weaker explanatory clarity.
+
+What the examiner wants to see:
+
+- fair tuning discipline,
+- awareness that flexible tree models may capture patterns logistic regression misses,
+- awareness of the trade-off between predictive gain and interpretability,
+- a decision tied to the deployment rule rather than only to one generic accuracy summary.
+
+```{r}
+# Your code here
+```
+
+## (e) Tune boosting and write the final campaign-allocation memo (10 points)
+
+Fit a boosting model and finish Task 2 with a short deployment recommendation.
+
+What to do:
+
+- Fit a boosting model using only the training data.
+- Choose the number of trees using staged validation logic.
+- Compare boosting with logistic regression and Random Forest on the hold-out test set.
+- Apply the same capacity-aware threshold logic to all candidate models.
+- Decide which model you would recommend.
+- Write a short memo stating the final model, the threshold, the capacity trade-off, and what should be monitored after deployment.
+
+The best answers sound like the closing section of a polished BAN404 submission rather than a loose summary of outputs.
 
 ```{r}
 # Your code here
