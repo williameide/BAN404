@@ -18,46 +18,121 @@ execute:
 - **Duration:** 6 hours
 - **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
+- **Important exam expectation:** In every subquestion, combine **method choice + runnable code + interpretation + theory/business reasoning**. A strong BAN404 answer explains why a sparse model may or may not be preferable, how validation evidence supports the choice, and what business loss structure the final churn decision is built around.
+
+# How to use this mock exam
+
+This mock exam is written to function both as a **practice exam** and as a **lookup tool for decision-ready exam writing**. That means each subquestion tells you what to calculate, what kind of theoretical justification the examiner is likely to reward, and what trade-off you are expected to comment on. If you solve it properly, you should practice not only **running the analysis**, but also **writing short BAN404-style explanations** about selection, uncertainty, model fairness, and deployment logic.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
-## (a) Method identification from custom code (10 points)
+## Context for Task 1
 
-Interpret the following objective and discuss variable selection behavior.
+This task is centered on **sparsity, defensible simplification, and model-selection evidence**. In BAN404, a strong LASSO answer is not only about obtaining zero coefficients, but about explaining **why variable selection happened**, whether the chosen penalty is **stable enough to trust**, and whether the simpler model is genuinely easier to defend than richer alternatives. You should therefore connect **penalty mechanics**, **cross-validation**, **bootstrap evidence**, and **nonlinear benchmarks** into one coherent answer.
 
-```{r}
-f <- function(beta, X, y, lambda) {
-  sum((y - X %*% beta)^2) + lambda * sum(abs(beta))
-}
-```
+## (a) Explain why LASSO can simplify a regression answer (10 points)
 
-## (b) OLS vs LASSO sparsity path (10 points)
+You are told that a penalized least-squares criterion adds a penalty proportional to the **sum of the absolute values of the coefficients**.
 
-Fit OLS and LASSO over a lambda grid. Show coefficient paths and identify first predictors to shrink to zero.
+What to do:
 
-```{r}
-# Your code here
-```
+- Identify the method and explain how you can recognize it.
+- Explain why the absolute-value penalty can set some coefficients exactly to zero.
+- Explain why standardization matters before penalization.
+- Discuss when sparsity can improve an exam answer and when it can become misleading.
+- Explain how correlated predictors can complicate interpretation of the selected model.
 
-## (c) Repeated K-fold CV (10 points)
+What the examiner wants to see:
 
-Use repeated 5-fold CV to reduce variance in lambda choice. Explain why single split can be unstable.
-
-```{r}
-# Your code here
-```
-
-## (d) Bootstrap SD(y) and CI comparison (10 points)
-
-Bootstrap SD(y) with B = 1200 and compare percentile and normal CIs.
+- correct recognition of **LASSO regression**,
+- awareness that LASSO changes the **bias-variance trade-off**,
+- awareness that variable selection is not the same as proving a variable is truly unimportant,
+- theory-grounded discussion rather than only naming the method.
 
 ```{r}
 # Your code here
 ```
 
-## (e) Basis expansion vs GAM (10 points)
+## (b) Compare OLS, LASSO, and Elastic Net under a shared workflow (10 points)
 
-Compare polynomial regression and GAM for non-linear effects. Comment on overfitting risk.
+Build a fair comparison between **OLS**, **LASSO**, and **Elastic Net**.
+
+What to do:
+
+- Fit OLS as the unpenalized baseline.
+- Fit LASSO and Elastic Net using the same fold structure.
+- Report `lambda.min` and `lambda.1se` for the penalized models.
+- Compare coefficient behavior at the selected penalty choices.
+- Report how many predictors remain active under each penalized fit.
+- Explain whether the more selective model seems preferable or whether the extra stability of Elastic Net is easier to defend.
+
+What the examiner wants to see:
+
+- a fair comparison built on shared validation logic,
+- awareness that LASSO emphasizes sparsity while Elastic Net can behave more stably with correlated predictors,
+- interpretation of both performance and coefficient behavior,
+- a justified model choice rather than a number-only answer.
+
+```{r}
+# Your code here
+```
+
+## (c) Study sparse-model stability rather than only one chosen lambda (10 points)
+
+Use validation and resampling to study whether the selected sparse model is stable enough to trust.
+
+What to do:
+
+- Use repeated K-fold CV to study variation in the selected `lambda.min`.
+- Summarize how much the chosen penalty moves across repetitions.
+- Use a bootstrap procedure to study how often predictors remain active in the LASSO solution.
+- Identify which predictors look highly stable and which look fragile.
+- Explain why selection stability matters for interpretation.
+- State what kind of overly confident exam wording would be risky here.
+
+A strong answer should make clear that a sparse model may look neat, while still being unstable across plausible samples or splits.
+
+```{r}
+# Your code here
+```
+
+## (d) Test whether simple nonlinearity can beat a sparse linear answer (10 points)
+
+Compare a sparse linear answer to a more flexible nonlinear alternative.
+
+What to do:
+
+- Fit the chosen sparse linear model.
+- Fit a polynomial or basis-expansion benchmark.
+- Fit a GAM with smooth terms for plausible nonlinear predictors.
+- Compare MSE and an R²-style fit measure.
+- Explain whether the extra flexibility seems substantively useful or mainly cosmetic.
+- State which version would be easiest to defend in a time-pressured exam answer.
+
+What the examiner wants to see:
+
+- awareness that sparsity is not automatically best if the functional form is wrong,
+- correct interpretation of smooth/nonlinear model evidence,
+- discussion of complexity versus defendability,
+- a final recommendation based on fit **and** clarity.
+
+```{r}
+# Your code here
+```
+
+## (e) Write the final Task 1 recommendation paragraph (10 points)
+
+End Task 1 with a short **exam-ready recommendation paragraph**.
+
+What to include:
+
+- which model you would report as the main answer,
+- whether you would emphasize `lambda.min` or `lambda.1se`,
+- what the stability evidence says about your confidence,
+- whether nonlinearity changes your conclusion,
+- how you would defend the final answer in one polished BAN404 paragraph.
+
+The best answers sound like the final paragraph of a strong submission, not a list of outputs.
 
 ```{r}
 # Your code here
@@ -65,41 +140,105 @@ Compare polynomial regression and GAM for non-linear effects. Comment on overfit
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
-## (a) Data cleaning and leakage prevention (8 points)
+## Context for Task 2
 
-Prepare factors, remove non-actionable columns, and define an 80/20 split.
+This task focuses on **retention targeting under asymmetric decision costs**. You should keep separate the ideas of **descriptive churn patterns**, **probability ranking quality**, and **final intervention policy**. In this mock exam, assume that a **false negative costs 5 times as much as a false positive**, so the final threshold choice should be designed to catch risky customers rather than simply maximize default accuracy.
 
-```{r}
-# Your code here
-```
+## (a) Build a deployment-aware churn dataset (8 points)
 
-## (b) EDA and imbalance diagnosis (8 points)
+Prepare the churn data so later models can be defended as realistic and leakage-aware.
 
-Quantify class imbalance and produce churn-rate comparisons for key categorical and numeric predictors.
+What to do:
 
-```{r}
-# Your code here
-```
+- Read and clean the data.
+- Recode categorical variables appropriately.
+- Remove deterministic or duplicated predictors.
+- Exclude or justify fields that are weak from an intervention or deployment perspective.
+- Perform an 80/20 train/test split with a fixed seed.
+- Explain why the test data must remain untouched until final model comparison.
 
-## (c) Logistic model with cost matrix (12 points)
+What the examiner wants to see:
 
-Choose threshold by minimizing expected cost where FN cost is 4x FP cost.
-
-```{r}
-# Your code here
-```
-
-## (d) Random forest (12 points)
-
-Tune model and discuss top importance variables versus logistic coefficient signs.
+- sensible factor handling,
+- awareness of duplicated information,
+- awareness of deployment realism,
+- correct train/test discipline.
 
 ```{r}
 # Your code here
 ```
 
-## (e) Gradient boosting (10 points)
+## (b) Use EDA to build retention personas and hypotheses (8 points)
 
-Tune number of trees and provide final model recommendation for churn retention campaign.
+Use the training data to create **retention personas** and translate them into model hypotheses.
+
+What to do:
+
+- Quantify class imbalance.
+- Create grouped churn summaries for meaningful customer profiles.
+- Produce at least two informative plots.
+- Describe one high-risk persona and one moderate-risk persona.
+- Propose at least two intervention ideas linked to the descriptive patterns.
+- Mention one limitation of persona-based EDA.
+
+This is not only a plotting task. It is a reasoning task where descriptive churn patterns become **candidate model stories** and **candidate business actions**.
+
+```{r}
+# Your code here
+```
+
+## (c) Build an interpretable logistic decision rule (12 points)
+
+Fit a logistic regression model and choose an operating threshold under the **5:1 false-negative cost ratio**.
+
+What to do:
+
+- Fit logistic regression on the training data.
+- Predict probabilities on the test data.
+- Report a ranking metric such as AUC.
+- Evaluate a grid of thresholds.
+- Report sensitivity, specificity, and expected cost.
+- Interpret at least three coefficients in odds-ratio language.
+- Explain why the business-optimal threshold is not automatically `0.5`.
+
+A strong answer should clearly separate **ranking quality** from **action policy**.
+
+```{r}
+# Your code here
+```
+
+## (d) Compare flexible ensembles against the logistic baseline (12 points)
+
+Use **Random Forest** and **boosting** to test whether more flexible models improve the churn solution.
+
+What to do:
+
+- Tune Random Forest using the training data only.
+- Fit a boosting model and choose the number of trees using staged validation logic.
+- Compare all models on the hold-out test set.
+- Report AUC and cost-sensitive threshold performance.
+- Compare tree-based importance patterns with the earlier personas.
+- Explain what the flexible models may capture that logistic regression may miss.
+
+The best answers explain that improved prediction may come at the cost of simpler coefficient-based interpretation.
+
+```{r}
+# Your code here
+```
+
+## (e) Write the final retention-policy memo (10 points)
+
+Provide a final recommendation memo for management.
+
+Your memo should explicitly state:
+
+1. which model you recommend,
+2. which threshold you would deploy,
+3. which metric or objective mattered most,
+4. what trade-off the company is accepting,
+5. what you would monitor after deployment.
+
+A strong answer should sound like the closing paragraph of a polished BAN404 submission.
 
 ```{r}
 # Your code here
