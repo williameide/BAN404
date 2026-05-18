@@ -1668,10 +1668,10 @@ This section is the **first live-data pivot** for the 2026 retake. The goal is t
 
 ## Fast map of the two live datasets
 
-| Dataset | File path from this compendium | Rows × columns | Response type | First BAN404 instinct |
+| Dataset | File path if your working directory is `Exam2026/` | Rows × columns | Response type | First BAN404 instinct |
 |---|---|---:|---|---|
-| `task1_data.csv` | `./task1_data.csv` | 5000 × 7 | continuous `y` | Task 1 regression, regularization, nonlinearity checks, LOOCV/CV |
-| `customer_data.csv` | `./customer_data.csv` | 2666 × 20 | binary `churn` | Task 2 classification, threshold choice, leakage/redundancy discussion, tree ensembles |
+| `task1_data.csv` | `task1_data.csv` | 5000 × 7 | continuous `y` | Task 1 regression, regularization, nonlinearity checks, LOOCV/CV |
+| `customer_data.csv` | `customer_data.csv` | 2666 × 20 | binary `churn` | Task 2 classification, threshold choice, leakage/redundancy discussion, tree ensembles |
 
 ## Dataset 1 — `task1_data.csv`
 
@@ -1703,7 +1703,7 @@ This dataset is already screaming three classic BAN404 directions:
 ### First-pass working code for Task 1
 
 ```{r}
-# Read the live 2026 Task 1 dataset.  # The file sits next to this compendium, so the path is short and stable.
+# Read the live 2026 Task 1 dataset.  # This assumes your R working directory is `Exam2026/`, where the file sits next to this compendium.
 task1_2026 <- read_csv("task1_data.csv", show_col_types = FALSE)  # Standard csv import because the file is comma-separated.
 
 # Inspect the structure immediately.  # We want to confirm that x1 to x6 and y are all numeric.
@@ -1821,7 +1821,7 @@ This dataset strongly prepares you for three common BAN404 Task 2 question types
 ### First-pass working code for Task 2
 
 ```{r}
-# Read the live 2026 Task 2 dataset.  # The file is stored next to this compendium.
+# Read the live 2026 Task 2 dataset.  # This assumes your R working directory is `Exam2026/`, where the file sits next to this compendium.
 customer_2026_raw <- read_csv("customer_data.csv", show_col_types = FALSE)  # Standard CSV import.
 
 # Clean names and recode the key categorical variables.  # This makes the data easier and safer to work with in the exam.
