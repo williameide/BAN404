@@ -1,0 +1,100 @@
+---
+title: "BAN404 Mock Exam 2026 #10"
+subtitle: "Comprehensive Final Simulation"
+author: "Candidate"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: false
+execute:
+  eval: true
+  echo: true
+---
+
+# Exam Information
+
+- **Duration:** 6 hours
+- **Datasets:** `../task1_data.csv`, `../customer_data.csv`
+- **Point split:** Task 1 (50), Task 2 (50)
+
+# Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
+
+## (a) Read algorithm from code and describe assumptions (10 points)
+
+Given custom penalized objective + optimizer, identify method and assumptions.
+
+## (b) OLS baseline and diagnostics (10 points)
+
+Fit OLS, evaluate assumptions, and identify signs of nonlinearity.
+
+```{r}
+# Your code here
+```
+
+## (c) Penalized alternatives + tuning (10 points)
+
+Tune Ridge/LASSO/Elastic Net and select model by cross-validated error and simplicity.
+
+```{r}
+# Your code here
+```
+
+## (d) Bootstrap uncertainty (10 points)
+
+Bootstrap variance and provide confidence interval interpretation suitable for exam write-up.
+
+```{r}
+# Your code here
+```
+
+## (e) GAM enhancement (10 points)
+
+Fit GAM and assess whether it improves enough to justify lower interpretability.
+
+```{r}
+# Your code here
+```
+
+# Task 2 (50 points) — Churn (`customer_data.csv`)
+
+## (a) Data prep strategy (8 points)
+
+Design prediction-ready dataset and explain each exclusion choice.
+
+```{r}
+# Your code here
+```
+
+## (b) EDA and business framing (8 points)
+
+Link patterns to retention actions and define what model errors are most costly.
+
+```{r}
+# Your code here
+```
+
+## (c) Logistic model (12 points)
+
+Train and evaluate logistic model with threshold sweep.
+
+```{r}
+# Your code here
+```
+
+## (d) Random forest (12 points)
+
+Tune and evaluate RF, interpret importance, and compare to logistic coefficients.
+
+```{r}
+# Your code here
+```
+
+## (e) Boosting and final recommendation (10 points)
+
+Tune boosting, compare all candidates, and provide final justified deployment choice.
+
+```{r}
+# Your code here
+```

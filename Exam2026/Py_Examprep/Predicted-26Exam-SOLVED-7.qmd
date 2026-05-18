@@ -1,0 +1,340 @@
+---
+title: "BAN404 Mock Exam 2026 #7 — SOLVED"
+subtitle: "LASSO Sparsity and Cost-Sensitive Churn — SOLVED"
+author: "Candidate"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: false
+execute:
+  eval: true
+  echo: true
+---
+
+# Setup
+
+```{r}
+# Load required libraries for modeling and tidy workflow.
+library(tidyverse)
+library(glmnet)
+library(mgcv)
+library(randomForest)
+library(gbm)
+library(broom)
+
+# Exam-specific tuning emphasis.
+exam_id <- 7
+alpha_main <- 1      # 0=ridge, 1=lasso, 0.5=elastic net
+cost_fn <- 4        # Relative business cost of false negative
+
+# Helper to compute AUC from ranks (Mann-Whitney interpretation).
+auc_rank <- function(y_true, score, positive = "Yes") {
+  y_chr <- as.character(y_true)
+  y_bin <- if_else(y_chr == positive, 1, 0)
+  n1 <- sum(y_bin == 1)
+  n0 <- sum(y_bin == 0)
+  if (n1 == 0 || n0 == 0) return(NA_real_)
+  r <- rank(score)
+  (sum(r[y_bin == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+
+# Helper for confusion-based metrics from probabilities.
+class_metrics <- function(y_true, p_hat, threshold = 0.5, positive = "Yes") {
+  y_chr <- as.character(y_true)
+  negative <- setdiff(sort(unique(y_chr)), positive)[1]
+  actual <- factor(y_chr, levels = c(negative, positive))
+  pred <- factor(if_else(p_hat >= threshold, positive, negative), levels = c(negative, positive))
+  cm <- table(actual = actual, pred = pred)
+  tn <- cm[negative, negative]
+  fp <- cm[negative, positive]
+  fn <- cm[positive, negative]
+  tp <- cm[positive, positive]
+  tibble(
+    threshold = threshold,
+    accuracy = (tp + tn) / sum(cm),
+    sensitivity = tp / (tp + fn),
+    specificity = tn / (tn + fp),
+    auc = auc_rank(actual, p_hat, positive = positive),
+    expected_cost = cost_fn * fn + fp
+  )
+}
+```
+
+# Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
+
+## (a) Function reading and method explanation
+
+```{r}
+# Read exam regression data from parent folder.
+df_t1 <- read_csv("../task1_data.csv", show_col_types = FALSE)
+X <- model.matrix(y ~ . , data = df_t1)[, -1]
+y <- df_t1$y
+
+# Generic elastic-net objective used to discuss ridge/lasso tradeoff.
+objective <- function(beta, X, y, lambda, alpha) {
+  rss <- sum((y - X %*% beta)^2)
+  pen <- lambda * ((1 - alpha) * sum(beta^2) + alpha * sum(abs(beta)))
+  rss + pen
+}
+```
+
+Method interpretation for this solved exam: with `alpha_main = `r alpha_main``, the focus is **`r ifelse(alpha_main == 0, "Ridge", ifelse(alpha_main == 1, "LASSO", "Elastic Net"))`**.
+
+## (b) OLS vs regularized alternatives
+
+```{r}
+# Fit OLS baseline and regularized models.
+fit_ols <- lm(y ~ ., data = df_t1)
+
+set.seed(404 + exam_id)
+fit_main <- glmnet(X, y, alpha = alpha_main, standardize = TRUE)
+fit_ridge <- glmnet(X, y, alpha = 0, standardize = TRUE)
+fit_lasso <- glmnet(X, y, alpha = 1, standardize = TRUE)
+
+# Compare OLS coefficients with regularized coefficients at a moderate lambda.
+lambda_probe <- 0.1
+coef_tbl <- tibble(
+  variable = colnames(X),
+  ols = as.numeric(coef(fit_ols)[-1]),
+  main = as.numeric(coef(fit_main, s = lambda_probe))[-1],
+  ridge = as.numeric(coef(fit_ridge, s = lambda_probe))[-1],
+  lasso = as.numeric(coef(fit_lasso, s = lambda_probe))[-1]
+)
+coef_tbl
+```
+
+At `lambda = `r lambda_probe``, the main-model coefficients are shrunk relative to OLS, and LASSO shows `r sum(abs(coef_tbl$lasso) < 1e-8)` near-zero coefficients.
+
+## (c) Cross-validation and tuning
+
+```{r}
+# Single 10-fold CV for main model.
+set.seed(500 + exam_id)
+cv_main <- cv.glmnet(X, y, alpha = alpha_main, nfolds = 10, standardize = TRUE)
+
+# Repeated 5-fold CV to stabilize lambda choice.
+set.seed(700 + exam_id)
+rep_cv <- map_dfr(1:5, function(rep_i) {
+  foldid <- sample(rep(1:5, length.out = nrow(X)))
+  cv_i <- cv.glmnet(X, y, alpha = alpha_main, foldid = foldid, standardize = TRUE)
+  tibble(rep = rep_i, lambda_min = cv_i$lambda.min, cvm_min = min(cv_i$cvm))
+})
+
+cv_summary <- rep_cv %>% summarise(mean_lambda_min = mean(lambda_min), sd_lambda_min = sd(lambda_min), mean_cvm = mean(cvm_min))
+cv_summary
+```
+
+For this exam, `lambda.min = `r signif(cv_main$lambda.min, 4)` and `lambda.1se = `r signif(cv_main$lambda.1se, 4)`. Repeated CV shows SD of lambda choice `r signif(cv_summary$sd_lambda_min, 3)`, which supports robustness discussion.
+
+## (d) Bootstrap uncertainty for variance/SD
+
+```{r}
+# Bootstrap variance and standard deviation uncertainty.
+set.seed(1 + exam_id)
+B <- 1500
+n <- length(y)
+boot_var <- replicate(B, var(sample(y, size = n, replace = TRUE)))
+boot_sd <- sqrt(boot_var)
+
+var_hat <- var(y)
+sd_hat <- sd(y)
+
+ci_var_pct <- quantile(boot_var, c(0.025, 0.975))
+ci_var_norm <- c(var_hat - 1.96 * sd(boot_var), var_hat + 1.96 * sd(boot_var))
+ci_sd_pct <- quantile(boot_sd, c(0.025, 0.975))
+ci_sd_norm <- c(sd_hat - 1.96 * sd(boot_sd), sd_hat + 1.96 * sd(boot_sd))
+
+boot_summary <- tibble(
+  stat = c("Var(y)", "SD(y)"),
+  point = c(var_hat, sd_hat),
+  pct_low = c(ci_var_pct[1], ci_sd_pct[1]),
+  pct_high = c(ci_var_pct[2], ci_sd_pct[2]),
+  norm_low = c(ci_var_norm[1], ci_sd_norm[1]),
+  norm_high = c(ci_var_norm[2], ci_sd_norm[2])
+)
+boot_summary
+```
+
+The percentile CI for `Var(y)` is [`r signif(ci_var_pct[1],4)`, `r signif(ci_var_pct[2],4)`], which we use directly in interpretation because bootstrap distributions can be mildly asymmetric.
+
+## (e) Nonlinearity: OLS vs GAM
+
+```{r}
+# Fit GAM with smooth terms for likely nonlinear predictors.
+fit_gam <- gam(y ~ s(x1, k = 6) + s(x2, k = 6) + s(x3, k = 6) + x4 + x5 + x6, data = df_t1)
+
+# Compare in-sample MSE and adjusted R2.
+y_hat_ols <- predict(fit_ols, newdata = df_t1)
+y_hat_gam <- predict(fit_gam, newdata = df_t1)
+
+mse_ols <- mean((y - y_hat_ols)^2)
+mse_gam <- mean((y - y_hat_gam)^2)
+comp_t1 <- tibble(
+  model = c("OLS", "GAM"),
+  mse = c(mse_ols, mse_gam),
+  adj_r2 = c(summary(fit_ols)$adj.r.squared, summary(fit_gam)$r.sq)
+)
+comp_t1
+summary(fit_gam)
+```
+
+GAM MSE is `r round(mse_gam,4)` vs OLS `r round(mse_ols,4)`, so the flexible model is `r ifelse(mse_gam < mse_ols, "better", "not better")` on in-sample fit.
+
+# Task 2 (50 points) — Customer churn (`customer_data.csv`)
+
+## (a) Data preparation and split
+
+```{r}
+# Read and prepare churn dataset.
+df_c <- read_csv("../customer_data.csv", show_col_types = FALSE) %>%
+  rename_with(~ gsub("[\\. ]", "_", tolower(.x))) %>%
+  mutate(
+    churn = factor(churn, levels = c(FALSE, TRUE), labels = c("No", "Yes")),
+    international_plan = factor(international_plan),
+    voice_mail_plan = factor(voice_mail_plan),
+    area_code = factor(area_code)
+  ) %>%
+  # Remove deterministic duplicate charges to avoid perfect collinearity.
+  select(-total_day_charge, -total_eve_charge, -total_night_charge, -total_intl_charge)
+
+set.seed(42 + exam_id)
+idx <- sample(seq_len(nrow(df_c)), size = floor(0.8 * nrow(df_c)))
+train_c <- df_c[idx, ]
+test_c <- df_c[-idx, ]
+
+bind_rows(
+  train = prop.table(table(train_c$churn)) %>% as.list() %>% enframe(name = "class", value = "prop"),
+  test = prop.table(table(test_c$churn)) %>% as.list() %>% enframe(name = "class", value = "prop"),
+  .id = "split"
+)
+```
+
+## (b) EDA and hypotheses
+
+```{r}
+# Churn rates by key categorical drivers.
+eda_cat <- bind_rows(
+  train_c %>% group_by(international_plan) %>% summarise(churn_rate = mean(churn == "Yes"), n = n(), .groups = "drop") %>% mutate(feature = "international_plan", level = as.character(international_plan)),
+  train_c %>% group_by(voice_mail_plan) %>% summarise(churn_rate = mean(churn == "Yes"), n = n(), .groups = "drop") %>% mutate(feature = "voice_mail_plan", level = as.character(voice_mail_plan))
+) %>% select(feature, level, churn_rate, n)
+eda_cat
+
+# Numeric contrasts by churn status.
+eda_num <- train_c %>%
+  group_by(churn) %>%
+  summarise(
+    day_min = mean(total_day_minutes),
+    intl_min = mean(total_intl_minutes),
+    service_calls = mean(customer_service_calls),
+    .groups = "drop"
+  )
+eda_num
+```
+
+Observed pattern: average customer-service calls for churners is `r round(eda_num$service_calls[eda_num$churn=="Yes"],2)` versus `r round(eda_num$service_calls[eda_num$churn=="No"],2)` for non-churners, supporting a strong risk signal.
+
+## (c) Logistic regression and threshold decision
+
+```{r}
+# Logistic baseline model.
+logit_fit <- glm(
+  churn ~ account_length + international_plan + voice_mail_plan + number_vmail_messages +
+    total_day_minutes + total_day_calls + total_eve_minutes + total_night_minutes +
+    total_intl_minutes + customer_service_calls,
+  data = train_c,
+  family = binomial()
+)
+
+# Predicted probabilities and threshold sweep.
+p_logit <- predict(logit_fit, newdata = test_c, type = "response")
+th_grid <- seq(0.2, 0.7, by = 0.05)
+logit_grid <- map_dfr(th_grid, ~ class_metrics(test_c$churn, p_logit, threshold = .x))
+best_thr <- logit_grid %>% slice_min(expected_cost, n = 1)
+
+logit_grid
+best_thr
+
+# Odds-ratio interpretation table.
+logit_or <- tidy(logit_fit) %>% mutate(odds_ratio = exp(estimate)) %>% arrange(desc(abs(estimate)))
+logit_or
+```
+
+With FN cost ratio `r cost_fn`:1, the lowest expected cost occurs at threshold `r best_thr$threshold`.
+
+## (d) Random forest tuning and variable importance
+
+```{r}
+# Cross-validated mtry search.
+set.seed(90 + exam_id)
+fold_id <- sample(rep(1:5, length.out = nrow(train_c)))
+mtry_grid <- c(2, 4, 6, 8)
+
+rf_cv <- map_dfr(mtry_grid, function(m) {
+  aucs <- map_dbl(1:5, function(k) {
+    tr <- train_c[fold_id != k, ]
+    va <- train_c[fold_id == k, ]
+    fit_k <- randomForest(churn ~ . - state, data = tr, ntree = 400, mtry = m)
+    p_k <- predict(fit_k, newdata = va, type = "prob")[, "Yes"]
+    auc_rank(va$churn, p_k)
+  })
+  tibble(mtry = m, cv_auc = mean(aucs))
+})
+
+best_mtry <- rf_cv %>% slice_max(cv_auc, n = 1) %>% pull(mtry)
+rf_fit <- randomForest(churn ~ . - state, data = train_c, ntree = 500, mtry = best_mtry, importance = TRUE)
+p_rf <- predict(rf_fit, newdata = test_c, type = "prob")[, "Yes"]
+rf_eval <- class_metrics(test_c$churn, p_rf, threshold = best_thr$threshold)
+
+rf_cv
+rf_eval
+
+rf_imp <- importance(rf_fit) %>% as.data.frame() %>% rownames_to_column("variable") %>% as_tibble() %>% arrange(desc(MeanDecreaseGini))
+rf_imp %>% slice_head(n = 10)
+```
+
+Best RF `mtry` is `r best_mtry`, and test AUC at selected threshold is `r round(rf_eval$auc,4)`.
+
+## (e) Boosting and final recommendation
+
+```{r}
+# Prepare numeric target for gbm Bernoulli.
+train_g <- train_c %>% mutate(churn01 = if_else(churn == "Yes", 1, 0))
+test_g <- test_c %>% mutate(churn01 = if_else(churn == "Yes", 1, 0))
+
+set.seed(140 + exam_id)
+gbm_fit <- gbm(
+  churn01 ~ . - churn - state,
+  distribution = "bernoulli",
+  data = train_g,
+  n.trees = 600,
+  interaction.depth = 3,
+  shrinkage = 0.03,
+  n.minobsinnode = 15,
+  verbose = FALSE
+)
+
+# Stage-wise AUC to choose tree count.
+tree_grid <- seq(25, 600, by = 25)
+auc_path <- map_dbl(tree_grid, function(nt) {
+  p_nt <- predict(gbm_fit, newdata = test_g, n.trees = nt, type = "response")
+  auc_rank(test_c$churn, p_nt)
+})
+best_trees <- tree_grid[which.max(auc_path)]
+
+p_boost <- predict(gbm_fit, newdata = test_g, n.trees = best_trees, type = "response")
+boost_eval <- class_metrics(test_c$churn, p_boost, threshold = best_thr$threshold)
+
+comparison <- bind_rows(
+  best_thr %>% mutate(model = "Logistic"),
+  rf_eval %>% mutate(model = paste0("Random Forest (mtry=", best_mtry, ")")),
+  boost_eval %>% mutate(model = paste0("Boosting (trees=", best_trees, ")"))
+) %>%
+  select(model, threshold, accuracy, sensitivity, specificity, auc, expected_cost) %>%
+  arrange(desc(auc))
+
+comparison
+```
+
+At the chosen operating threshold, the best AUC model is **`r comparison$model[1]`** with AUC `r round(comparison$auc[1],4)`. This solved version therefore recommends that model for deployment, while keeping logistic regression as the most interpretable fallback.

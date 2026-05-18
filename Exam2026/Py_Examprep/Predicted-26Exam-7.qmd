@@ -1,0 +1,106 @@
+---
+title: "BAN404 Mock Exam 2026 #7"
+subtitle: "LASSO Sparsity and Cost-Sensitive Churn"
+author: "Candidate"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: false
+execute:
+  eval: true
+  echo: true
+---
+
+# Exam Information
+
+- **Duration:** 6 hours
+- **Datasets:** `../task1_data.csv`, `../customer_data.csv`
+- **Point split:** Task 1 (50), Task 2 (50)
+
+# Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
+
+## (a) Method identification from custom code (10 points)
+
+Interpret the following objective and discuss variable selection behavior.
+
+```{r}
+f <- function(beta, X, y, lambda) {
+  sum((y - X %*% beta)^2) + lambda * sum(abs(beta))
+}
+```
+
+## (b) OLS vs LASSO sparsity path (10 points)
+
+Fit OLS and LASSO over a lambda grid. Show coefficient paths and identify first predictors to shrink to zero.
+
+```{r}
+# Your code here
+```
+
+## (c) Repeated K-fold CV (10 points)
+
+Use repeated 5-fold CV to reduce variance in lambda choice. Explain why single split can be unstable.
+
+```{r}
+# Your code here
+```
+
+## (d) Bootstrap SD(y) and CI comparison (10 points)
+
+Bootstrap SD(y) with B = 1200 and compare percentile and normal CIs.
+
+```{r}
+# Your code here
+```
+
+## (e) Basis expansion vs GAM (10 points)
+
+Compare polynomial regression and GAM for non-linear effects. Comment on overfitting risk.
+
+```{r}
+# Your code here
+```
+
+# Task 2 (50 points) — Churn (`customer_data.csv`)
+
+## (a) Data cleaning and leakage prevention (8 points)
+
+Prepare factors, remove non-actionable columns, and define an 80/20 split.
+
+```{r}
+# Your code here
+```
+
+## (b) EDA and imbalance diagnosis (8 points)
+
+Quantify class imbalance and produce churn-rate comparisons for key categorical and numeric predictors.
+
+```{r}
+# Your code here
+```
+
+## (c) Logistic model with cost matrix (12 points)
+
+Choose threshold by minimizing expected cost where FN cost is 4x FP cost.
+
+```{r}
+# Your code here
+```
+
+## (d) Random forest (12 points)
+
+Tune model and discuss top importance variables versus logistic coefficient signs.
+
+```{r}
+# Your code here
+```
+
+## (e) Gradient boosting (10 points)
+
+Tune number of trees and provide final model recommendation for churn retention campaign.
+
+```{r}
+# Your code here
+```

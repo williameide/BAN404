@@ -1,0 +1,110 @@
+---
+title: "BAN404 Mock Exam 2026 #6"
+subtitle: "Ridge-first Validation and Churn Decisioning"
+author: "Candidate"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: false
+execute:
+  eval: true
+  echo: true
+---
+
+# Exam Information
+
+- **Duration:** 6 hours
+- **Datasets:** `../task1_data.csv`, `../customer_data.csv`
+- **Point split:** Task 1 (50), Task 2 (50)
+
+# Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
+
+## (a) Read method from objective function (10 points)
+
+Given
+
+```{r}
+f <- function(beta, X, y, lambda) {
+  rss <- sum((y - X %*% beta)^2)
+  penalty <- lambda * sum(beta^2)
+  rss + penalty
+}
+```
+
+Explain method, geometry of shrinkage, and why coefficients rarely become exactly zero.
+
+## (b) OLS vs Ridge vs LASSO (10 points)
+
+Fit OLS, Ridge, and LASSO. Compare coefficients and discuss stability vs sparsity.
+
+```{r}
+# Your code here
+```
+
+## (c) K-fold CV + one-standard-error rule (10 points)
+
+Tune lambda with 10-fold CV. Report `lambda.min` and `lambda.1se` and justify which you would pick for exam robustness.
+
+```{r}
+# Your code here
+```
+
+## (d) Bootstrap variance uncertainty (10 points)
+
+Bootstrap `Var(y)` with B = 1500. Report percentile and normal CIs and explain any asymmetry.
+
+```{r}
+# Your code here
+```
+
+## (e) Linear vs smooth effects (10 points)
+
+Diagnose non-linearity and compare OLS with GAM. Evaluate using MSE and adjusted R².
+
+```{r}
+# Your code here
+```
+
+# Task 2 (50 points) — Churn (`customer_data.csv`)
+
+## (a) Prediction-time data design (8 points)
+
+Prepare data, remove deterministic duplicates, and create train/test split with fixed seed.
+
+```{r}
+# Your code here
+```
+
+## (b) EDA with actionable hypotheses (8 points)
+
+Create churn-rate summaries and at least two visuals. State three hypotheses to test in models.
+
+```{r}
+# Your code here
+```
+
+## (c) Logistic regression + threshold strategy (12 points)
+
+Fit logistic regression, evaluate multiple thresholds, and choose threshold using business cost of false negatives.
+
+```{r}
+# Your code here
+```
+
+## (d) Random forest tuning and interpretation (12 points)
+
+Tune `mtry` using CV on training set. Evaluate on test set and compare importance with EDA hypotheses.
+
+```{r}
+# Your code here
+```
+
+## (e) Boosting and final recommendation (10 points)
+
+Tune tree count by staged test AUC. Compare logistic, RF, and boosting and recommend one deployment model.
+
+```{r}
+# Your code here
+```

@@ -1,0 +1,100 @@
+---
+title: "BAN404 Mock Exam 2026 #8"
+subtitle: "Resampling-heavy Methods and Explainable Churn"
+author: "Candidate"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: false
+execute:
+  eval: true
+  echo: true
+---
+
+# Exam Information
+
+- **Duration:** 6 hours
+- **Datasets:** `../task1_data.csv`, `../customer_data.csv`
+- **Point split:** Task 1 (50), Task 2 (50)
+
+# Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
+
+## (a) Explain CV pseudocode (10 points)
+
+Given pseudocode for K-fold CV, explain where leakage can happen and how to avoid it.
+
+## (b) Regularized model comparison (10 points)
+
+Compare OLS, Ridge, and Elastic Net using the same standardized inputs.
+
+```{r}
+# Your code here
+```
+
+## (c) Bootstrap coefficient stability (10 points)
+
+Bootstrap OLS coefficients and report the most unstable predictor.
+
+```{r}
+# Your code here
+```
+
+## (d) Variance CI (10 points)
+
+Estimate CI for `Var(y)` and interpret practical uncertainty for expected prediction error scale.
+
+```{r}
+# Your code here
+```
+
+## (e) GAM diagnostics (10 points)
+
+Fit GAM with smooth terms and interpret EDF values.
+
+```{r}
+# Your code here
+```
+
+# Task 2 (50 points) — Churn (`customer_data.csv`)
+
+## (a) Data prep with collinearity handling (8 points)
+
+Remove deterministic duplicates, encode factors, and split data.
+
+```{r}
+# Your code here
+```
+
+## (b) EDA and interpretable segments (8 points)
+
+Build churn summaries by segment and identify a high-risk customer profile.
+
+```{r}
+# Your code here
+```
+
+## (c) Logistic baseline + interpretation (12 points)
+
+Fit logistic model and interpret three key effects in odds terms.
+
+```{r}
+# Your code here
+```
+
+## (d) Random forest nonlinear interactions (12 points)
+
+Evaluate RF and explain where it can improve over logistic.
+
+```{r}
+# Your code here
+```
+
+## (e) Boosting + deployment recommendation (10 points)
+
+Tune boosting and recommend model under requirement: high recall while keeping acceptable specificity.
+
+```{r}
+# Your code here
+```

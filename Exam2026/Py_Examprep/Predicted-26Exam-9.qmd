@@ -1,0 +1,100 @@
+---
+title: "BAN404 Mock Exam 2026 #9"
+subtitle: "Validation Discipline and Robust Prediction"
+author: "Candidate"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: false
+execute:
+  eval: true
+  echo: true
+---
+
+# Exam Information
+
+- **Duration:** 6 hours
+- **Datasets:** `../task1_data.csv`, `../customer_data.csv`
+- **Point split:** Task 1 (50), Task 2 (50)
+
+# Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
+
+## (a) Theory: LOOCV vs K-fold (10 points)
+
+Discuss bias-variance-computation tradeoff between LOOCV and K-fold CV for n = 5000.
+
+## (b) Leakage-safe preprocessing (10 points)
+
+Implement scaling inside CV folds for regularized regression and compare with naive scaling.
+
+```{r}
+# Your code here
+```
+
+## (c) Ridge and LASSO tuning (10 points)
+
+Tune both models and compare best CV-MSE values.
+
+```{r}
+# Your code here
+```
+
+## (d) Bootstrap CI for SD(y) (10 points)
+
+Compute normal and percentile CIs for SD(y) with B = 1000.
+
+```{r}
+# Your code here
+```
+
+## (e) OLS vs GAM fit quality (10 points)
+
+Compare models and explain whether added flexibility is justified.
+
+```{r}
+# Your code here
+```
+
+# Task 2 (50 points) — Churn (`customer_data.csv`)
+
+## (a) Data prep and split (8 points)
+
+Prepare a strict train/test process with no peeking.
+
+```{r}
+# Your code here
+```
+
+## (b) EDA and candidate predictors (8 points)
+
+Summarize churn patterns and identify predictors likely to survive multivariate modeling.
+
+```{r}
+# Your code here
+```
+
+## (c) Logistic model diagnostics (12 points)
+
+Evaluate metrics at different thresholds and discuss trade-offs.
+
+```{r}
+# Your code here
+```
+
+## (d) Random forest (12 points)
+
+Tune `mtry`, evaluate AUC, and compare with logistic.
+
+```{r}
+# Your code here
+```
+
+## (e) Boosting and final choice (10 points)
+
+Use staged evaluation to choose tree count and justify final model for production.
+
+```{r}
+# Your code here
+```
