@@ -25,347 +25,76 @@ df_task1 <- read_csv("task1_data.csv", show_col_types = FALSE) %>% clean_names()
 df_customer <- read_csv("customer_data.csv", show_col_types = FALSE) %>% clean_names()
 ```
 
-# Task 2: Binary Classification (Churn Prediction)
+# Task 2: Binary Classification (Predicting Churn)
 
-Before fitting any classification models, we must understand the data generating process and the structure of our variables. The goal of this Exploratory Data Analysis (EDA) is to inform our preprocessing and model selection. We will systematically check:
+## Historical Exam Context & Strategy
 
-1.  Data structure and variable types
-2.  Data integrity (Missing values)
-3.  Target distribution (Class Imbalance)
-4.  Feature relationships with the target
+Before touching the code, we must recognize what the professor typically asks for in Classification EDA. Past exams (2023-2025) repeatedly ask to: \* *"Remove variables that cannot plausibly be assumed to be available..."* \* *"If necessary, recode categorical variables as factors. Motivate your choices..."* \* *"Use descriptive statistics and graphs in order to find potentially useful predictors."*
 
-## 2.1 Exploratory Data Analysis (EDA)
+**Our Strategy:** We will systematically verify data types, hunt for "illegal" variables, clean the dataset, evaluate class imbalance, and iteratively visualize the predictors to find the best approach. We follow a strict `Before ➔ Code ➔ After` structure.
 
-### Data Structure and Summary
+## Initial Import and Raw Data Inspection
 
-**Possible Exam Question:** *"Inspect the customer dataset. How many observations and predictors are there? Ensure that categorical variables (especially the target) are formatted correctly for classification algorithms."*
+**Possible Exam Question:** *"Load the dataset. Inspect its dimensions and data types. Check for missing values. Create a visual summary (e.g., boxplots) of all continuous variables in their raw state to identify differences in scale."*
 
-**Exam-Ready Written Reasoning:** The very first step in any machine learning task is to understand the dimensions and data types of the dataset. Many algorithms in R (like `glmnet` or `randomForest`) will fail or behave unpredictably if categorical variables are stored as "character" or "logical" types rather than "factors". We must also check the summary statistics to see if predictors are on vastly different scales, which would require standardization later.
-
-```{r t2_structure}
-# glimpse() provides a transposed view of the data: columns become rows.
-# This allows us to quickly see the number of rows/cols and the data type of every variable.
-glimpse(df_customer)
-
-# Check the summary statistics for all columns
-# This helps identify wild differences in scale or obvious outliers in numeric variables
-summary(df_customer)
-
-# Convert character/logical categorical variables to factors
-# R's classification models strictly require the target (churn) to be a factor.
-# We also convert 'international_plan' and 'voice_mail_plan' as they are categorical.
-df_customer <- df_customer %>%
-  mutate(
-    churn = as.factor(churn),
-    international_plan = as.factor(international_plan),
-    voice_mail_plan = as.factor(voice_mail_plan)
-  )
-
-# Verify the conversion worked by checking the levels of our target variable
-# We expect to see "FALSE" and "TRUE"
-levels(df_customer$churn)
-```
-
-### Data Integrity Check
-
-**Reasoning:** Just like in regression, missing values (NAs) will cause most classification algorithms to drop rows, potentially losing valuable information or crashing the model entirely.
-
-```{r t2_missing}
-# colSums(is.na()) counts the number of missing values in every single column
-colSums(is.na(df_customer))
-```
-
-*Conclusion:* The output shows 0 missing values across all columns. The dataset is complete, so no imputation or row-dropping is necessary.
-
-# Task 2: Binary Classification (Churn Prediction)
-
-## 2.1 Data Familiarization and Logical Inference
-
-**Possible Exam Question:** *"Inspect the customer churn dataset. Identify any variables that are stored as numeric but should logically be treated as categorical. Furthermore, check for potential perfect multicollinearity between the billing variables (e.g., minutes vs. charge). Explain why including perfectly correlated variables or high-cardinality categorical variables (like state) can harm a logistic regression model."*
-
-**Exam-Ready Written Reasoning:** Before running any complex algorithms, we must apply business logic to our variables. First, we must identify "disguised categories." For example, an `area_code` is a geographic label, not a quantity. If left as numeric, a model will incorrectly assume that an increase in area code changes the outcome linearly. Second, we must be wary of "high cardinality" variables like `state` (50 unique values); including it creates 49 dummy variables, which dramatically increases model variance and risks overfitting (the curse of dimensionality). Finally, telecom datasets often contain perfect multicollinearity (e.g., `total_day_charge` is derived directly from `total_day_minutes`). Including both in a logistic regression causes the design matrix to become singular, leading to unstable, highly inflated coefficient estimates. We must test these hypotheses before modeling.
-
-```{r t2_business_logic}
-# 1. TEST THE AREA CODE HYPOTHESIS
-# We use unique() to see exactly how many different area codes exist in the dataset
-# If there are only a few, it proves it is categorical, not a continuous measurement
-unique(df_customer$area_code)
-
-# Since we know area code is a category, we overwrite it as a factor
-# This prevents the model from calculating a numeric slope for a geographic region
-df_customer <- df_customer %>%
-  mutate(area_code = as.factor(area_code))
-
-# 2. TEST THE STATE CARDINALITY HYPOTHESIS
-# We use length() combined with unique() to count how many distinct states are present
-# High numbers (like 50) mean we might want to exclude this variable later to prevent overfitting
-length(unique(df_customer$state))
-
-# 3. TEST THE PERFECT MULTICOLLINEARITY HYPOTHESIS
-# We use cor() to calculate the Pearson correlation coefficient between minutes and charge
-# A value close to 1.0 means they contain the exact same information
-cor(df_customer$total_day_minutes, df_customer$total_day_charge)
-
-# We also check the evening minutes vs evening charge just to be sure the pattern holds
-# If the correlation is 1, we must remove one of these columns before fitting a Logistic Regression
-cor(df_customer$total_eve_minutes, df_customer$total_eve_charge)
-```
-
-### Target Distribution (Class Imbalance)
-
-**Reasoning:** In binary classification (like churn, default, or fraud), identifying **class imbalance** is the most critical step. If the vast majority of customers do not churn, a naive model could achieve high overall accuracy simply by predicting "FALSE" for everyone (the accuracy paradox). This dictates that we must evaluate our models later using confusion matrices, sensitivity, and specificity, rather than just raw accuracy.
-
-```{r t2_imbalance}
-# Calculate the raw counts for each class in the target variable
-table(df_customer$churn)
-
-# Calculate the proportions for each class in the target variable
-# This mathematically proves the severity of the class imbalance
-prop.table(table(df_customer$churn))
-
-# Create a bar plot to visually display the class imbalance
-ggplot(df_customer, aes(x = churn, fill = churn)) +
-  geom_bar(color = "black") +
-  theme_minimal() +
-  labs(title = "Distribution of Customer Churn",
-       subtitle = "Checking for Class Imbalance",
-       x = "Churn (Target Variable)",
-       y = "Count of Customers")
-```
-
-*Conclusion:* The tables and plot confirm a severe class imbalance. Approximately **85.4% of customers did not churn (FALSE)**, while only **14.6% churned (TRUE)**. Any baseline model we build must beat an 85.4% accuracy to be considered useful, and we must be careful to tune our classification threshold later to catch the rare "TRUE" cases.
-
-### Feature Relationships with the Target
-
-**Reasoning:** Visualizing how specific predictors relate to the target variable helps us form initial hypotheses. If a predictor shows distinctly different distributions for churners vs. non-churners, it will likely be a highly significant variable in our models.
-
-```{r t2_feature_explore}
-# Explore a categorical predictor: International Plan vs Churn
-# position = "fill" standardizes the bars to 100%, showing relative proportions
-ggplot(df_customer, aes(x = international_plan, fill = churn)) +
-  geom_bar(position = "fill", color = "black") +
-  theme_minimal() +
-  labs(title = "Churn Rate by International Plan Status",
-       y = "Proportion of Customers",
-       x = "Has International Plan?")
-
-# Explore a continuous predictor: Total Day Minutes vs Churn
-# geom_boxplot shows if the median and spread of minutes differ between classes
-ggplot(df_customer, aes(x = churn, y = total_day_minutes, fill = churn)) +
-  geom_boxplot(color = "black") +
-  theme_minimal() +
-  labs(title = "Total Day Minutes Distribution by Churn Status",
-       x = "Customer Churn",
-       y = "Total Day Minutes Used")
-```
-
-*Conclusion:* 1. **International Plan:** The stacked bar chart reveals a massive signal. Customers *with* an international plan churn at a drastically higher rate than those without one. This variable will be critical. 2. **Total Day Minutes:** The boxplot shows that customers who churned (TRUE) have a noticeably higher median for total day minutes used compared to those who stayed. High usage might be correlated with higher bills, driving churn.
-
-Here is a summary of our shared understanding of the dataset so far, directly answering your questions:
-
-### **1. Dataset Dimensions & The Outcome Variable**
-
--   **Dimensions:** We have 2,666 observations (rows) and 20 columns.
-
--   **Outcome Variable:** The outcome is `churn`, located in the 20th column. It is a binary factor (`FALSE` / `TRUE`).
-
--   **The Big Catch:** The outcome is severely imbalanced (85.4% FALSE vs. 14.6% TRUE). If we don't account for this later, our models will look highly accurate just by guessing "FALSE" every time.
-
-### **2. The Multicollinearity Problem**
-
--   We mathematically proved that `total_day_minutes` and `total_day_charge` are perfectly correlated (`cor = 1`). The same is true for the evening variables (`0.9999998`).
-
--   By logical inference, this pattern will hold for night and international calls too. Telecom companies use a flat rate (e.g., \$0.10/min) to calculate charge from minutes.
-
--   **Why it matters:** If we put both into a Logistic Regression, the math behind the model (matrix inversion) will collapse or produce wildly inflated standard errors. We *must* drop the `charge` columns (or the `minutes` columns) before modeling.
-
-### **3. Categorical Traps**
-
--   `area_code` is a category disguised as a number. We fixed this.
-
--   `state` has 51 unique values (high cardinality). If we keep it, a logistic regression will create 50 dummy variables. With only 388 actual churners (the TRUE cases), adding 50 variables will almost certainly cause **overfitting** (the model memorizes the training data but fails on new data). We should drop it.
-
-### **4. Scatter Plots, Non-linearity, and Normality**
-
--   **Scatter plots against Y:** Because `churn` is categorical (0 or 1), a standard scatter plot doesn't work well (all dots just line up on the top and bottom). That is why we used a **boxplot** earlier for `total_day_minutes`. Density plots are also great here.
-
--   **Are we dealing with normal distributions, and does it matter?** This is a classic exam trap! **Logistic regression DOES NOT require the predictor variables (X) to be normally distributed.** It only assumes that the *log-odds* of the outcome relate linearly to X.
-
--   **Non-linear relationships:** While normality doesn't matter, non-linear relationships *do*. For example, `customer_service_calls`. A customer making 1 or 2 calls might be normal. But if they make 4, 5, or 6 calls, their probability of churning probably skyrockets exponentially. That is a non-linear threshold effect. Linear/Logistic models struggle with this, which is why Tree-based models (Random Forest) often win on churn datasets.
-
-### EDA Master Conclusion for Task 2
-
-1.  **Pre-processing:** We successfully converted `churn`, `international_plan`, and `voice_mail_plan` to factors, fulfilling the strict requirements of R's classification algorithms. There are no missing values.
-2.  **Class Imbalance:** The 85/15 split dictates our evaluation strategy. We cannot rely on raw accuracy alone; we must inspect the Confusion Matrix to ensure we are actually catching the 15% who churn.
-3.  **Signal Strength:** Predictors like `international_plan` and `total_day_minutes` already show strong visual separation between classes, indicating that a model should be able to find a valid decision boundary.
-
-```{r dropCol}
-# 1. DROP PROBLEMATIC COLUMNS
-# We remove 'state' to prevent overfitting from 50 dummy variables.
-# We remove all 'charge' columns to prevent perfect multicollinearity.
-df_clean <- df_customer %>%
-  select(-state, -total_day_charge, -total_eve_charge, -total_night_charge, -total_intl_charge)
-
-# Verify our new column count (should be 15 now)
-ncol(df_clean)
-
-# 2. INVESTIGATE NON-LINEARITY IN CUSTOMER SERVICE CALLS
-# We will use a bar chart but split it by churn to see the "threshold" effect
-ggplot(df_clean, aes(x = as.factor(customer_service_calls), fill = churn)) +
-  geom_bar(position = "fill", color = "black") +
-  theme_minimal() +
-  labs(title = "Churn Rate by Number of Customer Service Calls",
-       subtitle = "Looking for a non-linear threshold effect",
-       x = "Number of Customer Service Calls",
-       y = "Proportion of Customers")
-```
-
-```{r}
-# VISUALIZING ALL NUMERIC VARIABLES VS CHURN
-# We take our clean dataset and pipe it into the plotting workflow
-df_clean %>%
-  # 1. Select only the numeric columns AND the churn column
-  # We can't scatter plot factors like 'international_plan' this way
-  select(where(is.numeric), churn) %>%
-  
-  # 2. Pivot the data from "wide" to "long"
-  # This collapses all numeric columns into two columns: 'variable' (the name) and 'value'
-  # This is the exact trick needed to plot all variables in one go using facet_wrap
-  pivot_longer(cols = -churn, names_to = "variable", values_to = "value") %>%
-  
-  # 3. Build the plot mapping churn to X and the numeric values to Y
-  ggplot(aes(x = churn, y = value, color = churn)) +
-  
-  # 4. Use geom_jitter instead of geom_point!
-  # alpha = 0.3 makes dots transparent so we can see density (darker = more dots)
-  # width = 0.2 controls how far the dots spread out horizontally
-  geom_jitter(alpha = 0.3, width = 0.2) +
-  
-  # 5. Create a separate mini-plot for every single variable
-  # scales = "free_y" allows each plot to have its own y-axis limits (since minutes and calls have different scales)
-  facet_wrap(~variable, scales = "free_y") +
-  
-  # 6. Clean up the aesthetics
-  theme_minimal() +
-  theme(legend.position = "none") + # Hide legend since the x-axis already says TRUE/FALSE
-  labs(title = "Jittered Scatter Plots: All Numeric Variables vs Churn",
-       subtitle = "Looking for visual separation between TRUE and FALSE clusters",
-       x = "Churn",
-       y = "Variable Value")
-```
-
-In a binary classification task, the standard, highly effective way to evaluate continuous predictors against the target is using **Overlapping Density Plots** and **Grouped Summary Statistics**.
-
-1.  **Density Plots (`geom_density`):** Instead of plotting individual dots, this draws a smooth curve showing where the data is concentrated. If the curves for TRUE and FALSE perfectly overlap, the variable is useless. If the curves are shifted (different peaks), the variable is a strong predictor.
-
-2.  **Grouped Means:** A quick numerical table showing the average value of each variable for Churners vs. Non-Churners. This gives us hard numbers to back up our visual intuition.
-
-### Evaluating Predictor Distributions (The Right Way)
-
-**Possible Exam Question:** *"Evaluate how the continuous predictors differ between customers who churned and those who did not. Use appropriate visualizations and summary statistics to identify which numerical variables show the strongest potential for predicting churn. Why are density plots or boxplots preferred over scatter plots for this task?"*
-
-**Exam-Ready Written Reasoning:** When exploring how continuous variables relate to a binary target, standard scatter plots suffer from severe overplotting (data points stacking on top of each other), making it impossible to see the true distribution. Furthermore, class imbalance can visually distort scatter plots. Instead, we use **Density Plots**. Density plots abstract away the raw point count and show the *shape* and *proportion* of the distribution. If the density curve for "Churn = TRUE" is significantly shifted horizontally compared to "Churn = FALSE", it indicates that the variable has high discriminatory power (it separates the classes well). Variables where the two curves perfectly overlap provide little to no information for a logistic regression or tree model. We back this visual analysis up by calculating the mean of each variable grouped by the target class.
-
-```{r t2_density_and_means}
-# 1. OVERLAPPING DENSITY PLOTS
-# We use the same pivot_longer trick, but map 'value' to the x-axis and 'churn' to the fill color
-df_clean %>%
-  select(where(is.numeric), churn) %>%
-  pivot_longer(cols = -churn, names_to = "variable", values_to = "value") %>%
-  ggplot(aes(x = value, fill = churn)) +
-  # geom_density creates smooth distribution curves. 
-  # alpha = 0.5 makes them semi-transparent so we can see where they overlap
-  geom_density(alpha = 0.5) +
-  # facet_wrap creates a separate plot for each variable. scales = "free" lets x and y axes adjust per plot.
-  facet_wrap(~variable, scales = "free") +
-  theme_minimal() +
-  labs(title = "Density Plots: Continuous Variables vs Customer Churn",
-       subtitle = "Separation between curves indicates a strong predictor",
-       x = "Variable Value",
-       y = "Density (Concentration of Customers)")
-
-# 2. GROUPED SUMMARY STATISTICS
-# Visuals are great, but hard numbers are better for the exam text.
-# We group the data by whether they churned or not.
-df_clean %>%
-  group_by(churn) %>%
-  # summarise(across(...)) applies a function to all selected columns.
-  # Here, we calculate the mean for all numeric columns, ignoring NAs just in case.
-  summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) %>%
-  # We transpose the output (turn it sideways) using t() just to make it easier to read in the console
-  t()
-```
-
-### 2.2 Deep Feature Analysis & Conclusions
-
-**Possible Exam Question:** *"Based on your density plots and summary statistics, identify the variables that possess the highest discriminatory power for predicting churn. Conversely, identify the variables that appear to be useless. How does this inform your expectations for a logistic regression model?"*
-
-**Exam-Ready Written Reasoning:** By abstracting away the raw data points into density curves and calculating grouped means, we can evaluate the "discriminatory power" of each predictor. Variables where the density curves perfectly overlap (such as `total_day_calls`, `total_eve_calls`, and `total_night_calls`) provide no mathematical separation between the classes. We expect these variables to have near-zero coefficients and high p-values in a baseline logistic regression.
-
-Conversely, `total_day_minutes` and `customer_service_calls` exhibit strong rightward shifts for the "TRUE" class, confirmed by their higher grouped means (205.2 vs 175.1 minutes; 2.2 vs 1.45 calls). These are our "star" predictors. Finally, `number_vmail_messages` displays severe "zero-inflation" (a massive spike at exactly 0). Standard logistic regression assumes a linear relationship between the predictor and the log-odds of the outcome; this zero-inflated, non-linear distribution suggests that a highly flexible, tree-based model (like a Random Forest) might ultimately extract more signal from this data than a rigid linear boundary.
-
-### THE WHY: Grounding the Extended EDA in Curriculum and Past Exams
-
-**Why is this extensive EDA important in an exam setting?** If you look at the last five years of exams, Task 'a' and 'b' almost always give you 10 to 20 points simply for cleaning the data and proving you understand it *before* running a model. The professors are testing whether you blindly feed data into an algorithm or if you act like a real data scientist. If you feed a character column into `glmnet`, it crashes. If you feed perfectly correlated variables into `glm()`, the math breaks. If you rely on scatter plots for binary data, you miss the actual trends.
-
-**What is the curriculum grounding?** This is deeply rooted in **ISLR Chapter 2 (Statistical Learning)** and **Chapter 4 (Classification)**. The curriculum emphasizes that the "Data Generating Process" must be understood. It explicitly warns about the Curse of Dimensionality (why we drop 50 states), Collinearity (why we drop charges), and the limitations of visualizing qualitative responses.
-
-**How does this help you tomorrow?** By structuring your compendium chronologically—including the "mistakes" like the scatter plot—you create a mental map. Tomorrow, when you read "Use descriptive statistics to find potentially useful predictors" (like the 2025 and 2023 exams), you won't freeze. You will know to do: 1. `glimpse()` for types. 2. `prop.table()` for imbalance. 3. Density plots for continuous variables. 4. Stacked bar charts for categorical variables. 5. Grouped `summarise()` tables for hard numbers.
-
-Here is the **Ultimate EDA Section** for your compendium. It includes the historical exam prompts as a reminder of *why* we do this, the "learning process" with the scatter plots, and the final clean dataset generation.
-
-------------------------------------------------------------------------
-
-\`\`\`\`markdown name=Exam2026/Task2_Classification.qmd \# Task 2: Binary Classification (Predicting Churn)
-
-## 2.0 Historical Exam Context & Strategy
-
-Before touching the code, we must recognize what the professor typically asks for in Classification EDA. Look at these past exam prompts: \* **2025:** *"Remove variables that cannot plausibly be assumed to be available... Use descriptive statistics and graphs in order to find potentially useful predictors."* \* **2024:** *"If necessary, recode categorical variables as factors. Motivate your choices in words."* \* **2023:** *"Remove variables if you mean that they are unreasonable to include... present results as tables and graphs and comment."*
-
-**Our Strategy:** We will not just plot data blindly. We will systematically verify data types, hunt for "illegal" or "unreasonable" variables (multicollinearity, extreme cardinality, data leakage), visualize the predictors iteratively (showing why some plots fail and others succeed), and output concrete summary tables.
-
-## 2.1 Initial Import and Raw Data Inspection
-
-**Possible Exam Question:** *"Load the dataset. Inspect its dimensions and data types. Check for missing values. Are all variables in the correct format for a classification model?"*
-
-**Exam-Ready Written Reasoning:** The very first step in any machine learning pipeline is to import the data safely and inspect its raw structure. Many R algorithms will fail if categorical variables are stored as "character" or "numeric" rather than "factors". We must also check for missing values (`NAs`), as classification models like logistic regression or random forests will either crash or silently drop rows with missing data, distorting our results. We keep our original dataset untouched (`df_customer_raw`) so we have a reliable fallback.
+**Exam-Ready Written Reasoning:** The very first step in any machine learning pipeline is to import the data safely and inspect its raw structure. Classification algorithms in R require the target variable to be a "factor". We must also check for missing values (`NAs`), as algorithms will either crash or drop rows, distorting our results. Finally, checking the raw scale of continuous variables via boxplots tells us if we need to standardize the data later for distance-based models (like KNN) or regularized models (like LASSO). We keep our original dataset untouched (`df_customer_raw`) as a reliable fallback.
 
 ```{r t2_raw_inspect}
 # 1. LOAD DATA SAFELY
-# read_csv is faster and more robust than base R's read.csv.
-# clean_names() standardizes column names (removes spaces, makes everything lowercase).
+# read_csv is robust; clean_names() standardizes column names.
 df_customer_raw <- read_csv("customer_data.csv", show_col_types = FALSE) %>% clean_names()
 
 # 2. DIMENSIONS AND TYPES
-# glimpse() allows us to quickly see the number of rows/cols and the data type of every variable.
+# glimpse() allows us to quickly see rows/cols and data types.
 glimpse(df_customer_raw)
 
 # 3. MISSING VALUES CHECK
-# colSums(is.na()) counts missing values per column. 0 means we don't need to impute or drop rows.
+# colSums(is.na()) counts missing values per column.
 colSums(is.na(df_customer_raw))
+
+# 4. RAW DESCRIPTIVE BOXPLOTS
+# We want to see the scale and outliers of all numeric variables BEFORE cleaning.
+df_customer_raw %>%
+  select(where(is.numeric)) %>%
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "value") %>%
+  ggplot(aes(x = variable, y = value)) +
+  geom_boxplot(fill = "lightgray", color = "black") +
+  coord_flip() + # Turns the plot sideways so variable names are readable
+  theme_minimal() +
+  labs(title = "Raw Scale and Outliers of All Numeric Variables")
 ```
 
-## 2.2 Business Logic: Hunting for "Unreasonable" Variables
+**Written analysis of findings/output:** The `glimpse()` output reveals 2,666 observations and 20 columns, and `colSums` confirms there are exactly 0 missing values (meaning no imputation is required). However, the raw boxplots reveal three critical insights that will dictate our preprocessing: 1. **Scale Disparity:** Variables are on vastly different mathematical scales (e.g., `total_day_minutes` spans up to \~350, while `customer_service_calls` is bounded near 10). If we use distance-based models (KNN) or regularized models (LASSO) later, we must ensure these features are standardized so large numbers do not artificially dominate the model. 2. **Presence of Outliers:** There are severe right-tail outliers in almost all usage metrics (the black dots beyond the whiskers). Standard logistic regression can be sensitive to outliers, hinting that robust tree-based models might be safer. 3. **The Categorical Trap:** The boxplot for `area_code` looks highly unnatural, clustered entirely around the 400-500 range. This visually flags that `area_code` is not a continuous measurement, but rather a discrete geographic label (e.g., 408, 415, 510) that must be converted to a categorical factor in our next step.
 
-**Possible Exam Question:** *"Identify variables that should be removed or recoded before modeling. Explain your reasoning in the context of multicollinearity, high cardinality, or data leakage."*
+## Hunting for Traps: Checking Business Logic
 
-**Exam-Ready Written Reasoning:** Based on ISLR principles, we must remove "unreasonable" variables before modeling. 1. **Disguised Categories:** `area_code` is numeric, but logically it is a geographic label. Leaving it numeric forces the model to calculate a meaningless linear slope. It must be recoded as a factor. 2. **High Cardinality (Curse of Dimensionality):** The `state` variable has 51 unique text values. Including it in a logistic regression creates 50 dummy variables. With our limited number of actual churners, this will cause severe overfitting (memorizing the training data). We must drop it. 3. **Perfect Multicollinearity:** Telecom billing is usually a flat rate (Minutes \* Rate = Charge). If we include both `total_day_minutes` and `total_day_charge`, the correlation will be 1.0. This makes the mathematical design matrix singular, crashing the logistic regression or causing wild standard errors. We must drop the charge columns. *(Note: If a dataset has a variable created AFTER the outcome—like "exit_survey_score"—we would also drop it here due to Data Leakage).*
+**Possible Exam Question:** *"Analyze the variables in the raw dataset. Test for high cardinality, disguised categories, and perfect multicollinearity. Explain your findings."*
 
-```{r t2_business_logic}
-# 1. TEST AREA CODE (Disguised Category)
-unique(df_customer_raw$area_code) # Only 3 distinct numbers. It is a category!
+**Exam-Ready Written Reasoning:** Before modifying the dataset, we must run diagnostic tests to find "illegal" or problematic variables. 1. **Disguised Categories:** We suspect `area_code` is a geographic label, not a math variable. We will check how many unique values it has. 2. **High Cardinality:** We suspect `state` has too many unique text values, which would create an explosion of dummy variables and risk severe overfitting. We will count them. 3. **Perfect Multicollinearity:** We suspect telecom billing uses a flat rate (Minutes \* Rate = Charge). We will test the correlation; if it is near 1.0, it will make our design matrix singular and crash a logistic regression.
 
-# 2. TEST STATE (High Cardinality)
-length(unique(df_customer_raw$state)) # 51 distinct values. Will cause overfitting.
+```{r t2_business_tests}
+# 1. TEST AREA CODE (Disguised Category Trap)
+unique(df_customer_raw$area_code)
 
-# 3. TEST MULTICOLLINEARITY (Minutes vs Charge)
-# cor() calculates Pearson correlation. 1.0 means perfect multicollinearity.
+# 2. TEST STATE (High Cardinality Trap)
+length(unique(df_customer_raw$state))
+
+# 3. TEST MULTICOLLINEARITY (Minutes vs Charge Trap)
 cor(df_customer_raw$total_day_minutes, df_customer_raw$total_day_charge)
+```
 
-# 4. EXECUTE THE CLEANING PIPELINE
-# We create a new, clean dataframe based on our logical findings.
+**Written analysis of findings/output:** The tests confirm our three suspicions. First, `area_code` outputs only `415, 408, 510`, proving it is a discrete category, not a continuous number. Second, `state` outputs `51`; leaving it in would force the model to create 50 dummy variables, almost guaranteeing overfitting. Third, the correlation between day minutes and day charge is exactly `1`. Including both would cause perfect multicollinearity.
+
+## Executing the Cleaning Pipeline
+
+**Possible Exam Question:** *"Based on your diagnostic tests, clean the dataset. Remove redundant or harmful variables and ensure all categorical variables are correctly formatted as factors for classification."*
+
+**Exam-Ready Written Reasoning:** Because our diagnostic tests proved the presence of high cardinality and perfect multicollinearity, we must drop the `state` variable and all four `charge` columns. Furthermore, R's classification algorithms (like logistic regression and random forests) strictly require the outcome variable and categorical predictors to be stored as `factors`. We will execute these changes to create our final, safe modeling dataset.
+
+```{r t2_clean_execution}
+# EXECUTE THE CLEANING PIPELINE based strictly on prior findings
 df_clean <- df_customer_raw %>%
-  # Drop state (overfitting) and all charge columns (perfect multicollinearity)
+  # Drop state (overfitting) and charge columns (perfect multicollinearity)
   select(-state, -total_day_charge, -total_eve_charge, -total_night_charge, -total_intl_charge) %>%
   # Convert target and categorical variables to factors
   mutate(
@@ -375,15 +104,17 @@ df_clean <- df_customer_raw %>%
     voice_mail_plan = as.factor(voice_mail_plan)
   )
 
-# Verify the new dimensions (Should be 15 columns now, fully prepared for modeling)
+# Verify the final clean dimensions
 dim(df_clean)
 ```
 
-## 2.3 Target Distribution (Class Imbalance)
+**Written analysis of findings/output:** The cleaning pipeline successfully executed. The output `2666 15` confirms that our row count remains intact (no data was lost), but our column count has been successfully reduced from 20 to 15 by stripping out the 5 harmful variables. `df_clean` is now mathematically safe for modeling.
+
+## Target Distribution (Class Imbalance)
 
 **Possible Exam Question:** *"Analyze the distribution of the target variable. Explain why this distribution dictates how you will evaluate your classification models later."*
 
-**Exam-Ready Written Reasoning:** In binary classification, identifying class imbalance is paramount. If a vast majority of the dataset belongs to one class, a naive model can achieve high overall accuracy simply by guessing the majority class every time (the Accuracy Paradox). Our business goal is to identify the rare "TRUE" cases (the churners). Therefore, knowing the imbalance forces us to rely on the Confusion Matrix, Sensitivity, and Specificity rather than raw accuracy during model evaluation.
+**Exam-Ready Written Reasoning:** In binary classification, verifying the balance of the target classes is the most critical pre-modeling step. If a vast majority of the dataset belongs to one class, a naive model can achieve high overall accuracy simply by guessing the majority class every time (the "Accuracy Paradox"). Identifying severe imbalance forces us to abandon raw accuracy as our primary metric and instead rely on the Confusion Matrix, Sensitivity, and Specificity.
 
 ```{r t2_imbalance}
 # Calculate exact proportions for the target variable
@@ -393,14 +124,16 @@ prop.table(table(df_clean$churn))
 ggplot(df_clean, aes(x = churn, fill = churn)) +
   geom_bar(color = "black") +
   theme_minimal() +
-  labs(title = "Distribution of Customer Churn", subtitle = "Severe Class Imbalance Detected (85% vs 15%)")
+  labs(title = "Distribution of Customer Churn", subtitle = "Checking for Class Imbalance")
 ```
 
-## 2.4 Visualizing Predictors: The Learning Process
+**Written analysis of findings/output:** The output reveals "The Big Catch": severe class imbalance. Approximately 85.4% of the customers belong to the negative class (`FALSE`), while only 14.6% belong to the positive class (`TRUE`). Because our operational goal is to identify churners, any model we build must be evaluated on its ability to correctly catch that 14.6% (Sensitivity). A model that just predicts "FALSE" for everyone achieves 85.4% accuracy but is entirely useless for the business.
 
-**Possible Exam Question:** *"Use graphs to find potentially useful predictors for churn. Discuss the limitations of scatter plots for binary outcomes and provide a superior alternative."*
+## 2.4 Visualizing Predictors: The Learning Process (Scatter vs. Density)
 
-**Exam-Ready Written Reasoning:** To find useful predictors, we must visualize them against the target. A naive first attempt might be a jittered scatter plot. However, plotting continuous variables against a binary (0/1) categorical target results in severe overplotting, where thousands of points merge into thick, unreadable rectangles. Furthermore, the class imbalance distorts the visual, making the majority class look "denser" simply because it has more rows. The superior approach is using **Overlapping Density Plots**. These abstract away raw point counts and show the normalized *shape* and *proportion* of the distribution. If a variable is a strong predictor, its density curve for the "TRUE" class will be visibly shifted horizontally compared to the "FALSE" class.
+**Possible Exam Question:** *"Use graphs to find potentially useful predictors for churn. Discuss the limitations of scatter plots for binary outcomes and provide a superior alternative. Are we dealing with normal distributions, and does it matter?"*
+
+**Exam-Ready Written Reasoning:** To find useful predictors, we must visualize them against the target. A naive attempt is a jittered scatter plot. However, plotting continuous variables against a binary target results in severe overplotting, and class imbalance heavily distorts the visual. The mathematically superior approach is using **Overlapping Density Plots**, which abstract away point counts and display the normalized *shape* of the distribution. If a variable is a strong predictor, its density curve for the "TRUE" class will be visibly shifted compared to the "FALSE" class. Note: This is a classic exam trap; Logistic regression DOES NOT require predictor variables (X) to be normally distributed, it only assumes the log-odds relate linearly to X.
 
 ```{r t2_visual_learning}
 # ATTEMPT 1: JITTERED SCATTER PLOTS (The problematic approach)
@@ -413,7 +146,7 @@ df_clean %>%
   theme_minimal() + theme(legend.position = "none") +
   labs(title = "Attempt 1: Jittered Scatter Plots (Suffers from Overplotting)")
 
-# ATTEMPT 2: OVERLAPPING DENSITY PLOTS (The optimal approach)
+# ATTEMPT 2: OVERLAPPING DENSITY PLOTS (The optimal approach for continuous variables)
 df_clean %>%
   select(where(is.numeric), churn) %>%
   pivot_longer(cols = -churn, names_to = "variable", values_to = "value") %>%
@@ -421,33 +154,31 @@ df_clean %>%
   geom_density(alpha = 0.5) + # alpha=0.5 makes curves transparent to see overlap
   facet_wrap(~variable, scales = "free") +
   theme_minimal() +
-  labs(title = "Attempt 2: Density Plots (Clear visualization of discriminatory power)",
-       subtitle = "Shifted peaks (e.g., total_day_minutes) indicate strong predictors")
+  labs(title = "Attempt 2: Density Plots (Clear visualization of discriminatory power)")
 
 # ATTEMPT 3: CATEGORICAL PREDICTORS (Stacked Bar Charts)
-# For categorical or highly discrete predictors, we use position = "fill" to see proportions
+# For categorical predictors, we use position = "fill" to see standardized proportions
 ggplot(df_clean, aes(x = international_plan, fill = churn)) +
   geom_bar(position = "fill", color = "black") +
   theme_minimal() +
   labs(title = "Churn Rate by International Plan", y = "Proportion of Customers")
 ```
 
+**Written analysis of findings/output:** The scatter plot proved ineffective due to overplotting. The density plots, however, revealed clear patterns. Variables like `total_day_minutes` show a distinct rightward shift for the blue curve (`TRUE`), indicating that higher daily minutes correlate with higher churn. Conversely, `total_day_calls` shows perfectly overlapping curves, providing no mathematical separation between classes. Furthermore, the stacked bar chart reveals that the proportion of churn is drastically higher for customers who possess an `international_plan`.
+
 ## 2.5 Tabular Summary and EDA Master Conclusion
 
 **Possible Exam Question:** *"Present your descriptive findings as a table. Based on all your EDA, summarize which variables have the highest discriminatory power and which appear useless. How might non-linear variables affect model choice?"*
 
-**Exam-Ready Written Reasoning:** Visual intuition must be backed up by hard numbers. By grouping the dataset by churn status and calculating the mean for all numeric columns, we establish a tabular baseline. **Star Predictors:** `total_day_minutes` (mean jumps from 175 to 205) and `customer_service_calls` (mean jumps from 1.45 to 2.2). The stacked bar chart also proves `international_plan` is a massive signal. **Useless Predictors:** Variables like `total_day_calls` or `total_night_calls` show perfectly overlapping density curves and nearly identical tabular means (100.1 vs 101.1). They provide no mathematical separation and will likely be insignificant in our models. **Non-Linearity:** `number_vmail_messages` is severely zero-inflated (massive spike at 0). Furthermore, customer service calls likely have a threshold effect (churn spikes exponentially after 3 calls). Because standard logistic regression requires a strictly linear relationship between predictors and the log-odds of the outcome, these non-linear structures suggest that a flexible, tree-based model might ultimately perform best.
+**Exam-Ready Written Reasoning:** Visual intuition must always be backed up by hard mathematical numbers in an exam. By grouping the dataset by churn status and calculating the mean for all numeric columns, we establish a tabular baseline to definitively prove which variables separate the classes.
 
 ```{r t2_summary_table}
 # CREATE A GROUPED SUMMARY TABLE
-# group_by() splits the math by churn status
 df_clean %>%
   group_by(churn) %>%
-  # summarise(across()) calculates the mean for every numeric column automatically
-  # na.rm = TRUE is a safety mechanism in case NAs slipped through
+  # Calculate the mean for every numeric column
   summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) %>%
-  # t() transposes the table to make it easy to read in the exam console
-  t()
+  t() # Transpose for readability in the console
 ```
 
-\`\`\`\`
+**Written analysis of findings/output (Master EDA Conclusion):** The grouped means table mathematically confirms our visual findings: 1. **Star Predictors:** The mean for `total_day_minutes` jumps substantially from 175.1 (FALSE) to 205.2 (TRUE), and `customer_service_calls` jumps from 1.45 to 2.2. These will be the primary drivers in our models. 2. **Useless Predictors:** `total_day_calls`, `total_eve_calls`, and `total_night_calls` have nearly identical means across both classes. We expect these to have high p-values and near-zero coefficients in a baseline logistic regression. 3. **Non-Linearity:** `number_vmail_messages` is severely zero-inflated (massive spike at 0 in the density plot), and `customer_service_calls` likely has a threshold effect (churn spikes exponentially after a few calls). Because standard logistic regression assumes a strictly linear relationship between predictors and log-odds, this non-linear structure strongly suggests that a flexible, tree-based model (like a Random Forest) might ultimately extract more signal from this dataset.

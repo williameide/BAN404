@@ -1,8 +1,36 @@
 ---
-title: "Task 1 compendium"
-author: "William"
-format: html
-editor: visual
+title: "BAN404 R code explanation Task 1"
+subtitle: "from probable to possible code explanation task 1"
+author: "Self-study preparation file"
+date: "2026"
+format:
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    colorlinks: true
+    papersize: a4
+    fontsize: 10pt
+    geometry:
+      - top=20mm
+      - left=20mm
+      - right=20mm
+      - bottom=20mm
+    fig-align: center
+    fig-width: 6
+    fig-height: 4
+  html:
+    toc: true
+    toc-depth: 4
+    number-sections: true
+    theme: flatly
+    highlight-style: kate
+execute:
+  echo: true
+  warning: false
+  message: false
+  eval: false
+  error: true
 ---
 
 # TASK 1 CHEAT SHEET: "Explain the Code" Dictionary
