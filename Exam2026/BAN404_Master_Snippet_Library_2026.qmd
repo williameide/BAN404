@@ -317,7 +317,7 @@ suppressPackageStartupMessages(library(randomForest))
 TARGET_VAR <- "Y_VAR"
 rf_formula <- as.formula(paste(TARGET_VAR, "~ ."))
 NTREE <- 500
-MTRY <- NULL # keep NULL unless exam asks for explicit tuning
+MTRY <- NULL # keep NULL unless exam asks tuning; regression default is roughly floor(p/3)
 
 SEED_VALUE <- 123
 set.seed(SEED_VALUE)
@@ -518,8 +518,12 @@ for (k in 1:K) {
   fold_train <- train_df[fold_id != k, ]
   fold_val <- train_df[fold_id == k, ]
 
-  form_a <- as.formula(paste(TARGET_VAR, "~", paste(c(BASE_VARS, paste0("poly(", POLY_VAR, ",", DEGREE_A, ", raw = TRUE)")), collapse = " + ")))
-  form_b <- as.formula(paste(TARGET_VAR, "~", paste(c(BASE_VARS, paste0("poly(", POLY_VAR, ",", DEGREE_B, ", raw = TRUE)")), collapse = " + ")))
+  poly_term_a <- paste0("poly(", POLY_VAR, ",", DEGREE_A, ", raw = TRUE)")
+  poly_term_b <- paste0("poly(", POLY_VAR, ",", DEGREE_B, ", raw = TRUE)")
+  rhs_a <- paste(c(BASE_VARS, poly_term_a), collapse = " + ")
+  rhs_b <- paste(c(BASE_VARS, poly_term_b), collapse = " + ")
+  form_a <- as.formula(paste(TARGET_VAR, "~", rhs_a))
+  form_b <- as.formula(paste(TARGET_VAR, "~", rhs_b))
 
   fit_a <- lm(form_a, data = fold_train)
   fit_b <- lm(form_b, data = fold_train)
@@ -591,10 +595,9 @@ colSums(is.na(df_customer_raw))
 summary(df_customer_raw %>% select(where(is.numeric)))
 
 df_customer_raw %>%
-  summarise(across(where(is.numeric), sd, na.rm = TRUE)) %>%
-  t() %>%
-  as.data.frame() %>%
-  rename(standard_deviation = V1)
+  summarise(across(where(is.numeric), ~ sd(.x, na.rm = TRUE))) %>%
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "standard_deviation") %>%
+  arrange(desc(standard_deviation))
 ```
 
 Interpretation template: The dataset has `[N_ROWS]` rows and `[N_COLS]` columns with `[NA_STATUS]` missingness. Numeric summaries indicate predictors are on `[SIMILAR / DIFFERENT]` scales.
