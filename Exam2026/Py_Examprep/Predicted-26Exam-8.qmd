@@ -18,40 +18,127 @@ execute:
 - **Duration:** 6 hours
 - **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
+- **Important exam expectation:** In every subquestion, combine **method choice + runnable code + interpretation + theory/business reasoning**. A strong BAN404 answer shows not only that you can compute a result, but that you understand **why the workflow is leakage-safe**, **why the validation evidence is trustworthy**, and **how the final churn rule balances interpretability with action quality**.
+
+# How to use this mock exam
+
+This mock exam is designed to work both as a **full rehearsal** and as a **lookup tool for defensible exam writing**. Each subquestion therefore tells you what to calculate, what theory the examiner is likely to reward, and what kind of written interpretation should follow the output. If you work through it carefully, you should practice not only **running models**, but also **explaining stability, uncertainty, explainability, and deployment trade-offs** in BAN404 language.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
-## (a) Explain CV pseudocode (10 points)
+## Context for Task 1
 
-Given pseudocode for K-fold CV, explain where leakage can happen and how to avoid it.
+This task is centered on **resampling discipline, leakage avoidance, and defensible model comparison**. In BAN404, a strong answer does not only report one low error number; it explains whether the comparison was **fair**, whether the selected model looks **stable across plausible samples**, and whether a more flexible model is giving **real improvement** or only **extra complexity**. You should therefore connect **cross-validation**, **bootstrap evidence**, **uncertainty summaries**, and **GAM interpretation** into one coherent Task 1 story.
 
-## (b) Regularized model comparison (10 points)
+## (a) Audit a resampling workflow for leakage risk (10 points)
 
-Compare OLS, Ridge, and Elastic Net using the same standardized inputs.
+You are asked to explain a K-fold validation workflow in which preprocessing, model fitting, and prediction are repeated across folds.
+
+What to do:
+
+- Explain the purpose of K-fold cross-validation in prediction-focused model assessment.
+- State where leakage can occur if scaling, variable screening, or tuning is done using the full dataset before the folds are created.
+- Explain why all fold-specific preprocessing must be learned inside the training portion of each fold.
+- Distinguish between **fair validation** and **optimistic validation**.
+- State one reason repeated CV may be easier to defend than one single split.
+
+What the examiner wants to see:
+
+- clear understanding of why CV is used,
+- correct identification of **information leakage**,
+- awareness that preprocessing belongs inside the resampling loop,
+- theory-grounded wording about optimism, fairness, and generalization.
 
 ```{r}
 # Your code here
 ```
 
-## (c) Bootstrap coefficient stability (10 points)
+## (b) Build a same-fold benchmark: OLS vs Ridge vs Elastic Net (10 points)
 
-Bootstrap OLS coefficients and report the most unstable predictor.
+Compare **OLS**, **Ridge**, and **Elastic Net** under one common fold structure.
+
+What to do:
+
+- Fit OLS as the unpenalized baseline.
+- Create one shared fold assignment and reuse it across methods.
+- Tune Ridge and Elastic Net using the same folds.
+- Report `lambda.min` and `lambda.1se` for the penalized models.
+- Compare prediction error and coefficient behavior.
+- Explain which model appears easiest to defend when both **performance** and **stability** matter.
+
+What the examiner wants to see:
+
+- fair method comparison rather than split-driven comparison,
+- awareness that Ridge stabilizes and Elastic Net mixes shrinkage with some selection pressure,
+- interpretation of both validation output and coefficient patterns,
+- a final model judgment rather than isolated numbers.
 
 ```{r}
 # Your code here
 ```
 
-## (d) Variance CI (10 points)
+## (c) Use the bootstrap to study coefficient instability (10 points)
 
-Estimate CI for `Var(y)` and interpret practical uncertainty for expected prediction error scale.
+Study whether the linear-model coefficient story is stable enough to trust.
+
+What to do:
+
+- Bootstrap the OLS model many times.
+- Summarize the bootstrap variability of the coefficients.
+- Identify the predictor that appears most unstable.
+- Explain what large bootstrap SD means in interpretation terms.
+- Distinguish between a strong average effect and an unstable estimated effect.
+- State how this kind of evidence should change the wording of an exam answer.
+
+A strong answer should show that coefficient interpretation is strongest when the estimated effect is not only large, but also **stable across plausible resamples**.
 
 ```{r}
 # Your code here
 ```
 
-## (e) GAM diagnostics (10 points)
+## (d) Translate variance uncertainty into model-quality caution (10 points)
 
-Fit GAM with smooth terms and interpret EDF values.
+Estimate uncertainty for `Var(y)` and interpret what that says about the overall scale of noise in the response.
+
+What to do:
+
+- Use the bootstrap to estimate the sampling distribution of `Var(y)`.
+- Report a percentile CI and a normal approximation CI.
+- Compare whether the two intervals look similar or noticeably different.
+- Explain why the bootstrap distribution may be asymmetric.
+- Link the uncertainty in response variability to caution in regression interpretation.
+- State what kind of BAN404 conclusion would sound appropriately careful.
+
+What the examiner wants to see:
+
+- correct bootstrap logic,
+- awareness that interval shape matters,
+- awareness that uncertainty in the response scale affects how confident we should sound,
+- interpretation grounded in theory rather than only reporting bounds.
+
+```{r}
+# Your code here
+```
+
+## (e) Decide whether a GAM improvement is real enough to report (10 points)
+
+Fit a **GAM** and decide whether the nonlinear upgrade is substantively worthwhile.
+
+What to do:
+
+- Fit a linear baseline.
+- Fit a GAM with smooth terms for plausible nonlinear predictors.
+- Compare MSE and an R²-style fit measure.
+- Interpret the GAM smoothness using EDF values.
+- Explain whether the nonlinear gain seems meaningful or only modest.
+- End with a short Task 1 recommendation statement.
+
+What the examiner wants to see:
+
+- correct intuition for GAM smooths and EDF,
+- awareness that extra flexibility must be justified,
+- discussion of fit versus defendability,
+- a short, examiner-ready conclusion.
 
 ```{r}
 # Your code here
@@ -59,41 +146,111 @@ Fit GAM with smooth terms and interpret EDF values.
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
-## (a) Data prep with collinearity handling (8 points)
+## Context for Task 2
 
-Remove deterministic duplicates, encode factors, and split data.
+This task focuses on **explainable churn modeling under a recall-first business policy**. You should keep separate the ideas of **descriptive risk patterns**, **probability ranking**, and **final operating rule**. In this mock exam, assume that the company wants to **catch as many true churners as possible**, but still wants specificity to remain at an acceptable level so the retention team is not overwhelmed by false alarms.
 
-```{r}
-# Your code here
-```
+## (a) Build a deployment-safe churn table (8 points)
 
-## (b) EDA and interpretable segments (8 points)
+Prepare the churn data so later models can be defended as realistic and interpretable.
 
-Build churn summaries by segment and identify a high-risk customer profile.
+What to do:
 
-```{r}
-# Your code here
-```
+- Read and clean the data.
+- Recode categorical variables appropriately.
+- Remove deterministic or duplicated predictors.
+- Remove or justify fields that are weak from a realistic intervention perspective.
+- Perform an 80/20 train/test split with a fixed seed.
+- Explain why the test set should remain untouched until final comparison.
 
-## (c) Logistic baseline + interpretation (12 points)
+What the examiner wants to see:
 
-Fit logistic model and interpret three key effects in odds terms.
-
-```{r}
-# Your code here
-```
-
-## (d) Random forest nonlinear interactions (12 points)
-
-Evaluate RF and explain where it can improve over logistic.
+- sensible factor handling,
+- awareness of duplicated information,
+- awareness of deployment realism,
+- correct separation between training work and final testing.
 
 ```{r}
 # Your code here
 ```
 
-## (e) Boosting + deployment recommendation (10 points)
+## (b) Turn EDA into explainable churn personas (8 points)
 
-Tune boosting and recommend model under requirement: high recall while keeping acceptable specificity.
+Use the training data to build **interpretable churn personas** and convert them into hypotheses.
+
+What to do:
+
+- Quantify class imbalance.
+- Create grouped churn summaries for meaningful customer segments.
+- Produce at least two informative plots.
+- Describe one high-risk persona and one lower-risk persona.
+- Propose at least two plausible retention actions linked to the observed patterns.
+- Mention one limitation of descriptive personas.
+
+This is not only an EDA task. It is a reasoning task where visible patterns become **candidate model stories** and **candidate actions**.
+
+```{r}
+# Your code here
+```
+
+## (c) Build a logistic model under a recall-first policy (12 points)
+
+Fit logistic regression and choose a threshold that prioritizes **high sensitivity** while keeping specificity acceptable.
+
+What to do:
+
+- Fit logistic regression on the training data.
+- Predict churn probabilities on the test data.
+- Report a ranking metric such as AUC.
+- Evaluate a grid of thresholds.
+- Choose a threshold under a **recall-first rule** rather than defaulting to `0.5`.
+- Interpret at least three coefficients in odds-ratio language.
+- Explain why the chosen threshold is an action rule, not a property of the model itself.
+
+A strong answer should clearly separate **discrimination quality** from **deployment policy**.
+
+```{r}
+# Your code here
+```
+
+## (d) Test whether Random Forest adds useful nonlinear signal (12 points)
+
+Use **Random Forest** to assess whether a more flexible model improves the churn solution.
+
+What to do:
+
+- Tune Random Forest using the training data only.
+- Compare its test-set ranking and threshold performance to logistic regression.
+- Report the most important predictors.
+- Explain what kind of nonlinearities or interactions Random Forest may capture.
+- Explain what is gained and lost when moving from logistic coefficients to importance scores.
+- State whether the gain appears practically meaningful.
+
+What the examiner wants to see:
+
+- fair tuning logic,
+- awareness that flexible tree models can capture threshold effects,
+- awareness of the trade-off between performance and explainability,
+- a decision grounded in both action quality and interpretability.
+
+```{r}
+# Your code here
+```
+
+## (e) Tune boosting and write the final deployment memo (10 points)
+
+Fit a boosting model and end the task with a final recommendation.
+
+What to do:
+
+- Fit a boosting model using only the training data.
+- Choose the number of trees using staged validation logic.
+- Compare boosting with logistic regression and Random Forest on the hold-out test set.
+- Use the same recall-first deployment logic when selecting the boosting threshold.
+- Decide which model you would recommend.
+- Write a short memo stating the final threshold, the main trade-off, and what should be monitored after deployment.
+
+The best answers sound like the closing paragraph of a polished BAN404 submission.
 
 ```{r}
 # Your code here
