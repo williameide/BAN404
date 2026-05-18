@@ -1,137 +1,127 @@
 ---
 title: "BAN404 Mock Exam 2026 #1"
-subtitle: "Recency-biased Mixed Methods"
+subtitle: "Ridge-first Generalization and Churn Operations"
 author: "Candidate"
 date: today
 format:
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    colorlinks: true
+    papersize: a4
+    fontsize: 10pt
+    geometry:
+      - top=20mm
+      - left=20mm
+      - right=20mm
+      - bottom=20mm
+    fig-align: center
+    fig-width: 6
+    fig-height: 4
   html:
     toc: true
-    toc-depth: 2
-    code-fold: false
+    toc-depth: 4
+    number-sections: true
+    theme: flatly
+    highlight-style: kate
 execute:
-  eval: true
   echo: true
+  warning: false
+  message: false
+  eval: true
+  error: true
 ---
 
 # Exam Information
 
 - **Duration:** 6 hours
-- **Datasets:** `task1_data.csv`, `customer_data.csv`
+- **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
 
-# Task 1 (50 points) — Methodology + Regression (task1_data.csv)
+# Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
-## (a) Function reading and method identification (10 points)
+## (a) Decode the objective: Ridge variant (10 points)
 
-You are given this BAN404-style R function pair.
+Given
 
 ```{r}
 f <- function(beta, X, y, lambda) {
-  rss <- sum((y - X %*% beta)^2)
-  penalty <- lambda * sum(abs(beta))
-  rss + penalty
-}
-
-g <- function(X, y, lambda) {
-  y_bar <- mean(y)
-  X_c <- sweep(X, 2, colMeans(X), "-")
-  y_c <- y - y_bar
-  fit <- optim(par = rep(0, ncol(X)), fn = f, X = X_c, y = y_c, lambda = lambda)
-  list(intercept = y_bar, beta = fit$par)
+  sum((y - X %*% beta)^2) + lambda * sum(beta^2)
 }
 ```
 
-Explain method, penalty role, and difference from Ridge.
+Identify the method and explain the shrinkage effect as `lambda` increases.
 
-## (b) OLS vs regularization (10 points)
+## (b) Baseline vs shrinkage fit comparison (10 points)
 
-- Read `task1_data.csv`.
-- Fit OLS and LASSO/Ridge-style alternatives.
-- Compare coefficient tables.
-- Explain whether variable selection appears.
+Fit OLS and Ridge on the dataset and compare coefficient stability under multicollinearity.
 
 ```{r}
 # Your code here
 ```
 
-## (c) Cross-validation and tuning (10 points)
+## (c) Ten-fold CV tuning with robust choice rule (10 points)
 
-- Use K-fold CV (not LOOCV) to tune regularisation strength.
-- Plot CV-MSE against penalty on log scale.
-- Explain data leakage risk in fold preprocessing.
+Tune lambda with 10-fold CV and report both `lambda.min` and `lambda.1se`. Argue which choice is safer for exam-style deployment.
 
 ```{r}
 # Your code here
 ```
 
-## (d) Bootstrap confidence interval (10 points)
+## (d) Bootstrap uncertainty for variance (10 points)
 
-- Bootstrap the sampling distribution of `Var(y)` with B=1000 and seed 1.
-- Show histogram.
-- Compute normal-approx CI and percentile CI.
+Use bootstrap (`B = 1500`) for `Var(y)`, show histogram, and compare percentile vs normal CI.
 
 ```{r}
 # Your code here
 ```
 
-## (e) Non-linearity and GAM (10 points)
+## (e) Linear vs additive model improvement (10 points)
 
-- Diagnose non-linear predictors.
-- Fit one OLS and one GAM.
-- Compare in-sample MSE and R².
+Fit OLS and GAM. Compare MSE and adjusted R² and explain if smooth terms are justified.
 
 ```{r}
 # Your code here
 ```
 
-# Task 2 (50 points) — Customer churn (customer_data.csv)
+# Task 2 (50 points) — Churn (`customer_data.csv`)
 
-## (a) Data prep and design assumptions (8 points)
+## (a) Prediction-ready data design (8 points)
 
-- Recode to correct variable formats.
-- Remove variables not suitable at prediction time and motivate choices.
-- Handle collinearity in telecom minute/charge pairs.
-- Split to train/test with fixed seed.
+Prepare variables for realistic deployment, remove deterministic duplicates, and split train/test using a fixed seed.
 
 ```{r}
 # Your code here
 ```
 
-## (b) EDA and hypothesis building (8 points)
+## (b) EDA for churn risk framing (8 points)
 
-- Use descriptive stats and plots.
-- Identify strongest candidate churn predictors.
-- Comment on one drawback of pairwise analysis.
+Build churn-rate summaries and two plots. State three testable churn hypotheses.
 
 ```{r}
 # Your code here
 ```
 
-## (c) Logistic regression (12 points)
+## (c) Logistic model with FN-cost thresholding (12 points)
 
-- Fit logistic model.
-- Evaluate with confusion matrix, sensitivity/specificity, and AUC.
-- Justify threshold in business terms.
+Fit logistic regression and choose threshold when FN cost is 3x FP cost. Report confusion metrics and AUC.
 
 ```{r}
 # Your code here
 ```
 
-## (d) Random forest and variable importance (12 points)
+## (d) Random forest hyperparameter tuning (12 points)
 
-- Tune `mtry` using CV on training data.
-- Evaluate on test data.
-- Interpret variable importance and compare with EDA hypotheses.
+Tune `mtry` with CV, evaluate on test set, and relate top importance variables to your EDA hypotheses.
 
 ```{r}
 # Your code here
 ```
 
-## (e) Boosting and model recommendation (10 points)
+## (e) Boosting selection and deployment recommendation (10 points)
 
-- Fit boosted trees.
-- Find optimal number of trees using staged evaluation.
-- Compare all models and recommend one for deployment.
+Tune number of trees with staged AUC and provide final model recommendation for retention operations.
 
 ```{r}
 # Your code here
