@@ -1657,6 +1657,336 @@ km_fit$tot.withinss
 
 ---
 
+# 2026 exam data reconnaissance — first pivot to the live datasets
+
+This section is the **first live-data pivot** for the 2026 retake. The goal is to stop thinking only in generic old-exam terms and start thinking:
+
+- what the two attached datasets look like,  
+- what they are already strongly hinting at,  
+- which BAN404 model families are most likely to matter tomorrow, and  
+- which answer structures are safest if the exam questions are short but demanding.
+
+## Fast map of the two live datasets
+
+| Dataset | File path from this compendium | Rows × columns | Response type | First BAN404 instinct |
+|---|---|---:|---|---|
+| `task1_data.csv` | `task1_data.csv` | 5000 × 7 | continuous `y` | Task 1 regression, regularization, nonlinearity checks, LOOCV/CV |
+| `customer_data.csv` | `customer_data.csv` | 2666 × 20 | binary `churn` | Task 2 classification, threshold choice, leakage/redundancy discussion, tree ensembles |
+
+## Dataset 1 — `task1_data.csv`
+
+### What we already know before fitting anything advanced
+
+- The file is **clean and numeric**: six predictors (`x1` to `x6`) and one continuous response (`y`).  
+- The predictors look approximately **standardized around 0** with similar spread, which is very friendly for regularization questions.  
+- A first-pass signal check suggests:
+  - `x5` has a **strong positive** relationship with `y`,  
+  - `x3` has a **strong negative** relationship with `y`,  
+  - `x1` has a **moderate positive** relationship with `y`,  
+  - `x2` looks weak **linearly**, but stronger once we allow **nonlinear structure**,  
+  - the predictors appear to be **almost uncorrelated with each other**, so heavy multicollinearity is not the first story here.  
+- A plain linear model should be a safe **baseline**, but the data already hints that a **nonlinear follow-up** may outperform it.
+
+### Why this matters for likely Task 1 wording
+
+This dataset is already screaming three classic BAN404 directions:
+
+1. **Baseline linear regression**  
+   "Fit and interpret an OLS model."
+
+2. **Regularization / tuning**  
+   "Compare OLS, ridge, and/or LASSO" or "choose `lambda` by CV/LOOCV."
+
+3. **Nonlinearity check**  
+   "Motivate a GAM / local regression / more flexible model."
+
+### First-pass working code for Task 1
+
+```{r}
+# Read the live 2026 Task 1 dataset.  # The file sits next to this compendium, so the path is short and stable.
+task1_2026 <- read_csv("task1_data.csv", show_col_types = FALSE)  # Standard csv import because the file is comma-separated.
+
+# Inspect the structure immediately.  # We want to confirm that x1 to x6 and y are all numeric.
+glimpse(task1_2026)  # Fast structure check before we do any modeling.
+
+# Build a quick correlation table with y.  # This is a very fast exam move when you want to see which linear signals look strongest.
+task1_linear_signal <- task1_2026 %>%
+  summarise(across(starts_with("x"), ~ cor(.x, y))) %>%  # Correlate each predictor with the continuous response y.
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "cor_with_y") %>%  # Turn the one-row summary into a readable table.
+  arrange(desc(abs(cor_with_y)))  # Largest absolute correlation first because it is most exam-useful.
+
+task1_linear_signal  # Print the table so we quickly see the strongest linear predictors.
+
+# Screen for simple curvature.  # Squared terms are a fast way to see whether a weak linear predictor might still matter nonlinearly.
+task1_nonlinear_signal <- task1_2026 %>%
+  transmute(
+    x1_sq = x1^2,  # Square x1 to check whether curvature matters more than the straight-line effect.
+    x2_sq = x2^2,  # x2 looked more promising after nonlinear screening than after plain linear screening.
+    x3_sq = x3^2,  # x3 already looks important linearly, but a squared term may show extra structure.
+    x4_sq = x4^2,  # Same logic for x4 even if the first signal is weaker.
+    x5_sq = x5^2,  # Strong linear predictor can still have extra curvature.
+    x6_sq = x6^2,  # Weak linear predictor may still become useful nonlinearly.
+    y = y          # Keep y in the same table so we can compute correlations in one tidy pipeline.
+  ) %>%
+  summarise(across(-y, ~ cor(.x, y))) %>%  # Correlate each squared feature with y.
+  pivot_longer(cols = everything(), names_to = "feature", values_to = "cor_with_y") %>%  # Turn to long format for easy reading.
+  arrange(desc(abs(cor_with_y)))  # Strongest nonlinear hints first.
+
+task1_nonlinear_signal  # This often tells us whether GAM/polynomial thinking is worth trying.
+
+# Create a reproducible train/test split.  # Predictive comparison should use unseen data, not only in-sample fit.
+set.seed(404)  # Fixed seed gives a reproducible answer.
+idx_task1_2026 <- sample(seq_len(nrow(task1_2026)), size = floor(0.7 * nrow(task1_2026)))  # 70 percent training rows.
+train_task1_2026 <- task1_2026[idx_task1_2026, ]   # Training data for model fitting and tuning.
+test_task1_2026  <- task1_2026[-idx_task1_2026, ]  # Test data for honest final comparison.
+
+# Fit the safest baseline model first.  # OLS is the natural benchmark for a continuous response.
+ols_task1_2026 <- lm(y ~ ., data = train_task1_2026)  # Linear model using all six predictors.
+summary(ols_task1_2026)  # Coefficients, signs, and significance-style information.
+
+# Evaluate OLS on the held-out test data.  # MSE is the standard BAN404 regression metric.
+pred_ols_task1_2026 <- predict(ols_task1_2026, newdata = test_task1_2026)  # Predict y on unseen rows.
+mse_ols_task1_2026 <- mean((test_task1_2026$y - pred_ols_task1_2026)^2)    # Test MSE for the OLS baseline.
+
+# Fit a richer but still interpretable GAM.  # We only smooth the variables that looked most suspicious for curvature.
+gam_task1_2026 <- gam(
+  y ~ x1 + s(x2) + s(x3) + x4 + x5 + x6,  # Keep a mostly simple model, but let x2 and x3 bend if the data wants that.
+  data = train_task1_2026
+)  # GAM is a natural "improvement" model when the linearity assumption may be too restrictive.
+
+# Evaluate the GAM on the same test set.  # Fair comparison means same split and same metric.
+pred_gam_task1_2026 <- predict(gam_task1_2026, newdata = test_task1_2026)  # Out-of-sample GAM predictions.
+mse_gam_task1_2026 <- mean((test_task1_2026$y - pred_gam_task1_2026)^2)     # Test MSE for the flexible model.
+
+# Prepare design matrices for ridge or LASSO.  # The predictors are already numeric, so this is straightforward.
+X_train_task1_2026 <- model.matrix(y ~ ., data = train_task1_2026)[, -1]  # Remove the intercept column because glmnet handles it internally.
+y_train_task1_2026 <- train_task1_2026$y                                   # Numeric response vector for glmnet.
+X_test_task1_2026  <- model.matrix(y ~ ., data = test_task1_2026)[, -1]   # Matching test matrix.
+
+# Tune ridge by CV.  # alpha = 0 means ridge rather than LASSO.
+cv_ridge_task1_2026 <- cv.glmnet(X_train_task1_2026, y_train_task1_2026, alpha = 0, standardize = TRUE)  # Cross-validated ridge fit.
+pred_ridge_task1_2026 <- as.numeric(predict(cv_ridge_task1_2026, newx = X_test_task1_2026, s = "lambda.min"))  # Test predictions at the best lambda.
+mse_ridge_task1_2026 <- mean((test_task1_2026$y - pred_ridge_task1_2026)^2)  # Ridge test MSE.
+
+# Tune LASSO by CV.  # alpha = 1 means LASSO and may zero weak coefficients.
+cv_lasso_task1_2026 <- cv.glmnet(X_train_task1_2026, y_train_task1_2026, alpha = 1, standardize = TRUE)  # Cross-validated LASSO fit.
+pred_lasso_task1_2026 <- as.numeric(predict(cv_lasso_task1_2026, newx = X_test_task1_2026, s = "lambda.min"))  # Test predictions at the best lambda.
+mse_lasso_task1_2026 <- mean((test_task1_2026$y - pred_lasso_task1_2026)^2)  # LASSO test MSE.
+
+# Collect the main predictive comparison in one table.  # This is the safest exam layout when asked which model performs best.
+tibble(
+  model = c("OLS", "GAM", "Ridge", "LASSO"),  # Names of the competing models.
+  test_mse = c(mse_ols_task1_2026, mse_gam_task1_2026, mse_ridge_task1_2026, mse_lasso_task1_2026)  # Same metric for all four models.
+) %>%
+  arrange(test_mse)  # Lowest test MSE first because lower is better.
+```
+
+### Short written answer you can reuse for Task 1
+
+> I started with OLS because `y` is continuous and OLS is the correct BAN404 baseline. I then checked whether a more flexible model was justified. The first-pass signal suggested strong linear effects for `x1`, `x3`, and `x5`, but also possible curvature especially for `x2` and `x3`, so a GAM is a natural improvement candidate. Because the predictors are already numeric and on similar scales, ridge and LASSO are also easy and appropriate follow-up models when the question asks for regularization or tuning of `lambda`. I compared all models on the same test set using test MSE so the performance comparison stayed fair.
+
+## Dataset 2 — `customer_data.csv`
+
+### What the dataset is already telling us
+
+- This is a **binary churn classification** dataset.  
+- The target is **imbalanced**: roughly **14.5% churners** and **85.5% non-churners**, so raw accuracy alone can mislead.  
+- Several variables come in **near-duplicate charge/minute pairs**:
+  - `total_day_minutes` and `total_day_charge`  
+  - `total_eve_minutes` and `total_eve_charge`  
+  - `total_night_minutes` and `total_night_charge`  
+  - `total_intl_minutes` and `total_intl_charge`  
+
+  These are not leakage, but they are essentially **redundant pricing transforms** of the same usage information. In practice, it is cleaner to keep the **minutes** and drop the matching **charges**.
+
+- Early signal checks suggest:
+  - `customer_service_calls` is very important, especially from **4 calls and up**,  
+  - `international_plan = "Yes"` is strongly associated with churn,  
+  - `voice_mail_plan = "Yes"` is associated with lower churn,  
+  - `total_day_minutes` is one of the strongest continuous usage predictors.  
+
+### Why this matters for likely Task 2 wording
+
+This dataset strongly prepares you for three common BAN404 Task 2 question types:
+
+1. **Explanatory classification**  
+   "Which variables are associated with churn?"
+
+2. **Operational predictive classification**  
+   "Predict churn for new customers and evaluate the model."
+
+3. **Improvement / threshold / model comparison**  
+   "Should we change the threshold?" or "Does random forest improve on logistic regression?"
+
+### First-pass working code for Task 2
+
+```{r}
+# Read the live 2026 Task 2 dataset.  # The file is stored next to this compendium.
+customer_2026_raw <- read_csv("customer_data.csv", show_col_types = FALSE)  # Standard CSV import.
+
+# Clean names and recode the key categorical variables.  # This makes the data easier and safer to work with in the exam.
+customer_2026 <- customer_2026_raw %>%
+  janitor::clean_names() %>%  # Convert spaces and capitals into tidy snake_case names.
+  mutate(
+    churn = factor(churn, levels = c(FALSE, TRUE), labels = c("no", "yes")),  # Make the binary target explicit and readable.
+    international_plan = factor(international_plan),  # Text yes/no should be treated as a category, not as free text.
+    voice_mail_plan = factor(voice_mail_plan),        # Same logic for voice mail plan.
+    state = factor(state),                            # State is categorical.
+    area_code = factor(area_code)                     # Area code is better treated as a category than as a continuous number.
+  )
+
+# Check class balance immediately.  # Class imbalance affects threshold choice and metric interpretation.
+customer_2026 %>%
+  count(churn) %>%                                   # Count churners and non-churners.
+  mutate(prop = n / sum(n))                          # Add proportions so we see imbalance directly.
+
+# Check two high-signal categorical variables.  # These quick grouped summaries often become useful written-answer evidence.
+customer_2026 %>%
+  group_by(international_plan) %>%                   # Compare churn rates across international-plan groups.
+  summarise(churn_rate = mean(churn == "yes"), n = n())  # Mean of a logical condition gives the class proportion.
+
+customer_2026 %>%
+  group_by(voice_mail_plan) %>%                      # Compare churn rates across voice-mail groups.
+  summarise(churn_rate = mean(churn == "yes"), n = n())  # Same exam-friendly churn-rate summary.
+
+# Check whether customer service calls looks operationally important.  # This variable often shows a strong escalation pattern.
+customer_2026 %>%
+  group_by(customer_service_calls) %>%               # Group customers by number of service calls.
+  summarise(churn_rate = mean(churn == "yes"), n = n()) %>%  # Compute the churn rate in each group.
+  arrange(customer_service_calls)                    # Keep the table in natural call-count order.
+
+# Remove redundant charge columns before modeling.  # The charge columns are almost exact rescalings of the corresponding minute columns.
+customer_model_2026 <- customer_2026 %>%
+  select(
+    -total_day_charge,    # Drop redundant day charge because total_day_minutes carries the same usage information.
+    -total_eve_charge,    # Drop redundant evening charge.
+    -total_night_charge,  # Drop redundant night charge.
+    -total_intl_charge    # Drop redundant international charge.
+  )
+
+# Create a reproducible train/test split.  # Predictive evaluation should happen on unseen customers.
+set.seed(404)  # Fixed seed for reproducibility.
+idx_customer_2026 <- sample(seq_len(nrow(customer_model_2026)), size = floor(0.7 * nrow(customer_model_2026)))  # 70 percent training data.
+train_customer_2026 <- customer_model_2026[idx_customer_2026, ]   # Training customers.
+test_customer_2026  <- customer_model_2026[-idx_customer_2026, ]  # Test customers.
+
+# Fit logistic regression first.  # Logistic regression is the safest binary baseline because it is interpretable.
+logit_customer_2026 <- glm(churn ~ ., data = train_customer_2026, family = binomial())  # Predict churn probability.
+summary(logit_customer_2026)  # Coefficients and directions for explanatory discussion.
+
+# Tune the classification threshold on training data.  # We should not choose the threshold by looking at test performance.
+prob_train_customer_2026 <- predict(logit_customer_2026, newdata = train_customer_2026, type = "response")  # Logistic probabilities on training data.
+threshold_grid_customer_2026 <- seq(0.10, 0.50, by = 0.05)  # Lower thresholds are worth checking because churn is the minority class.
+
+threshold_results_customer_2026 <- map_dfr(threshold_grid_customer_2026, function(th) {  # Score each candidate threshold.
+  pred_train_th <- if_else(
+    prob_train_customer_2026 > th, "yes", "no"  # Convert probabilities to classes using the candidate threshold.
+  ) %>%
+    factor(levels = c("no", "yes"))             # Force the class order to stay stable.
+
+  cm_train_th <- table(actual = train_customer_2026$churn, predicted = pred_train_th)  # Confusion matrix for this threshold.
+  sens_train_th <- cm_train_th["yes", "yes"] / sum(cm_train_th["yes", ])                # Sensitivity for actual churners.
+  spec_train_th <- cm_train_th["no", "no"] / sum(cm_train_th["no", ])                   # Specificity for non-churners.
+
+  tibble(
+    threshold = th,                               # Candidate threshold we are testing.
+    sensitivity = sens_train_th,                  # True-positive rate.
+    specificity = spec_train_th,                  # True-negative rate.
+    balanced_accuracy = mean(c(sens_train_th, spec_train_th))  # Safe summary metric under class imbalance.
+  )
+})
+
+best_threshold_customer_2026 <- threshold_results_customer_2026 %>%
+  slice_max(order_by = balanced_accuracy, n = 1) %>%  # Pick the threshold with the best balanced accuracy.
+  pull(threshold)                                     # Extract the threshold value itself.
+
+threshold_results_customer_2026  # Print the threshold comparison table.
+best_threshold_customer_2026     # Print the chosen threshold.
+
+# Evaluate logistic regression on the held-out test set.  # This is the honest final score for the chosen threshold.
+prob_test_customer_2026 <- predict(logit_customer_2026, newdata = test_customer_2026, type = "response")  # Test probabilities.
+pred_test_customer_2026 <- if_else(prob_test_customer_2026 > best_threshold_customer_2026, "yes", "no") %>%
+  factor(levels = c("no", "yes"))  # Final test-set class prediction.
+
+cm_logit_customer_2026 <- table(actual = test_customer_2026$churn, predicted = pred_test_customer_2026)  # Honest confusion matrix.
+acc_logit_customer_2026 <- sum(diag(cm_logit_customer_2026)) / sum(cm_logit_customer_2026)               # Plain accuracy.
+sens_logit_customer_2026 <- cm_logit_customer_2026["yes", "yes"] / sum(cm_logit_customer_2026["yes", ]) # Sensitivity.
+spec_logit_customer_2026 <- cm_logit_customer_2026["no", "no"] / sum(cm_logit_customer_2026["no", ])    # Specificity.
+
+# Fit a random forest on the same cleaned training data.  # This is the natural improvement model for nonlinear interactions.
+rf_customer_2026 <- randomForest(churn ~ ., data = train_customer_2026, ntree = 300)  # Flexible ensemble classifier.
+pred_rf_customer_2026 <- predict(rf_customer_2026, newdata = test_customer_2026)       # Default class prediction from the forest.
+cm_rf_customer_2026 <- table(actual = test_customer_2026$churn, predicted = pred_rf_customer_2026)  # RF confusion matrix.
+acc_rf_customer_2026 <- sum(diag(cm_rf_customer_2026)) / sum(cm_rf_customer_2026)                   # RF accuracy.
+
+# Print the main scorecard.  # This gives a compact answer block for a likely Task 2 comparison question.
+tibble(
+  model = c("Logistic regression", "Random forest"),  # Two likely comparison models.
+  accuracy = c(acc_logit_customer_2026, acc_rf_customer_2026)  # Same metric for both models.
+)
+
+importance(rf_customer_2026)  # Variable importance helps with interpretation if the exam asks what mattered most.
+```
+
+### Short written answer you can reuse for Task 2
+
+> I treated this as a binary churn classification problem. Because churn is the minority class, I did not rely on accuracy alone and instead tuned the classification threshold on the training data. I removed the charge variables because they are almost exact linear transforms of the corresponding minute variables and therefore add redundancy rather than genuinely new information. I started with logistic regression because it is the safest interpretable baseline, then compared it with random forest to check whether nonlinearities and interactions improved predictive performance. The most important early warning signals in the raw data are international plan, customer service calls, and usage intensity, especially day minutes.
+
+## Three very likely live-data question scenarios
+
+### Scenario 1 — Task 1 asks for a safe baseline plus one improvement model
+
+> I would start with OLS because the response `y` is continuous and OLS is the correct baseline. I would then compare it with a more flexible model such as a GAM, because the first-pass screening suggests that at least some predictors may enter nonlinearly even if their plain linear correlation is modest. I would compare the models on the same test set using MSE and recommend the model with the lower test MSE.
+
+### Scenario 2 — Task 2 asks which variables are associated with churn
+
+> I would use logistic regression because the response is binary and the coefficient signs are interpretable. Before fitting the model, I would remove redundant charge variables so the explanation is cleaner and less distorted by near-duplicate predictors. From the descriptive analysis, international plan, customer service calls, and usage variables already look important, so I would expect them to remain central in the fitted model.
+
+### Scenario 3 — Task 2 asks for the best predictive model
+
+> I would split the data into training and test sets, fit logistic regression as a baseline, tune the threshold on the training set, and then compare it with a more flexible model such as random forest on the same test set. Because churn is relatively rare, I would report not only accuracy but also sensitivity and specificity or balanced accuracy. I would recommend the more complex model only if it gives a clear predictive improvement on unseen data.
+
+## RStudio snippets to save for plug-and-play tomorrow
+
+Paste these into **RStudio → Tools / Global Options → Code → Edit Snippets** if you want fast insertable templates.
+
+```text
+snippet ban404task1live
+	task1_2026 <- readr::read_csv("task1_data.csv", show_col_types = FALSE)
+	glimpse(task1_2026)
+	set.seed(404)
+	idx <- sample(seq_len(nrow(task1_2026)), size = floor(0.7 * nrow(task1_2026)))
+	train <- task1_2026[idx, ]
+	test <- task1_2026[-idx, ]
+	ols_fit <- lm(y ~ ., data = train)
+	pred <- predict(ols_fit, newdata = test)
+	mean((test$y - pred)^2)
+
+snippet ban404task2live
+	customer_2026 <- readr::read_csv("customer_data.csv", show_col_types = FALSE) %>%
+	  janitor::clean_names() %>%
+	  dplyr::mutate(
+	    churn = factor(churn, levels = c(FALSE, TRUE), labels = c("no", "yes")),
+	    international_plan = factor(international_plan),
+	    voice_mail_plan = factor(voice_mail_plan),
+	    state = factor(state),
+	    area_code = factor(area_code)
+	  ) %>%
+	  dplyr::select(-total_day_charge, -total_eve_charge, -total_night_charge, -total_intl_charge)
+
+snippet ban404threshold
+	threshold_grid <- seq(0.10, 0.50, by = 0.05)
+	threshold_results <- purrr::map_dfr(threshold_grid, function(th) {
+	  pred_th <- if_else(prob_train > th, "yes", "no") %>% factor(levels = c("no", "yes"))
+	  cm_th <- table(actual = train$churn, predicted = pred_th)
+	  sens_th <- cm_th["yes", "yes"] / sum(cm_th["yes", ])
+	  spec_th <- cm_th["no", "no"] / sum(cm_th["no", ])
+	  tibble(threshold = th, balanced_accuracy = mean(c(sens_th, spec_th)))
+	})
+```
+
+---
+
 # Dataset-anchored worked examples for likely exam questions
 
 This section builds the generic method playbooks into **fuller, more exam-shaped examples** using datasets that are already known from BAN404. The point is not only to show code, but to show **why this exact code chunk is the right answer to this exact kind of exam wording**.
@@ -1665,13 +1995,13 @@ This section builds the generic method playbooks into **fuller, more exam-shaped
 
 | Dataset | Repo-relative path from this file | Typical BAN404 use | Best methods to revise with it |
 |---|---|---|---|
-| `data_task1.csv` | `2025/data_task1.csv` | small numeric Task 1 data | OLS, ridge, LOOCV, bootstrap, GAM |
+| `data_task1.csv` | `../Previous Exam/2025/data_task1.csv` | small numeric Task 1 data | OLS, ridge, LOOCV, bootstrap, GAM |
 | `dataOhlsson` | package dataset via `insuranceData` | 2025 Task 2 insurance claims | logistic, threshold choice, random forest, boosting |
-| `airline.csv` | `2024/airline.csv` | 2024 Task 2 two-perspective classification | descriptive analysis, logistic, tree, random forest |
-| `Churn.csv` | `2023/Churn.csv` | 2023 mixed regression + classification practice | OLS, LASSO, tree, random forest, logistic, bootstrap |
+| `airline.csv` | `../Previous Exam/2024/airline.csv` | 2024 Task 2 two-perspective classification | descriptive analysis, logistic, tree, random forest |
+| `Churn.csv` | `../Previous Exam/2023/Churn.csv` | 2023 mixed regression + classification practice | OLS, LASSO, tree, random forest, logistic, bootstrap |
 | `OJ` | package dataset via `ISLR` / `ISLR2` | 2022 classification practice | logistic, classification tree, threshold CV |
 
-All file paths in this section are **relative to this compendium file inside `Previous Exam/`**. So `2025/data_task1.csv` means the `data_task1.csv` file inside the `2025/` subfolder that sits under `Previous Exam/`.
+All file paths in this section are **relative to this compendium file inside `Exam2026/`**. So `../Previous Exam/2025/data_task1.csv` means "go up one folder from `Exam2026/`, then into `Previous Exam/2025/`".
 
 ## Example 1 — 2025 Task 1 style: `data_task1.csv`
 
@@ -1695,7 +2025,7 @@ This is one of the cleanest BAN404 Task 1 datasets for practicing four recurring
 
 ```{r}
 # Read the 2025 Task 1 data using read_csv2.  # We use read_csv2 because the file uses semicolon separators and decimal commas.
-task1_2025 <- read_csv2("2025/data_task1.csv", show_col_types = FALSE)  # This is the safest import choice for the stored file format.
+task1_2025 <- read_csv2("../Previous Exam/2025/data_task1.csv", show_col_types = FALSE)  # This is the safest import choice for the stored file format.
 
 # Check that the import worked correctly.  # We want y plus X1 to X20 as separate numeric columns, not one giant text column.
 glimpse(task1_2025)  # Always inspect structure before modeling so we catch file-format mistakes early.
@@ -1806,8 +2136,8 @@ Those are **not** the same modeling problem, even though they use the same datas
 ### Full worked code skeleton
 
 ```{r}
-# Read the airline data from the 2024 folder.  # The compendium file lives in Previous Exam, so the year subfolder path is short and stable.
-airline_2024 <- read_csv("2024/airline.csv", show_col_types = FALSE)  # This is a standard comma-separated file.
+# Read the airline data from the 2024 folder.  # From `Exam2026/` we step up one folder and then into `Previous Exam/2024/`.
+airline_2024 <- read_csv("../Previous Exam/2024/airline.csv", show_col_types = FALSE)  # This is a standard comma-separated file.
 
 # Convert text variables to factors immediately.  # Logistic regression, trees, and random forests should treat categories as categories.
 airline_2024 <- airline_2024 %>%
@@ -1904,7 +2234,7 @@ That means the dataset trains one of the most important exam reflexes: **choose 
 
 ```{r}
 # Read the 2023 churn data.  # This file is already stored locally in the repository.
-churn_2023 <- read_csv("2023/Churn.csv", show_col_types = FALSE)  # Standard CSV import for the exam dataset.
+churn_2023 <- read_csv("../Previous Exam/2023/Churn.csv", show_col_types = FALSE)  # Standard CSV import for the exam dataset.
 
 # Remove the ID and recode binary indicators as factors.  # IDs do not generalize, and binary service indicators should be categorical.
 churn_2023 <- churn_2023 %>%
