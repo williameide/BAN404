@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Self-study preparation file">
+<meta name="dcterms.date" content="2026-01-01">
+
+<title>BAN404 R Exam Compendium</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="ExamPrep_files/libs/clipboard/clipboard.min.js"></script>
+<script src="ExamPrep_files/libs/quarto-html/quarto.js"></script>
+<script src="ExamPrep_files/libs/quarto-html/popper.min.js"></script>
+<script src="ExamPrep_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="ExamPrep_files/libs/quarto-html/anchor.min.js"></script>
+<link href="ExamPrep_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="ExamPrep_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="ExamPrep_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="ExamPrep_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="ExamPrep_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#task-1-continuous-outcome-regression" id="toc-task-1-continuous-outcome-regression" class="nav-link active" data-scroll-target="#task-1-continuous-outcome-regression"><span class="header-section-number">1</span> Task 1: Continuous Outcome (Regression)</a>
+  <ul>
+  <li><a href="#data-integrity-check" id="toc-data-integrity-check" class="nav-link" data-scroll-target="#data-integrity-check"><span class="header-section-number">1.0.1</span> Data Integrity Check</a></li>
+  <li><a href="#distribution-of-the-target-variable-y" id="toc-distribution-of-the-target-variable-y" class="nav-link" data-scroll-target="#distribution-of-the-target-variable-y"><span class="header-section-number">1.0.2</span> Distribution of the Target Variable (y)</a></li>
+  <li><a href="#multicollinearity-and-feature-scaling" id="toc-multicollinearity-and-feature-scaling" class="nav-link" data-scroll-target="#multicollinearity-and-feature-scaling"><span class="header-section-number">1.0.3</span> Multicollinearity and Feature Scaling</a></li>
+  <li><a href="#checking-the-linearity-assumption" id="toc-checking-the-linearity-assumption" class="nav-link" data-scroll-target="#checking-the-linearity-assumption"><span class="header-section-number">1.0.4</span> Checking the Linearity Assumption</a></li>
+  <li><a href="#eda-findings" id="toc-eda-findings" class="nav-link" data-scroll-target="#eda-findings"><span class="header-section-number">1.0.5</span> EDA Findings</a></li>
+  <li><a href="#data-splitting" id="toc-data-splitting" class="nav-link" data-scroll-target="#data-splitting"><span class="header-section-number">1.1</span> Data Splitting</a></li>
+  <li><a href="#baseline-linear-models-ols-lasso" id="toc-baseline-linear-models-ols-lasso" class="nav-link" data-scroll-target="#baseline-linear-models-ols-lasso"><span class="header-section-number">1.2</span> Baseline Linear Models (OLS &amp; LASSO)</a>
+  <ul class="collapse">
+  <li><a href="#scenario-a-explicit-non-linearities-gam" id="toc-scenario-a-explicit-non-linearities-gam" class="nav-link" data-scroll-target="#scenario-a-explicit-non-linearities-gam"><span class="header-section-number">1.2.1</span> Scenario A: Explicit Non-Linearities (GAM)</a></li>
+  <li><a href="#scenario-b-tree-based-ensemble-random-forest" id="toc-scenario-b-tree-based-ensemble-random-forest" class="nav-link" data-scroll-target="#scenario-b-tree-based-ensemble-random-forest"><span class="header-section-number">1.2.2</span> Scenario B: Tree-Based Ensemble (Random Forest)</a></li>
+  </ul></li>
+  <li><a href="#task-1-final-model-comparison" id="toc-task-1-final-model-comparison" class="nav-link" data-scroll-target="#task-1-final-model-comparison"><span class="header-section-number">1.3</span> Task 1 Final Model Comparison</a></li>
+  </ul></li>
+  </ul>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="ExamPrep.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">BAN404 R Exam Compendium</h1>
+<p class="subtitle lead">Comprehensive solution guide — 2023, 2024, and 2025 school exams</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Self-study preparation file </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">January 1, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><strong>General Setup and Package Loading</strong></p>
+<p>Before tackling any specific task, we load the standard suite of BAN404 packages. We use <code>tidyverse</code> for data manipulation and visualization, <code>janitor</code> for safe column naming, and the core statistical learning packages (<code>glmnet</code>, <code>gam</code>, <code>tree</code>, <code>randomForest</code>, <code>gbm</code>) so we don’t have to interrupt our workflow later.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 0. Load necessary libraries</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(janitor)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(glmnet)       <span class="co"># Regularization (Ridge/LASSO)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gam)          <span class="co"># Generalized Additive Models (Non-linearities)</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tree)         <span class="co"># Decision Trees</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(randomForest) <span class="co"># Bagging and Random Forests</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gbm)          <span class="co"># Boosting</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Load the datasets safely</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># show_col_types = FALSE keeps the exam output clean. </span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># clean_names() ensures no weird spaces or characters in column names.</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>df_task1 <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"task1_data.csv"</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span> <span class="fu">clean_names</span>()</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>df_customer <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"customer_data.csv"</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span> <span class="fu">clean_names</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="task-1-continuous-outcome-regression" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Task 1: Continuous Outcome (Regression)</h1>
+<p>Before fitting any models, we must understand the data generating process. The goal of this Exploratory Data Analysis (EDA) is to inform our model selection. We will systematically now do checks for:</p>
+<ol type="1">
+<li><p>Data integrity (Missing values)</p></li>
+<li><p>Target distribution (Skewness / Outliers)</p></li>
+<li><p>Feature independence (Multicollinearity)</p></li>
+<li><p>Functional form (Linearity vs.&nbsp;Non-linearity)</p></li>
+</ol>
+<section id="data-integrity-check" class="level3" data-number="1.0.1">
+<h3 data-number="1.0.1" class="anchored" data-anchor-id="data-integrity-check"><span class="header-section-number">1.0.1</span> Data Integrity Check</h3>
+<p><strong>Reasoning:</strong> Many machine learning algorithms (like standard Random Forests or <code>lm()</code> without <code>na.action</code> adjustments) will fail or drop rows entirely if missing values are present. We must verify completeness first.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check for missing values in each column</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colSums</span>(<span class="fu">is.na</span>(df_task1))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>x1 x2 x3 x4 x5 x6  y 
+ 0  0  0  0  0  0  0 </code></pre>
+</div>
+</div>
+<p><em>Conclusion:</em> There are 0 missing values. The dataset is complete, so no imputation is necessary.</p>
+</section>
+<section id="distribution-of-the-target-variable-y" class="level3" data-number="1.0.2">
+<h3 data-number="1.0.2" class="anchored" data-anchor-id="distribution-of-the-target-variable-y"><span class="header-section-number">1.0.2</span> Distribution of the Target Variable (y)</h3>
+<p><strong>Reasoning:</strong> The distribution of the continuous outcome <code>y</code> tells us if we need to transform the data. Severe skewness can violate OLS residual assumptions and make the model overly sensitive to outliers.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df_task1, <span class="fu">aes</span>(<span class="at">x =</span> y)) <span class="sc">+</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">bins =</span> <span class="dv">50</span>, <span class="at">fill =</span> <span class="st">"steelblue"</span>, <span class="at">color =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Distribution of Target Variable (y)"</span>, </span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"Checking for severe skewness or extreme outliers"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ExamPrep_files/figure-html/t1_target_dist-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><em>Conclusion:</em> The histogram shows a right-skewed distribution with a long tail extending towards 50. Normally, this suggests a <code>log(y)</code> transformation. However, <strong>the data contains negative values (down to approximately -8)</strong>. Because <span class="math inline">\(\log(x)\)</span> is undefined for <span class="math inline">\(x \le 0\)</span>, a standard log transformation is invalid here without shifting the entire dataset. We will proceed with the un-transformed <code>y</code>, but we note that our OLS model may yield non-normal residuals.</p>
+</section>
+<section id="multicollinearity-and-feature-scaling" class="level3" data-number="1.0.3">
+<h3 data-number="1.0.3" class="anchored" data-anchor-id="multicollinearity-and-feature-scaling"><span class="header-section-number">1.0.3</span> Multicollinearity and Feature Scaling</h3>
+<p><strong>Reasoning:</strong> If predictor variables are highly correlated (multicollinearity), OLS coefficient estimates become highly unstable (high variance). This is the primary justification for using Ridge Regression. We also check the summary statistics to see if predictors need standardization.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check summary to see if scales are wildly different</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(df_task1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       x1                  x2                  x3           
+ Min.   :-3.612812   Min.   :-3.456765   Min.   :-3.927514  
+ 1st Qu.:-0.701437   1st Qu.:-0.661705   1st Qu.:-0.683056  
+ Median : 0.025374   Median :-0.011046   Median :-0.018935  
+ Mean   : 0.005223   Mean   :-0.006547   Mean   :-0.003266  
+ 3rd Qu.: 0.693518   3rd Qu.: 0.646217   3rd Qu.: 0.674484  
+ Max.   : 3.404302   Max.   : 3.958603   Max.   : 3.613277  
+       x4                  x5                 x6                  y         
+ Min.   :-3.363736   Min.   :-4.23316   Min.   :-3.367947   Min.   :-8.178  
+ 1st Qu.:-0.677427   1st Qu.:-0.65188   1st Qu.:-0.667768   1st Qu.: 1.198  
+ Median :-0.003986   Median : 0.02763   Median :-0.008419   Median : 3.181  
+ Mean   :-0.005843   Mean   : 0.01977   Mean   :-0.000129   Mean   : 3.502  
+ 3rd Qu.: 0.648835   3rd Qu.: 0.68122   3rd Qu.: 0.655213   3rd Qu.: 5.451  
+ Max.   : 4.026849   Max.   : 4.16812   Max.   : 3.547680   Max.   :54.247  </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check correlation matrix</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>cor_matrix <span class="ot">&lt;-</span> <span class="fu">cor</span>(df_task1)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(cor_matrix, <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      x1    x2    x3    x4    x5    x6     y
+x1  1.00 -0.01 -0.02  0.02  0.03  0.01  0.32
+x2 -0.01  1.00  0.00 -0.01  0.01  0.01  0.03
+x3 -0.02  0.00  1.00  0.00  0.02 -0.01 -0.45
+x4  0.02 -0.01  0.00  1.00 -0.02 -0.01 -0.01
+x5  0.03  0.01  0.02 -0.02  1.00 -0.01  0.56
+x6  0.01  0.01 -0.01 -0.01 -0.01  1.00  0.01
+y   0.32  0.03 -0.45 -0.01  0.56  0.01  1.00</code></pre>
+</div>
+</div>
+<p><em>Conclusion:</em> The <code>summary()</code> shows all predictors are roughly centered around 0 with similar ranges, meaning massive scale disparities won’t artificially inflate penalties in regularized models. More importantly, the correlation matrix shows <strong>zero correlation between the independent variables</strong>. Because there is no multicollinearity, <strong>Ridge regression is unlikely to provide any significant variance-reduction benefit over OLS.</strong></p>
+</section>
+<section id="checking-the-linearity-assumption" class="level3" data-number="1.0.4">
+<h3 data-number="1.0.4" class="anchored" data-anchor-id="checking-the-linearity-assumption"><span class="header-section-number">1.0.4</span> Checking the Linearity Assumption</h3>
+<p><strong>Reasoning:</strong> OLS, Ridge, and LASSO all assume a strictly linear relationship between <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span>. If the true relationship is non-linear, these models will severely underfit. We plot each predictor against <code>y</code>, overlaying a strict linear fit (blue) and a flexible LOESS fit (red).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>df_task1 <span class="sc">%&gt;%</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">starts_with</span>(<span class="st">"x"</span>), <span class="at">names_to =</span> <span class="st">"predictor"</span>, <span class="at">values_to =</span> <span class="st">"value"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> value, <span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">color =</span> <span class="st">"blue"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>) <span class="sc">+</span>     <span class="co"># Linear OLS fit</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>) <span class="sc">+</span>   <span class="co"># Flexible non-linear fit</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>predictor, <span class="at">scales =</span> <span class="st">"free_x"</span>) <span class="sc">+</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Predictors vs. y (Blue = Linear, Red = Flexible)"</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"Looking for gaps between the straight line and flexible curve"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ExamPrep_files/figure-html/t1_linearity-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><em>Conclusion:</em> This plot dictates our entire modeling strategy: 1. <code>x1</code> and <code>x5</code> are strictly linear. 2. <code>x4</code> and <code>x6</code> appear to be pure noise (both lines are flat). 3. <strong><code>x2</code> and <code>x3</code> display severe non-linear relationships.</strong> Specifically, <code>x2</code> forms a distinct U-shape (quadratic).</p>
+<p>Because of this, standard linear models (OLS, LASSO) will falsely interpret <code>x2</code> as a weak predictor. To capture the true signal in this dataset, we can “upgrade” from linear models to a <strong>Generalized Additive Model (GAM)</strong> or a <strong>Tree-based model</strong>.</p>
+</section>
+<section id="eda-findings" class="level3" data-number="1.0.5">
+<h3 data-number="1.0.5" class="anchored" data-anchor-id="eda-findings"><span class="header-section-number">1.0.5</span> EDA Findings</h3>
+<p>Based on the exploratory data analysis, we can draw several critical conclusions that dictate our modeling strategy:</p>
+<ol type="1">
+<li><strong>Pre-Standardization:</strong> The <code>summary()</code> output shows that all predictors (<code>x1</code> through <code>x6</code>) have a mean of approximately 0 and a similar range. Therefore, manual standardization is not strictly necessary before applying penalty-based models like Ridge or LASSO, though <code>glmnet</code> handles this automatically anyway.</li>
+<li><strong>No Multicollinearity:</strong> The correlation matrix shows that the independent variables are entirely uncorrelated with one another (correlations are all ~0.00). Because there is no multicollinearity, <strong>Ridge regression is unlikely to provide a massive advantage</strong> over OLS in terms of variance reduction between predictors.</li>
+<li><strong>Severe Non-Linearities:</strong> The scatterplots reveal a massive limitation of standard linear models for this dataset.
+<ul>
+<li><code>x1</code> and <code>x5</code> have strictly linear relationships with <code>y</code> (the blue and red lines match).</li>
+<li><strong><code>x2</code> exhibits a strong U-shaped (quadratic) relationship</strong> with <code>y</code>. A standard OLS or LASSO model will assign <code>x2</code> a coefficient of near 0 (as seen in the correlation matrix), falsely identifying it as useless.</li>
+<li><code>x3</code> also shows a distinct non-linear curve.</li>
+<li><code>x4</code> and <code>x6</code> appear to be pure noise (flat lines for both fits).</li>
+</ul></li>
+<li><strong>Modeling Implication:</strong> To achieve optimal predictive performance, a baseline OLS model will underfit the data. We must introduce flexibility. We should proceed with a <strong>Generalized Additive Model (GAM)</strong> to capture the non-linearities in <code>x2</code> and <code>x3</code> smoothly, or apply a <strong>Tree-based model</strong> (like Random Forest) which naturally handles non-linear relationships without manual specification.</li>
+</ol>
+</section>
+<section id="data-splitting" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="data-splitting"><span class="header-section-number">1.1</span> Data Splitting</h2>
+<p><strong>Possible Exam Question:</strong> <em>“Split the dataset into a training and test set. Explain why this step is necessary before evaluating model performance.”</em></p>
+<p><strong>Exam-Ready Written Reasoning:</strong> To accurately evaluate how well our models will generalize to unseen data, we must split the dataset into a training set and a test set. If we train and evaluate a model on the exact same data, complex models (like Random Forests) will simply memorize the data (overfitting), leading to an artificially low error rate. By holding out 50% of the data exclusively for testing, we get an honest, unbiased estimate of the model’s true predictive power (Test MSE).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set a random seed. This locks the random number generator so our split is </span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># exactly the same every time we run the code. Crucial for reproducible exam answers!</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) </span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Create an index of row numbers. sample() picks random rows. </span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co"># size = floor(nrow()/2) ensures we grab exactly 50% of the data for training.</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>idx <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq_len</span>(<span class="fu">nrow</span>(df_task1)), <span class="at">size =</span> <span class="fu">floor</span>(<span class="fu">nrow</span>(df_task1) <span class="sc">/</span> <span class="dv">2</span>))</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Use the random row numbers (idx) to pull the training data</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>train_t1 <span class="ot">&lt;-</span> df_task1[idx, ]</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Use the negative index (-idx) to pull all the REMAINING rows for the test data</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>test_t1  <span class="ot">&lt;-</span> df_task1[<span class="sc">-</span>idx, ]</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co"># LASSO/Ridge (glmnet package) cannot read normal dataframes. They require a numeric matrix.</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co"># model.matrix() automatically converts the data. The [,-1] drops the intercept column </span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co"># because glmnet automatically creates its own intercept.</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>X_train <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(y <span class="sc">~</span> ., <span class="at">data =</span> train_t1)[, <span class="sc">-</span><span class="dv">1</span>]</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>y_train <span class="ot">&lt;-</span> train_t1<span class="sc">$</span>y   <span class="co"># Extract just the target variable for the training set</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>X_test  <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(y <span class="sc">~</span> ., <span class="at">data =</span> test_t1)[, <span class="sc">-</span><span class="dv">1</span>] <span class="co"># Do the exact same for the test set</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>y_test  <span class="ot">&lt;-</span> test_t1<span class="sc">$</span>y</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="baseline-linear-models-ols-lasso" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="baseline-linear-models-ols-lasso"><span class="header-section-number">1.2</span> Baseline Linear Models (OLS &amp; LASSO)</h2>
+<p><strong>Possible Exam Question:</strong> <em>“Fit an Ordinary Least Squares (OLS) model and a LASSO regression model. Compare their performance. Does LASSO perform variable selection? Explain the limitations of both models given your EDA.”</em></p>
+<p><strong>Exam-Ready Written Reasoning:</strong> We begin with an OLS regression as our strict baseline. However, our EDA proved that <code>x2</code> has a severe U-shaped non-linear relationship with <code>y</code>. Because OLS only draws straight lines, we expect it to completely miss the signal in <code>x2</code> and perform poorly.</p>
+<p>Next, we run a LASSO regression. LASSO applies an “L1 penalty” (absolute value penalty) to the coefficients. Unlike Ridge regression (which only shrinks coefficients towards zero), LASSO’s mathematical penalty can force coefficients to exactly zero, effectively dropping them from the model. This performs automatic variable selection, which is perfect here because our EDA suggested <code>x4</code> and <code>x6</code> are pure noise. However, because LASSO is still a linear model, it will also fail to capture the non-linear curve of <code>x2</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 1. OLS BASELINE ---</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the linear model. 'y ~ .' means predict y using all other variables in the dataset.</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>ols_fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> ., <span class="at">data =</span> train_t1)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Use the fitted OLS model to predict the y-values for the unseen test data.</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>pred_ols <span class="ot">&lt;-</span> <span class="fu">predict</span>(ols_fit, <span class="at">newdata =</span> test_t1)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate Mean Squared Error (MSE): The average of the squared differences between </span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co"># the actual test y-values and our predicted y-values. Lower is better.</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>mse_ols <span class="ot">&lt;-</span> <span class="fu">mean</span>((test_t1<span class="sc">$</span>y <span class="sc">-</span> pred_ols)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 2. LASSO REGRESSION ---</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) <span class="co"># Lock seed again because cross-validation uses random folds.</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="co"># cv.glmnet automatically tests many values of 'lambda' (the penalty size) </span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="co"># using Cross-Validation to find the optimal penalty. alpha = 1 tells it to use LASSO.</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>cv_lasso <span class="ot">&lt;-</span> <span class="fu">cv.glmnet</span>(X_train, y_train, <span class="at">alpha =</span> <span class="dv">1</span>)</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Now, fit the final LASSO model using the best lambda (lambda.min) found above.</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>lasso_fit <span class="ot">&lt;-</span> <span class="fu">glmnet</span>(X_train, y_train, <span class="at">alpha =</span> <span class="dv">1</span>, <span class="at">lambda =</span> cv_lasso<span class="sc">$</span>lambda.min)</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict on the test matrix. as.numeric() ensures the output is a simple vector.</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>pred_lasso <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">predict</span>(lasso_fit, <span class="at">newx =</span> X_test))</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate Test MSE for LASSO</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>mse_lasso <span class="ot">&lt;-</span> <span class="fu">mean</span>((test_t1<span class="sc">$</span>y <span class="sc">-</span> pred_lasso)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the LASSO coefficients to prove to the professor that variable selection happened.</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Look for the dots (.), which mean the coefficient was forced to exactly zero.</span></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"LASSO Coefficients:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "LASSO Coefficients:"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(lasso_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>7 x 1 sparse Matrix of class "dgCMatrix"
+                     s0
+(Intercept)  3.47978964
+x1           0.99871881
+x2           0.08530576
+x3          -1.62058189
+x4           .         
+x5           1.99455598
+x6           .         </code></pre>
+</div>
+</div>
+<section id="scenario-a-explicit-non-linearities-gam" class="level3" data-number="1.2.1">
+<h3 data-number="1.2.1" class="anchored" data-anchor-id="scenario-a-explicit-non-linearities-gam"><span class="header-section-number">1.2.1</span> Scenario A: Explicit Non-Linearities (GAM)</h3>
+<p><strong>Possible Exam Question:</strong> <em>“Based on your EDA, some variables are non-linear. Fit a model that captures these non-linearities while remaining highly interpretable.”</em></p>
+<p><strong>Exam-Ready Written Reasoning:</strong> To fix the underfitting of the linear models, we upgrade to a Generalized Additive Model (GAM). A GAM allows us to apply “smoothing splines” to specific variables, letting the model bend to fit curves while still keeping the effects additive and highly interpretable. Based on our EDA and LASSO results, we manually drop the noise variables (<code>x4</code>, <code>x6</code>). We keep <code>x1</code> and <code>x5</code> as straight lines (linear), but we wrap <code>x2</code> and <code>x3</code> in the <code>s()</code> function to allow the model to capture their severe non-linear curves.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the GAM. </span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Notice we excluded x4 and x6.</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># x1 and x5 are entered normally (forcing a straight line).</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># s(x2) and s(x3) tell the model to use smoothing splines to fit the curves.</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>gam_fit <span class="ot">&lt;-</span> <span class="fu">gam</span>(y <span class="sc">~</span> x1 <span class="sc">+</span> <span class="fu">s</span>(x2) <span class="sc">+</span> <span class="fu">s</span>(x3) <span class="sc">+</span> x5, <span class="at">data =</span> train_t1)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict on test data</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>pred_gam <span class="ot">&lt;-</span> <span class="fu">predict</span>(gam_fit, <span class="at">newdata =</span> test_t1)</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate Test MSE</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>mse_gam <span class="ot">&lt;-</span> <span class="fu">mean</span>((test_t1<span class="sc">$</span>y <span class="sc">-</span> pred_gam)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the GAM partial dependence plots. </span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="co"># This shows the professor exactly how the model bent to fit x2 and x3.</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="co"># mfrow = c(2,2) splits the plot window into a 2x2 grid so all 4 plots fit on one screen.</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(gam_fit, <span class="at">se =</span> <span class="cn">TRUE</span>, <span class="at">col =</span> <span class="st">"blue"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ExamPrep_files/figure-html/t1_gam-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>)) <span class="co"># Reset plot window back to normal</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="scenario-b-tree-based-ensemble-random-forest" class="level3" data-number="1.2.2">
+<h3 data-number="1.2.2" class="anchored" data-anchor-id="scenario-b-tree-based-ensemble-random-forest"><span class="header-section-number">1.2.2</span> Scenario B: Tree-Based Ensemble (Random Forest)</h3>
+<p><strong>Possible Exam Question:</strong> <em>“Use a tree-based ensemble method to predict y. Evaluate its performance and explain which variables are most important for making predictions.”</em></p>
+<p><strong>Exam-Ready Written Reasoning:</strong> Instead of manually specifying which variables are non-linear (like we did in the GAM), we can use a Random Forest. A Random Forest builds hundreds of deep decision trees using bootstrapped samples of the data, and randomly restricts the predictors available at each split (<code>mtry</code>). This decorrelates the trees, drastically reducing variance when their predictions are averaged. Decision trees naturally handle non-linearities and ignore useless variables without requiring manual intervention, making it an incredibly powerful “black-box” alternative to OLS.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) <span class="co"># Lock seed because Random Forest uses random bootstrap sampling</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the Random Forest. importance = TRUE forces it to track which variables </span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co"># reduce the error the most, so we can plot them later.</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>rf_fit <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(y <span class="sc">~</span> ., <span class="at">data =</span> train_t1, <span class="at">importance =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict on test data</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>pred_rf <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_fit, <span class="at">newdata =</span> test_t1)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate Test MSE</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>mse_rf <span class="ot">&lt;-</span> <span class="fu">mean</span>((test_t1<span class="sc">$</span>y <span class="sc">-</span> pred_rf)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the numerical importance scores.</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Increase in Node Purity (IncNodePurity) shows how much worse the model </span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="co"># would be if we removed that variable.</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="fu">importance</span>(rf_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       %IncMSE IncNodePurity
+x1  87.6122036      3932.133
+x2  80.9745238      4755.326
+x3 121.4843681     10592.416
+x4  10.7814978      1374.855
+x5 190.2134141     10873.399
+x6   0.8378736      1018.195</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the variable importance for easy visual interpretation in the exam.</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">varImpPlot</span>(rf_fit, <span class="at">main =</span> <span class="st">"Random Forest Variable Importance"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ExamPrep_files/figure-html/t1_rf-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="task-1-final-model-comparison" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="task-1-final-model-comparison"><span class="header-section-number">1.3</span> Task 1 Final Model Comparison</h2>
+<p><strong>Possible Exam Question:</strong> <em>“Summarize the performance of all models tested. Which model is optimal for this dataset and why?”</em></p>
+<p><strong>Exam-Ready Written Reasoning:</strong> By comparing the Test Mean Squared Error (MSE) across all models, we can definitively conclude that capturing non-linearity was the most critical factor for this dataset. OLS and LASSO both performed poorly because their strict linear constraints caused them to completely miss the massive U-shaped signal in <code>x2</code>. The flexible models (GAM and Random Forest) achieved a significantly lower Test MSE. If the business requires interpretability to understand exactly <em>how</em> each variable affects the outcome, the GAM is optimal. If the sole goal is minimizing predictive error, the Random Forest is the superior choice.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a tidy dataframe to cleanly display the MSE of all 4 models</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co"># tibble() creates the table, and we input our calculated MSE variables.</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>model_results <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Model =</span> <span class="fu">c</span>(<span class="st">"OLS"</span>, <span class="st">"LASSO"</span>, <span class="st">"GAM"</span>, <span class="st">"Random Forest"</span>),</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Test_MSE =</span> <span class="fu">c</span>(mse_ols, mse_lasso, mse_gam, mse_rf)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> </span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Test_MSE) <span class="co"># Sort from lowest error (best) to highest error (worst)</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the final leaderboard</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(model_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 2
+  Model         Test_MSE
+  &lt;chr&gt;            &lt;dbl&gt;
+1 GAM               1.54
+2 Random Forest     2.31
+3 LASSO             5.08
+4 OLS               5.08</code></pre>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
