@@ -38,12 +38,21 @@ execute:
 - **Duration:** 6 hours
 - **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
+- **Important exam expectation:** In every subquestion, combine **code + explanation + interpretation**. A good BAN404 answer does not stop after fitting a model; it also explains why the method is relevant, what assumptions matter, and what the results imply.
+
+# How to use this mock exam
+
+This mock exam is written as both a **practice exam** and a **revision lookup tool**. That means each task tells you not only what to compute, but also what the examiner is usually looking for in a strong written answer. When you solve it, aim to produce short theory-grounded paragraphs after the code, not only output tables.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
+## Context for Task 1
+
+The dataset contains a continuous response `y` and several predictors. The structure makes this a good environment for discussing **OLS**, **regularization**, **cross-validation**, **bootstrap uncertainty**, and **GAM-based nonlinearity handling**. Your answers should therefore show both technical execution and methodological judgment.
+
 ## (a) Decode the objective: Ridge variant (10 points)
 
-Given
+You are given the following function:
 
 ```{r}
 f <- function(beta, X, y, lambda) {
@@ -51,11 +60,33 @@ f <- function(beta, X, y, lambda) {
 }
 ```
 
-Identify the method and explain the shrinkage effect as `lambda` increases.
+Write a short but precise answer that explains all of the following:
+
+1. **Which method this represents** and how you know.
+2. **What the two parts of the objective function do**.
+3. **What happens when `lambda` increases**, especially to coefficient size, variance, and bias.
+4. **Why this can help under multicollinearity**, and how it differs from LASSO.
+
+Your answer should read like a BAN404 theory answer, not just a one-line identification.
 
 ## (b) Baseline vs shrinkage fit comparison (10 points)
 
-Fit OLS and Ridge on the dataset and compare coefficient stability under multicollinearity.
+Read `task1_data.csv` and compare an **OLS model** with a **Ridge model**.
+
+What to do:
+
+- Fit OLS using all available predictors.
+- Fit Ridge using `glmnet`.
+- Compare coefficient magnitudes in a clear table.
+- Comment on whether the Ridge coefficients look more stable / shrunk than OLS.
+- Explain what this tells you about the possible presence of correlated predictors.
+
+What the examiner wants to see:
+
+- correct data setup,
+- correct distinction between OLS and penalized regression,
+- interpretation of shrinkage,
+- clear statement of *why* Ridge is useful even if it does not perform variable selection.
 
 ```{r}
 # Your code here
@@ -63,7 +94,17 @@ Fit OLS and Ridge on the dataset and compare coefficient stability under multico
 
 ## (c) Ten-fold CV tuning with robust choice rule (10 points)
 
-Tune lambda with 10-fold CV and report both `lambda.min` and `lambda.1se`. Argue which choice is safer for exam-style deployment.
+Tune `lambda` using **10-fold cross-validation**.
+
+What to do:
+
+- Use `cv.glmnet` on the same data.
+- Report both `lambda.min` and `lambda.1se`.
+- Explain the practical meaning of the two rules.
+- State which one you would choose in an exam/business setting where robustness matters.
+- Briefly explain why CV is more trustworthy than one random train/test split for this tuning decision.
+
+You should also mention what kind of **data leakage mistake** would make CV unfair.
 
 ```{r}
 # Your code here
@@ -71,7 +112,18 @@ Tune lambda with 10-fold CV and report both `lambda.min` and `lambda.1se`. Argue
 
 ## (d) Bootstrap uncertainty for variance (10 points)
 
-Use bootstrap (`B = 1500`) for `Var(y)`, show histogram, and compare percentile vs normal CI.
+Use the bootstrap to study uncertainty in `Var(y)`.
+
+What to do:
+
+- Set a seed.
+- Use `B = 1500` bootstrap resamples.
+- Store the bootstrap variance estimate in each repetition.
+- Show the bootstrap distribution in a histogram.
+- Compute both a **percentile CI** and a **normal approximation CI**.
+- Explain when the percentile CI is often preferred.
+
+Your interpretation should explicitly connect the shape of the bootstrap distribution to your choice of confidence interval language.
 
 ```{r}
 # Your code here
@@ -79,7 +131,17 @@ Use bootstrap (`B = 1500`) for `Var(y)`, show histogram, and compare percentile 
 
 ## (e) Linear vs additive model improvement (10 points)
 
-Fit OLS and GAM. Compare MSE and adjusted R² and explain if smooth terms are justified.
+Fit both an **OLS model** and a **GAM**.
+
+What to do:
+
+- Fit a full linear model.
+- Fit a GAM where the most plausible nonlinear predictors are modeled with smooth terms.
+- Compare the models using MSE and adjusted / GAM-style R².
+- Explain whether the smooth terms seem justified.
+- Comment on the trade-off between flexibility and interpretability.
+
+A strong answer does not only say which model fits better; it also explains *why* BAN404 might reward choosing the more flexible model or sticking with the simpler one.
 
 ```{r}
 # Your code here
@@ -87,9 +149,29 @@ Fit OLS and GAM. Compare MSE and adjusted R² and explain if smooth terms are ju
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
+## Context for Task 2
+
+This is a classic BAN404 binary prediction task. A strong answer should move through the full workflow: **data design → EDA → interpretable baseline → more flexible model → recommendation**. You should keep separating *prediction usefulness* from *business usefulness* throughout the task.
+
 ## (a) Prediction-ready data design (8 points)
 
-Prepare variables for realistic deployment, remove deterministic duplicates, and split train/test using a fixed seed.
+Prepare the churn data so it is suitable for realistic prediction.
+
+What to do:
+
+- Read and clean the data.
+- Recode variables to appropriate types.
+- Remove duplicated/deterministic predictors that can create instability.
+- Explain which variables are safe to use at prediction time.
+- Split the data into training and test sets using a fixed seed.
+- Comment briefly on class balance in the two splits.
+
+What the examiner wants:
+
+- sensible factor handling,
+- awareness of leakage / deployment realism,
+- awareness of multicollinearity,
+- a clean split before later modeling.
 
 ```{r}
 # Your code here
@@ -97,7 +179,17 @@ Prepare variables for realistic deployment, remove deterministic duplicates, and
 
 ## (b) EDA for churn risk framing (8 points)
 
-Build churn-rate summaries and two plots. State three testable churn hypotheses.
+Use the training data only to build an initial explanation of churn.
+
+What to do:
+
+- Create grouped churn-rate summaries.
+- Make at least two informative plots.
+- Identify three plausible churn drivers.
+- Explain how EDA supports these hypotheses.
+- Mention one weakness of using only pairwise summaries before multivariate modeling.
+
+This is not only a plotting task. It is a **thinking task** where you show how descriptive patterns become modeling hypotheses.
 
 ```{r}
 # Your code here
@@ -105,7 +197,18 @@ Build churn-rate summaries and two plots. State three testable churn hypotheses.
 
 ## (c) Logistic model with FN-cost thresholding (12 points)
 
-Fit logistic regression and choose threshold when FN cost is 3x FP cost. Report confusion metrics and AUC.
+Fit a logistic regression model and choose a threshold when a **false negative costs 3 times as much as a false positive**.
+
+What to do:
+
+- Fit the model on the training set.
+- Predict probabilities on the test set.
+- Evaluate several thresholds.
+- Report confusion-based metrics and AUC.
+- Choose one threshold and defend it in business language.
+- Interpret at least a few coefficients using odds / odds ratios.
+
+A strong answer should explain why the best threshold is not necessarily `0.5`.
 
 ```{r}
 # Your code here
@@ -113,7 +216,17 @@ Fit logistic regression and choose threshold when FN cost is 3x FP cost. Report 
 
 ## (d) Random forest hyperparameter tuning (12 points)
 
-Tune `mtry` with CV, evaluate on test set, and relate top importance variables to your EDA hypotheses.
+Fit and tune a Random Forest model.
+
+What to do:
+
+- Tune `mtry` using CV on the training set only.
+- Fit the final forest with the chosen `mtry`.
+- Evaluate performance on the test set.
+- Show the most important predictors.
+- Compare the importance ranking with the hypotheses from your EDA and the story from logistic regression.
+
+Your written answer should explain why Random Forest can outperform logistic regression when nonlinearities or interactions matter.
 
 ```{r}
 # Your code here
@@ -121,7 +234,22 @@ Tune `mtry` with CV, evaluate on test set, and relate top importance variables t
 
 ## (e) Boosting selection and deployment recommendation (10 points)
 
-Tune number of trees with staged AUC and provide final model recommendation for retention operations.
+Fit a boosted-tree model and compare it with the earlier models.
+
+What to do:
+
+- Fit a boosting model on the training data.
+- Evaluate staged performance over different numbers of trees.
+- Pick an appropriate number of trees.
+- Compare logistic regression, Random Forest, and boosting.
+- Give one final recommendation for deployment in a retention context.
+
+The final paragraph should clearly state:
+
+1. which model you recommend,
+2. why that model is preferred,
+3. which metric matters most for this business problem,
+4. what trade-off the company is accepting.
 
 ```{r}
 # Your code here
