@@ -38,16 +38,51 @@ execute:
 - **Duration:** 6 hours
 - **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
+- **Important exam expectation:** In every subquestion, combine **method choice + runnable code + interpretation + theory/business reasoning**. A BAN404 answer earns more points when it explains *why* a method is appropriate, *how* the validation is kept fair, and *what* the output means for decision-making.
+
+# How to use this mock exam
+
+This mock exam is written as both a **practice exam** and a **lookup tool**. Each subquestion therefore tells you not only what to compute, but also what the examiner is likely to reward in a strong answer. When you solve it, aim to write in a way that would still help you two minutes before the real exam: short method justification, clear code, and direct interpretation.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
+## Context for Task 1
+
+This task is centered on **validation discipline**, **leakage prevention**, and **method justification**. That means the examiner is not only asking whether you can fit Ridge, LASSO, and GAM, but whether you understand **why a validation procedure is fair**, **why preprocessing must happen inside folds**, and **how uncertainty summaries should be defended**. A strong BAN404 answer therefore connects code to the bias-variance trade-off, honest model evaluation, and interpretation quality.
+
 ## (a) Explain K-fold CV pseudocode and leakage points (10 points)
 
-Describe each step in a K-fold loop and identify where accidental test-information leakage can happen.
+Describe a standard **K-fold cross-validation loop** and identify where test-information leakage can occur.
+
+What to explain:
+
+1. **How the data are split into folds**.
+2. **What happens inside each repetition of the loop**.
+3. **Which object plays the role of training data and which plays the role of validation data**.
+4. **Where preprocessing, feature engineering, or tuning can accidentally leak information**.
+5. **Why leakage produces overly optimistic performance estimates rather than genuinely better models**.
+
+A strong answer should sound like a BAN404 methodology paragraph, not just a list of steps.
 
 ## (b) Leakage-safe scaling inside folds (10 points)
 
-Implement fold-specific scaling and compare with naive global scaling for ridge tuning.
+Implement **fold-specific scaling** for Ridge regression and compare it with a naive global-scaling approach.
+
+What to do:
+
+- Create one common fold assignment.
+- Compare a **wrong** workflow where scaling is done on the full dataset before cross-validation.
+- Compare a **correct** workflow where scaling parameters are learned inside each training fold and then applied to its validation fold.
+- Tune Ridge over a lambda grid.
+- Compare the best validation MSE from the two procedures.
+- Explain why the globally scaled workflow is not trustworthy as an evaluation strategy.
+
+What the examiner wants to see:
+
+- correct identification of leakage,
+- fold-by-fold thinking,
+- awareness that preprocessing is part of the modeling pipeline,
+- explicit explanation that optimistic validation is not the same as real predictive improvement.
 
 ```{r}
 # Your code here
@@ -55,7 +90,17 @@ Implement fold-specific scaling and compare with naive global scaling for ridge 
 
 ## (c) Compare tuned Ridge and LASSO under common folds (10 points)
 
-Use identical folds for fairness and compare best CV-MSE.
+Use the **same fold assignment** to compare Ridge and LASSO fairly.
+
+What to do:
+
+- Reuse one common set of folds.
+- Tune Ridge and LASSO with those identical folds.
+- Compare `lambda.min`, `lambda.1se`, and best CV-MSE.
+- Compare coefficient sparsity at the chosen lambda values.
+- Explain why “same folds” matters when making a fair method comparison.
+
+A strong answer should make it clear that if the folds differ, some of the performance difference may come from the split rather than from the method itself.
 
 ```{r}
 # Your code here
@@ -63,7 +108,18 @@ Use identical folds for fairness and compare best CV-MSE.
 
 ## (d) Bootstrap CI interpretation quality check (10 points)
 
-Estimate CI for `Var(y)` and discuss when percentile CI is preferred to normal approximation.
+Use the bootstrap to estimate uncertainty for **`Var(y)`**.
+
+What to do:
+
+- Set a seed.
+- Use many bootstrap resamples.
+- Store `Var(y)` for each resample.
+- Visualize the bootstrap distribution.
+- Compute a **percentile confidence interval** and a **normal approximation confidence interval**.
+- Explain when the percentile interval is easier to defend than the normal approximation.
+
+The best answers explicitly link the interval choice to the **shape of the bootstrap distribution**.
 
 ```{r}
 # Your code here
@@ -71,7 +127,18 @@ Estimate CI for `Var(y)` and discuss when percentile CI is preferred to normal a
 
 ## (e) Backfitting intuition and GAM implementation (10 points)
 
-Explain backfitting intuition and compare GAM against OLS on fit quality.
+Explain the intuition behind **backfitting** and assess whether a GAM improves on a linear baseline.
+
+What to do:
+
+- Give a short intuition for what backfitting is doing conceptually.
+- Fit a linear baseline.
+- Fit a GAM with smooth terms for plausible nonlinear predictors.
+- Compare MSE and an R²-style fit measure.
+- Interpret the estimated smoothness of the terms.
+- Decide whether the added flexibility seems justified.
+
+A strong answer should explain not only whether GAM fits better, but also what that says about **nonlinearity** and **model complexity**.
 
 ```{r}
 # Your code here
@@ -79,9 +146,29 @@ Explain backfitting intuition and compare GAM against OLS on fit quality.
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
+## Context for Task 2
+
+This task focuses on **pipeline integrity**, **EDA-to-model reasoning**, and **cost-sensitive decision-making**. You are expected to keep separate the ideas of **descriptive insight**, **predictive discrimination**, and **operational threshold choice**. In this mock exam, assume that a **false negative is 5 times as costly as a false positive**, so the final threshold policy should reflect that business asymmetry.
+
 ## (a) Data pipeline integrity (8 points)
 
-Create a clean train/test process with no peeking and no post-outcome leakage variables.
+Create a clean churn-modeling pipeline with no peeking and no clearly post-outcome leakage variables.
+
+What to do:
+
+- Read and clean the data.
+- Recode variables into suitable types.
+- Remove duplicated or deterministic predictors.
+- Exclude variables you cannot defend from a realistic deployment perspective.
+- Perform an 80/20 train/test split with a fixed seed.
+- Explain why the split must happen before tuning and final evaluation.
+
+What the examiner wants:
+
+- sensible factor handling,
+- awareness of duplicated information,
+- awareness of deployment realism,
+- a clean separation between training work and final testing.
 
 ```{r}
 # Your code here
@@ -89,7 +176,18 @@ Create a clean train/test process with no peeking and no post-outcome leakage va
 
 ## (b) EDA to model-hypothesis bridge (8 points)
 
-Produce compact EDA outputs and map each to a modeling hypothesis.
+Use the training data to produce **compact EDA outputs** and map each one to a modeling hypothesis.
+
+What to do:
+
+- Quantify class imbalance.
+- Produce grouped summaries for meaningful churn segments.
+- Create at least two informative plots.
+- State at least three model hypotheses suggested by the EDA.
+- Explain how those hypotheses might appear later in logistic regression or tree ensembles.
+- Mention one limitation of the descriptive stage.
+
+This is not only an EDA task. It is a reasoning task where descriptive patterns become **candidate modeling stories**.
 
 ```{r}
 # Your code here
@@ -97,7 +195,18 @@ Produce compact EDA outputs and map each to a modeling hypothesis.
 
 ## (c) Logistic model under threshold sweep (12 points)
 
-Evaluate logistic across thresholds and explain business trade-offs.
+Fit a logistic regression model and evaluate it across a **threshold grid**.
+
+What to do:
+
+- Fit the model on the training set.
+- Predict probabilities on the test set.
+- Evaluate a grid of thresholds.
+- Report sensitivity, specificity, AUC, and expected cost.
+- Choose one threshold under the **5:1 false-negative cost ratio**.
+- Interpret at least three coefficients in odds-ratio language.
+
+A strong answer should make it explicit that a threshold of `0.5` is not automatically the best business choice.
 
 ```{r}
 # Your code here
@@ -105,7 +214,18 @@ Evaluate logistic across thresholds and explain business trade-offs.
 
 ## (d) Random forest robust tuning (12 points)
 
-Tune `mtry`, evaluate test AUC, and explain variable-importance reliability limits.
+Tune and evaluate a Random Forest, then discuss the limits of variable importance.
+
+What to do:
+
+- Tune `mtry` using CV on the training data only.
+- Fit the final Random Forest.
+- Evaluate the test-set AUC and threshold-based performance.
+- Show the most important variables.
+- Compare the Random Forest story with the logistic story.
+- Explain why variable importance is useful but not the same as a causal explanation.
+
+The best answers note that tree-based importance can be informative while still being affected by correlated predictors, split structure, and model instability.
 
 ```{r}
 # Your code here
@@ -113,7 +233,22 @@ Tune `mtry`, evaluate test AUC, and explain variable-importance reliability limi
 
 ## (e) Boosting selection with early stopping logic (10 points)
 
-Find optimal trees via staged evaluation and justify final deployment choice.
+Fit a boosting model and choose the final number of trees using staged evaluation.
+
+What to do:
+
+- Fit a boosting model on the training data.
+- Use a validation strategy inside the training set to choose the number of trees.
+- Compare logistic regression, Random Forest, and boosting.
+- Choose a threshold policy under the **5:1 false-negative cost structure**.
+- Give a final deployment recommendation.
+
+Your final paragraph should explicitly state:
+
+1. which model you recommend,
+2. which metric or objective matters most,
+3. how early stopping reduces overfitting risk,
+4. what trade-off the company accepts when it lowers the threshold to catch more churners.
 
 ```{r}
 # Your code here
