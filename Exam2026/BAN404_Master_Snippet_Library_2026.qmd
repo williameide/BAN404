@@ -316,7 +316,7 @@ suppressPackageStartupMessages(library(randomForest))
 TARGET_VAR <- "Y_VAR"
 rf_formula <- as.formula(paste(TARGET_VAR, "~ ."))
 NTREE <- 500
-MTRY <- NULL # NULL uses default mtry; set an explicit integer only if the exam asks you to tune/specify it
+MTRY <- NULL # NULL uses randomForest's regression default (about floor(p/3)); set explicit integer only if exam asks tuning/specification
 
 SEED_VALUE <- 123
 set.seed(SEED_VALUE)
@@ -436,8 +436,10 @@ Use when asked for bootstrap standard errors and confidence intervals.
 ```{r}
 #| label: task1_15_bootstrap_ci
 B <- 1000
-BOOT_FORMULA <- as.formula("Y_VAR ~ X_VAR")
-COEF_NAME <- "X_VAR"
+TARGET_VAR <- "Y_VAR"
+BOOT_X_VAR <- "X_VAR"
+BOOT_FORMULA <- as.formula(paste(TARGET_VAR, "~", BOOT_X_VAR))
+COEF_NAME <- BOOT_X_VAR
 
 SEED_VALUE <- 123
 set.seed(SEED_VALUE)
