@@ -1,0 +1,760 @@
+---
+title: "BAN404 Master Snippet Library 2026"
+subtitle: "Task 1 + Task 2 Exam-Ready Blocks"
+author: "Exam preparation"
+date: "2026"
+format:
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    colorlinks: true
+    papersize: a4
+    fontsize: 10pt
+    geometry:
+      - top=20mm
+      - left=20mm
+      - right=20mm
+      - bottom=20mm
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: flatly
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: true
+---
+
+# Task 1 snippets (from ExamPrep)
+
+## task1_1_setup_data_import
+
+Use when the exam says: load data, prepare packages, and create a clean dataset before EDA/modeling.
+
+**How to adapt (minimum):**
+- Change `DATA_PATH_TASK1` to the dataset path.
+- If your outcome is not named `y`, update `TARGET_VAR`.
+- If exam forbids package loading in chunk, move `library(...)` to setup.
+
+```{r}
+#| label: task1_1_setup_data_import
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(janitor)
+})
+
+DATA_PATH_TASK1 <- "DATA_HERE.csv"
+TARGET_VAR <- "Y_VAR"
+
+df_task1 <- read_csv(DATA_PATH_TASK1, show_col_types = FALSE) %>%
+  clean_names()
+
+glimpse(df_task1)
+summary(df_task1)
+```
+
+Interpretation template: Data loaded successfully with `[N_ROWS]` rows and `[N_COLS]` columns. The response variable is `[TARGET_VAR]`. No structural issues requiring immediate recoding were found / were found in `[COLUMNS]`.
+
+## task1_2_missing_values
+
+Use when the exam asks for data integrity checks or whether imputation is needed.
+
+**How to adapt (minimum):**
+- Replace `df_task1` with your active dataset object.
+- If exam asks row-level missingness, add row summaries.
+
+```{r}
+#| label: task1_2_missing_values
+NA_TABLE <- colSums(is.na(df_task1))
+NA_TABLE
+
+NA_TABLE %>%
+  enframe(name = "variable", value = "n_missing") %>%
+  arrange(desc(n_missing))
+```
+
+Interpretation template: Missing-value counts show `[COLUMN]` has `[N]` missing values. Therefore, we [DO / DO NOT] need imputation before modeling.
+
+## task1_3_target_distribution
+
+Use when asked to evaluate skewness/outliers of the continuous response.
+
+**How to adapt (minimum):**
+- Set `TARGET_VAR` to the response column.
+- Change `bins` if exam asks for a different granularity.
+
+```{r}
+#| label: task1_3_target_distribution
+TARGET_VAR <- "Y_VAR"
+
+ggplot(df_task1, aes(x = .data[[TARGET_VAR]])) +
+  geom_histogram(bins = 40, fill = "steelblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Target distribution", x = TARGET_VAR, y = "Count")
+
+df_task1 %>%
+  summarise(
+    min = min(.data[[TARGET_VAR]], na.rm = TRUE),
+    q1 = quantile(.data[[TARGET_VAR]], 0.25, na.rm = TRUE),
+    median = median(.data[[TARGET_VAR]], na.rm = TRUE),
+    mean = mean(.data[[TARGET_VAR]], na.rm = TRUE),
+    q3 = quantile(.data[[TARGET_VAR]], 0.75, na.rm = TRUE),
+    max = max(.data[[TARGET_VAR]], na.rm = TRUE)
+  )
+```
+
+Interpretation template: The response appears `[APPROX_SYMMETRIC / RIGHT-SKEWED / LEFT-SKEWED]` with `[OUTLIER_COMMENT]`. This suggests we should [KEEP SCALE / CONSIDER TRANSFORMATION] before fitting linear models.
+
+## task1_4_correlation_check
+
+Use when asked to assess multicollinearity before linear/regularized models.
+
+**How to adapt (minimum):**
+- Set `TARGET_VAR` and exclude it from predictor correlation.
+- If exam asks thresholding, change `CORR_THRESHOLD`.
+
+```{r}
+#| label: task1_4_correlation_check
+TARGET_VAR <- "Y_VAR"
+CORR_THRESHOLD <- 0.8
+
+num_df <- df_task1 %>% select(where(is.numeric))
+cor_matrix <- num_df %>% select(-all_of(TARGET_VAR)) %>% cor()
+round(cor_matrix, 2)
+
+high_corr_pairs <- as.data.frame(as.table(cor_matrix)) %>%
+  rename(var1 = Var1, var2 = Var2, corr = Freq) %>%
+  filter(var1 < var2, abs(corr) >= CORR_THRESHOLD)
+high_corr_pairs
+```
+
+Interpretation template: Correlation analysis shows `[N]` predictor pairs above `|r| >= [CORR_THRESHOLD]`. This indicates [LOW / MODERATE / HIGH] multicollinearity risk for OLS coefficient stability.
+
+## task1_5_linearity_visual
+
+Use when asked if linear models are appropriate or if non-linear methods are needed.
+
+**How to adapt (minimum):**
+- Set `TARGET_VAR` and `PREDICTOR_PREFIX`.
+- If variables do not share a prefix, replace selection logic manually.
+
+```{r}
+#| label: task1_5_linearity_visual
+TARGET_VAR <- "Y_VAR"
+PREDICTOR_PREFIX <- "x"
+
+df_task1 %>%
+  pivot_longer(
+    cols = starts_with(PREDICTOR_PREFIX),
+    names_to = "predictor",
+    values_to = "value"
+  ) %>%
+  ggplot(aes(x = value, y = .data[[TARGET_VAR]])) +
+  geom_point(alpha = 0.25) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +   # strict linear trend
+  geom_smooth(method = "loess", se = FALSE, color = "red") + # flexible trend
+  facet_wrap(~ predictor, scales = "free_x") +
+  theme_minimal()
+```
+
+Interpretation template: For `[PREDICTORS]`, the LOESS and linear fits are `[SIMILAR / DIFFERENT]`. Therefore, linear models are [ADEQUATE / LIKELY BIASED], and we should consider `[POLYNOMIAL / GAM / TREES]`.
+
+## task1_6_train_test_split_matrix
+
+Use when asked to create holdout validation and prepare matrices for glmnet.
+
+**How to adapt (minimum):**
+- Update `TRAIN_FRAC` (e.g., 0.5 or 0.8 as required).
+- Set `TARGET_VAR`.
+- Change `SEED_VALUE` if exam asks a specific seed.
+
+```{r}
+#| label: task1_6_train_test_split_matrix
+TARGET_VAR <- "Y_VAR"
+TRAIN_FRAC <- 0.5
+SEED_VALUE <- 123
+
+set.seed(SEED_VALUE)
+idx <- sample(seq_len(nrow(df_task1)), size = floor(TRAIN_FRAC * nrow(df_task1)))
+
+train_df <- df_task1[idx, ]
+test_df  <- df_task1[-idx, ]
+
+x_train <- model.matrix(as.formula(paste(TARGET_VAR, "~ .")), data = train_df)[, -1]
+y_train <- train_df[[TARGET_VAR]]
+
+x_test <- model.matrix(as.formula(paste(TARGET_VAR, "~ .")), data = test_df)[, -1]
+y_test <- test_df[[TARGET_VAR]]
+```
+
+Interpretation template: Data was split into `[N_TRAIN]` training and `[N_TEST]` test observations. This holdout design gives an out-of-sample estimate of predictive performance.
+
+## task1_7_ols_baseline
+
+Use when asked for an OLS baseline model and test MSE.
+
+**How to adapt (minimum):**
+- Set `TARGET_VAR`.
+- If exam asks specific predictors, replace `~ .` with explicit formula.
+
+```{r}
+#| label: task1_7_ols_baseline
+TARGET_VAR <- "Y_VAR"
+ols_formula <- as.formula(paste(TARGET_VAR, "~ ."))
+
+ols_fit <- lm(ols_formula, data = train_df)
+ols_pred <- predict(ols_fit, newdata = test_df)
+ols_mse <- mean((y_test - ols_pred)^2)
+
+summary(ols_fit)
+ols_mse
+```
+
+Interpretation template: OLS test MSE is `[OLS_MSE]`. Significant terms are `[TERMS]`, but model adequacy depends on whether linearity assumptions are plausible.
+
+## task1_8_polynomial_regression
+
+Use when exam asks to fix non-linearity in one predictor with polynomial terms.
+
+**How to adapt (minimum):**
+- Set `POLY_VAR` and `POLY_DEGREE`.
+- Keep/adjust `CONTROL_VARS` to include other relevant predictors.
+
+```{r}
+#| label: task1_8_polynomial_regression
+TARGET_VAR <- "Y_VAR"
+POLY_VAR <- "X_NONLINEAR"
+POLY_DEGREE <- 2
+CONTROL_VARS <- c("X_LINEAR1", "X_LINEAR2")
+
+rhs <- c(CONTROL_VARS, paste0("poly(", POLY_VAR, ", ", POLY_DEGREE, ", raw = TRUE)"))
+poly_formula <- as.formula(paste(TARGET_VAR, "~", paste(rhs, collapse = " + ")))
+
+poly_fit <- lm(poly_formula, data = train_df)
+poly_pred <- predict(poly_fit, newdata = test_df)
+poly_mse <- mean((y_test - poly_pred)^2)
+
+summary(poly_fit)
+poly_mse
+```
+
+Interpretation template: Adding a degree-`[POLY_DEGREE]` term for `[POLY_VAR]` changed test MSE to `[POLY_MSE]`. This implies the non-linear structure is [CAPTURED / NOT CAPTURED WELL].
+
+## task1_9_lasso_cv
+
+Use when asked for variable selection with cross-validated LASSO.
+
+**How to adapt (minimum):**
+- Set `CV_FOLDS` if exam specifies fold count.
+- If exam asks 1-SE rule, use `lambda.1se` instead of `lambda.min`.
+
+```{r}
+#| label: task1_9_lasso_cv
+suppressPackageStartupMessages(library(glmnet))
+
+CV_FOLDS <- 10
+set.seed(123)
+
+cv_lasso <- cv.glmnet(x_train, y_train, alpha = 1, nfolds = CV_FOLDS)
+lasso_fit <- glmnet(x_train, y_train, alpha = 1, lambda = cv_lasso$lambda.min)
+
+lasso_pred <- as.numeric(predict(lasso_fit, newx = x_test))
+lasso_mse <- mean((y_test - lasso_pred)^2)
+
+coef(lasso_fit)
+lasso_mse
+```
+
+Interpretation template: LASSO selected lambda `[LAMBDA]` and achieved test MSE `[LASSO_MSE]`. Coefficients shrunk to zero for `[DROPPED_VARS]`, indicating automatic variable selection.
+
+## task1_10_gam_splines
+
+Use when exam asks for interpretable non-linear regression.
+
+**How to adapt (minimum):**
+- Set `LINEAR_VARS` and `SMOOTH_VARS`.
+- If exam asks smoother complexity control, tune `df`/`sp`.
+
+```{r}
+#| label: task1_10_gam_splines
+suppressPackageStartupMessages(library(gam))
+
+TARGET_VAR <- "Y_VAR"
+LINEAR_VARS <- c("X_LINEAR1", "X_LINEAR2")
+SMOOTH_VARS <- c("X_CURVE1", "X_CURVE2")
+
+rhs_terms <- c(LINEAR_VARS, paste0("s(", SMOOTH_VARS, ")"))
+gam_formula <- as.formula(paste(TARGET_VAR, "~", paste(rhs_terms, collapse = " + ")))
+
+gam_fit <- gam(gam_formula, data = train_df)
+gam_pred <- predict(gam_fit, newdata = test_df)
+gam_mse <- mean((y_test - gam_pred)^2)
+
+summary(gam_fit)
+plot(gam_fit, se = TRUE, col = "blue")
+gam_mse
+```
+
+Interpretation template: GAM test MSE is `[GAM_MSE]`. Smooth terms `[SMOOTH_VARS]` show `[CURVATURE_PATTERN]`, suggesting non-linear effects that linear models miss.
+
+## task1_11_random_forest
+
+Use when exam asks for tree-based ensemble regression and variable importance.
+
+**How to adapt (minimum):**
+- Set `NTREE` and `MTRY` if exam requests tuning.
+- If runtime is limited, reduce `NTREE`.
+
+```{r}
+#| label: task1_11_random_forest
+suppressPackageStartupMessages(library(randomForest))
+
+TARGET_VAR <- "Y_VAR"
+rf_formula <- as.formula(paste(TARGET_VAR, "~ ."))
+NTREE <- 500
+MTRY <- NULL # set e.g. 3 if requested
+
+set.seed(123)
+rf_fit <- randomForest(rf_formula, data = train_df, ntree = NTREE, mtry = MTRY, importance = TRUE)
+rf_pred <- predict(rf_fit, newdata = test_df)
+rf_mse <- mean((y_test - rf_pred)^2)
+
+importance(rf_fit)
+varImpPlot(rf_fit)
+rf_mse
+```
+
+Interpretation template: Random Forest test MSE is `[RF_MSE]`. The most influential predictors are `[TOP_VARS]`, based on importance metrics.
+
+## task1_12_boosting_gbm
+
+Use when exam asks for gradient boosting in regression.
+
+**How to adapt (minimum):**
+- Tune `N_TREES`, `INTERACTION_DEPTH`, `SHRINKAGE`.
+- If exam asks CV-tuned trees, replace fixed `n.trees` with tuned value.
+
+```{r}
+#| label: task1_12_boosting_gbm
+suppressPackageStartupMessages(library(gbm))
+
+TARGET_VAR <- "Y_VAR"
+boost_formula <- as.formula(paste(TARGET_VAR, "~ ."))
+N_TREES <- 1000
+INTERACTION_DEPTH <- 3
+SHRINKAGE <- 0.01
+
+set.seed(123)
+boost_fit <- gbm(
+  formula = boost_formula,
+  data = train_df,
+  distribution = "gaussian",
+  n.trees = N_TREES,
+  interaction.depth = INTERACTION_DEPTH,
+  shrinkage = SHRINKAGE
+)
+
+boost_pred <- predict(boost_fit, newdata = test_df, n.trees = N_TREES)
+boost_mse <- mean((y_test - boost_pred)^2)
+
+summary(boost_fit)
+boost_mse
+```
+
+Interpretation template: Boosting with `[N_TREES]` trees achieved test MSE `[BOOST_MSE]`. Relative influence indicates `[TOP_VARS]` drive predictions most.
+
+## task1_13_model_comparison_mse
+
+Use when asked to compare candidate models in one ranked table.
+
+**How to adapt (minimum):**
+- Update `MODEL_NAMES` and `MSE_VALUES` for models you actually fit.
+- Sort by metric requested in the exam.
+
+```{r}
+#| label: task1_13_model_comparison_mse
+model_results <- tibble(
+  model = c("OLS", "Polynomial", "LASSO", "GAM", "Random Forest", "Boosting"),
+  test_mse = c(ols_mse, poly_mse, lasso_mse, gam_mse, rf_mse, boost_mse)
+) %>%
+  arrange(test_mse)
+
+model_results
+```
+
+Interpretation template: The best model by test MSE is `[BEST_MODEL]` with `[BEST_MSE]`. This indicates it provides the strongest out-of-sample predictive accuracy among tested alternatives.
+
+## task1_14_rmse_r2_master_table
+
+Use when exam requires RMSE and test R-squared beyond MSE.
+
+**How to adapt (minimum):**
+- Ensure all prediction vectors are available.
+- If using another metric set, append columns (MAE, etc.).
+
+```{r}
+#| label: task1_14_rmse_r2_master_table
+tss <- sum((y_test - mean(y_test))^2)
+
+metric_table <- tibble(
+  model = c("OLS", "Polynomial", "LASSO", "GAM", "Random Forest", "Boosting"),
+  mse = c(
+    mean((y_test - ols_pred)^2),
+    mean((y_test - poly_pred)^2),
+    mean((y_test - lasso_pred)^2),
+    mean((y_test - gam_pred)^2),
+    mean((y_test - rf_pred)^2),
+    mean((y_test - boost_pred)^2)
+  )
+) %>%
+  mutate(
+    rmse = sqrt(mse),
+    r2 = 1 - (mse * length(y_test)) / tss
+  ) %>%
+  arrange(desc(r2))
+
+metric_table
+```
+
+Interpretation template: `[BEST_MODEL]` achieved RMSE `[RMSE]` and test R² `[R2]`, meaning it explains approximately `[R2_PERCENT]%` of variance in unseen data.
+
+## task1_15_bootstrap_ci
+
+Use when asked for bootstrap standard errors and confidence intervals.
+
+**How to adapt (minimum):**
+- Set `B` (bootstrap replications) to the requested number.
+- Set `BOOT_FORMULA` and `COEF_NAME` to target coefficient.
+- If exam asks different confidence level, change quantiles.
+
+```{r}
+#| label: task1_15_bootstrap_ci
+B <- 1000
+BOOT_FORMULA <- as.formula("Y_VAR ~ X_VAR")
+COEF_NAME <- "X_VAR"
+
+set.seed(123)
+boot_vals <- numeric(B)
+n <- nrow(train_df)
+
+for (i in seq_len(B)) {
+  idx_b <- sample(seq_len(n), size = n, replace = TRUE)
+  boot_data <- train_df[idx_b, ]
+  fit_b <- lm(BOOT_FORMULA, data = boot_data)
+  boot_vals[i] <- coef(fit_b)[COEF_NAME]
+}
+
+boot_se <- sd(boot_vals)
+normal_ci <- mean(boot_vals) + c(-1.96, 1.96) * boot_se
+percentile_ci <- quantile(boot_vals, probs = c(0.025, 0.975))
+
+boot_se
+normal_ci
+percentile_ci
+```
+
+Interpretation template: Bootstrap SE for `[COEF_NAME]` is `[BOOT_SE]`. The 95% percentile CI is `[LOWER, UPPER]`, so the effect is [STATISTICALLY DIFFERENT FROM ZERO / NOT CLEARLY DIFFERENT FROM ZERO].
+
+## task1_16_ridge_vs_lasso
+
+Use when exam explicitly asks penalty comparison (L1 vs L2).
+
+**How to adapt (minimum):**
+- Keep same training matrix for fair comparison.
+- Report both coefficient vectors at comparable lambda selection.
+
+```{r}
+#| label: task1_16_ridge_vs_lasso
+suppressPackageStartupMessages(library(glmnet))
+
+set.seed(123)
+cv_ridge <- cv.glmnet(x_train, y_train, alpha = 0)
+ridge_fit <- glmnet(x_train, y_train, alpha = 0, lambda = cv_ridge$lambda.min)
+
+ridge_coef <- coef(ridge_fit)
+lasso_coef <- coef(lasso_fit)
+
+ridge_coef
+lasso_coef
+```
+
+Interpretation template: Ridge keeps all predictors with small nonzero coefficients, while LASSO sets `[DROPPED_VARS]` exactly to zero. This reflects L2 shrinkage vs L1 selection.
+
+## task1_17_manual_kfold_cv
+
+Use when exam asks you to manually implement K-fold CV.
+
+**How to adapt (minimum):**
+- Change `K` if fold count is specified.
+- Replace `DEGREE_A`/`DEGREE_B` (or formulas) with requested model alternatives.
+
+```{r}
+#| label: task1_17_manual_kfold_cv
+TARGET_VAR <- "Y_VAR"
+BASE_VARS <- c("X1_VAR", "X3_VAR", "X5_VAR")
+POLY_VAR <- "X2_VAR"
+DEGREE_A <- 2
+DEGREE_B <- 3
+K <- 5
+
+set.seed(123)
+fold_id <- sample(rep(1:K, length.out = nrow(train_df)))
+err_a <- numeric(K)
+err_b <- numeric(K)
+
+for (k in 1:K) {
+  fold_train <- train_df[fold_id != k, ]
+  fold_val <- train_df[fold_id == k, ]
+
+  form_a <- as.formula(paste(TARGET_VAR, "~", paste(c(BASE_VARS, paste0("poly(", POLY_VAR, ",", DEGREE_A, ", raw = TRUE)")), collapse = " + ")))
+  form_b <- as.formula(paste(TARGET_VAR, "~", paste(c(BASE_VARS, paste0("poly(", POLY_VAR, ",", DEGREE_B, ", raw = TRUE)")), collapse = " + ")))
+
+  fit_a <- lm(form_a, data = fold_train)
+  fit_b <- lm(form_b, data = fold_train)
+
+  pred_a <- predict(fit_a, newdata = fold_val)
+  pred_b <- predict(fit_b, newdata = fold_val)
+
+  err_a[k] <- mean((fold_val[[TARGET_VAR]] - pred_a)^2)
+  err_b[k] <- mean((fold_val[[TARGET_VAR]] - pred_b)^2)
+}
+
+cv_mse_a <- mean(err_a)
+cv_mse_b <- mean(err_b)
+
+cv_mse_a
+cv_mse_b
+```
+
+Interpretation template: Mean CV MSE for degree `[DEGREE_A]` is `[CV_A]` versus `[CV_B]` for degree `[DEGREE_B]`. We choose `[BETTER_MODEL]` by lower validation error (parsimony if nearly tied).
+
+## task1_18_confidence_vs_prediction_interval
+
+Use when asked to compute CI vs PI for a new profile.
+
+**How to adapt (minimum):**
+- Define `new_obs` with the exact predictor names used in model fitting.
+- Change `level` if exam asks 90% or 99% intervals.
+
+```{r}
+#| label: task1_18_confidence_vs_prediction_interval
+new_obs <- tibble(
+  X1_VAR = median(train_df$X1_VAR),
+  X2_VAR = median(train_df$X2_VAR),
+  X3_VAR = median(train_df$X3_VAR)
+)
+
+ci_95 <- predict(ols_fit, newdata = new_obs, interval = "confidence", level = 0.95)
+pi_95 <- predict(ols_fit, newdata = new_obs, interval = "prediction", level = 0.95)
+
+ci_95
+pi_95
+```
+
+Interpretation template: The confidence interval `[CI_LOW, CI_HIGH]` is narrower than the prediction interval `[PI_LOW, PI_HIGH]` because PI includes individual-level irreducible error.
+
+# Task 2 snippets (from ExamPrep2)
+
+## task2_1_import_and_summary
+
+Use when asked to import Task 2 data and produce descriptive statistics.
+
+**How to adapt (minimum):**
+- Update `DATA_PATH_TASK2`.
+- If exam requests specific stats, add/remove summary columns.
+
+```{r}
+#| label: task2_1_import_and_summary
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(janitor)
+})
+
+DATA_PATH_TASK2 <- "DATA_HERE.csv"
+
+df_customer_raw <- read_csv(DATA_PATH_TASK2, show_col_types = FALSE) %>%
+  clean_names()
+
+colSums(is.na(df_customer_raw))
+summary(df_customer_raw %>% select(where(is.numeric)))
+
+df_customer_raw %>%
+  summarise(across(where(is.numeric), sd, na.rm = TRUE)) %>%
+  t() %>%
+  as.data.frame() %>%
+  rename(standard_deviation = V1)
+```
+
+Interpretation template: The dataset has `[N_ROWS]` rows and `[N_COLS]` columns with `[NA_STATUS]` missingness. Numeric summaries indicate predictors are on `[SIMILAR / DIFFERENT]` scales.
+
+## task2_2_collinearity_heatmap
+
+Use when asked to diagnose collinearity in numeric predictors.
+
+**How to adapt (minimum):**
+- Change `EXCLUDE_VARS` if needed.
+- If a threshold is requested, compute and report pairs above it.
+
+```{r}
+#| label: task2_2_collinearity_heatmap
+cor_matrix_t2 <- cor(df_customer_raw %>% select(where(is.numeric)))
+
+cor_matrix_t2 %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "var1") %>%
+  pivot_longer(cols = -var1, names_to = "var2", values_to = "corr") %>%
+  ggplot(aes(var1, var2, fill = corr)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, limit = c(-1, 1)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+round(cor_matrix_t2, 2)
+```
+
+Interpretation template: The heatmap shows `[PAIRS]` with high correlation (up to `[MAX_CORR]`), so we [DROP / KEEP] redundant variables before logistic regression.
+
+## task2_3_business_logic_tests
+
+Use when exam asks to justify recoding and removal decisions (area code/state/charge traps).
+
+**How to adapt (minimum):**
+- Update variable names if your dataset uses different naming.
+- Add analogous checks for any suspected leakage/redundancy variables.
+
+```{r}
+#| label: task2_3_business_logic_tests
+unique(df_customer_raw$area_code)
+length(unique(df_customer_raw$state))
+
+cor(df_customer_raw$total_day_minutes, df_customer_raw$total_day_charge)
+cor(df_customer_raw$total_eve_minutes, df_customer_raw$total_eve_charge)
+cor(df_customer_raw$total_night_minutes, df_customer_raw$total_night_charge)
+cor(df_customer_raw$total_intl_minutes, df_customer_raw$total_intl_charge)
+```
+
+Interpretation template: `area_code` behaves as a category, `state` has high cardinality (`[N_STATES]`), and minutes/charge pairs are highly collinear (`r ≈ [R]`), so preprocessing must address these issues.
+
+## task2_4_preprocessing_pipeline
+
+Use when asked to clean Task 2 data and produce final modeling dataset.
+
+**How to adapt (minimum):**
+- Edit removed columns if exam rules differ.
+- Ensure response variable in `mutate()` matches exam target.
+
+```{r}
+#| label: task2_4_preprocessing_pipeline
+df_clean <- df_customer_raw %>%
+  select(-state, -total_day_charge, -total_eve_charge, -total_night_charge, -total_intl_charge) %>%
+  mutate(
+    churn = as.factor(churn),
+    area_code = as.factor(area_code),
+    international_plan = as.factor(international_plan),
+    voice_mail_plan = as.factor(voice_mail_plan)
+  )
+
+dim(df_clean)
+names(df_clean)
+```
+
+Interpretation template: After preprocessing, dataset size is `[ROWS] x [COLS]`. The response is correctly encoded as factor, and problematic predictors were removed.
+
+## task2_5_class_imbalance_prior_prob
+
+Use when exam asks for prior probabilities and imbalance implications.
+
+**How to adapt (minimum):**
+- Replace `churn` if response has another name.
+- If exam asks baseline classifier, compare against majority-class accuracy.
+
+```{r}
+#| label: task2_5_class_imbalance_prior_prob
+prop.table(table(df_clean$churn))
+
+ggplot(df_clean, aes(x = churn, fill = churn)) +
+  geom_bar(color = "black") +
+  theme_minimal() +
+  labs(title = "Class distribution", y = "Count")
+```
+
+Interpretation template: Class proportions are `[NEG]%` vs `[POS]%`, indicating `[BALANCED / IMBALANCED]` classes. Therefore, evaluation must emphasize confusion-matrix metrics (especially sensitivity).
+
+## task2_6_bivariate_density_and_categorical
+
+Use when exam asks to identify promising predictors with graphs.
+
+**How to adapt (minimum):**
+- For continuous features, keep density plots.
+- For categorical features, swap `international_plan` with requested categorical variable.
+
+```{r}
+#| label: task2_6_bivariate_density_and_categorical
+df_clean %>%
+  select(where(is.numeric), churn) %>%
+  pivot_longer(cols = -churn, names_to = "variable", values_to = "value") %>%
+  ggplot(aes(x = value, fill = churn)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~ variable, scales = "free") +
+  theme_minimal()
+
+ggplot(df_clean, aes(x = international_plan, fill = churn)) +
+  geom_bar(position = "fill", color = "black") +
+  theme_minimal() +
+  labs(y = "Proportion")
+```
+
+Interpretation template: Predictors with clearly shifted conditional densities (e.g., `[VARS]`) are likely strong classifiers, while near-complete overlap (e.g., `[VARS]`) suggests weak predictive value.
+
+## task2_7_conditional_means_table
+
+Use when exam asks for tabular numeric evidence to support visual findings.
+
+**How to adapt (minimum):**
+- Replace `mean` with `median` if requested.
+- Keep `na.rm = TRUE` if any missing values exist.
+
+```{r}
+#| label: task2_7_conditional_means_table
+df_clean %>%
+  group_by(churn) %>%
+  summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) %>%
+  t()
+```
+
+Interpretation template: Conditional means show largest separation for `[TOP_VARS]`, indicating these variables should be prioritized in baseline logistic and tree-based models.
+
+## task2_8_visual_learning_scatter_vs_density
+
+Use when exam explicitly asks why scatter is weak for binary targets and what to use instead.
+
+**How to adapt (minimum):**
+- Keep both plots only if discussion/critique is required.
+- Under time pressure, skip jitter and keep density + bar only.
+
+```{r}
+#| label: task2_8_visual_learning_scatter_vs_density
+# Jittered scatter (often hard to read with binary Y)
+df_clean %>%
+  select(where(is.numeric), churn) %>%
+  pivot_longer(cols = -churn, names_to = "variable", values_to = "value") %>%
+  ggplot(aes(x = churn, y = value, color = churn)) +
+  geom_jitter(alpha = 0.3, width = 0.2) +
+  facet_wrap(~ variable, scales = "free_y") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Density (preferred for continuous X vs binary Y)
+df_clean %>%
+  select(where(is.numeric), churn) %>%
+  pivot_longer(cols = -churn, names_to = "variable", values_to = "value") %>%
+  ggplot(aes(x = value, fill = churn)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~ variable, scales = "free") +
+  theme_minimal()
+```
+
+Interpretation template: Jitter plots suffer from overplotting, while density plots clearly show class-conditional separation. Therefore, density-based comparison is the better exam choice for continuous predictors with binary response.
