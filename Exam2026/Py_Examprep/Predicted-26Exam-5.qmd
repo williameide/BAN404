@@ -38,16 +38,60 @@ execute:
 - **Duration:** 6 hours
 - **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
+- **Important exam expectation:** In every subquestion, combine **method choice + runnable code + interpretation + theory/business reasoning**. A BAN404 answer is strongest when it explains not only *which* model was used, but also *why* that model is appropriate, *how* it was validated, and *what trade-off* the final recommendation accepts.
+
+# How to use this mock exam
+
+This mock exam is designed as a **final rehearsal** and as a **lookup tool for decision logic**. That means each subquestion tells you what to calculate, what kind of written reasoning the examiner is likely to reward, and how the result should be interpreted in BAN404 language. If you can solve this file well, you should be able to move from **method identification**, to **model comparison**, to **business recommendation** in a structured and exam-ready way.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
-## (a) Identify methods from function snippets (10 points)
+## Context for Task 1
 
-You are given multiple objective snippets from curriculum (`Task1_comp.qmd`). Match each snippet to method and state one strength/weakness.
+This task is centered on **method comparison and robustness**. You are expected to connect objective functions, regularization behavior, cross-validation, bootstrap uncertainty, and nonlinear extensions into one coherent story. A strong answer therefore shows that model choice is not just about one low error number, but about the combined evidence from **prediction performance**, **stability**, **complexity**, and **interpretability**.
+
+## (a) Identify methods from objective-function snippets (10 points)
+
+You are given several objective-function snippets from the BAN404 curriculum and must identify the corresponding method.
+
+What to do:
+
+- Match each snippet to the correct model family.
+- State which penalty or modeling idea makes the method identifiable.
+- Give one strength and one weakness for each method.
+- Explain how the methods differ in terms of **shrinkage**, **sparsity**, or **flexibility**.
+- Comment on when each method would be attractive in an exam answer.
+
+What the examiner wants to see:
+
+- clear recognition of Ridge, LASSO, Elastic Net, or flexible additive modeling ideas,
+- understanding of the role of the penalty term,
+- awareness that method choice is linked to both prediction and interpretability,
+- short but theory-grounded language rather than label-only answers.
+
+```{r}
+# Your code here
+```
 
 ## (b) Full regularization workflow (10 points)
 
-Fit OLS, Ridge, LASSO, and Elastic Net. Choose one using CV performance and model simplicity.
+Fit **OLS, Ridge, LASSO, and Elastic Net**, then choose one using validation evidence and model simplicity.
+
+What to do:
+
+- Fit OLS as the unpenalized baseline.
+- Fit Ridge, LASSO, and Elastic Net over their lambda paths.
+- Compare coefficients at a common lambda probe.
+- Use CV to tune the regularized models.
+- Compare `lambda.min`, `lambda.1se`, and best CV-MSE.
+- Discuss whether the best model is also the easiest one to defend in an exam answer.
+
+What the examiner wants to see:
+
+- correct distinction between unpenalized and penalized regression,
+- awareness that Ridge stabilizes while LASSO selects,
+- awareness that Elastic Net combines both behaviors,
+- a fair final choice based on both performance and simplicity.
 
 ```{r}
 # Your code here
@@ -55,7 +99,18 @@ Fit OLS, Ridge, LASSO, and Elastic Net. Choose one using CV performance and mode
 
 ## (c) Combine tuning and uncertainty evidence (10 points)
 
-Use CV for model tuning and bootstrap for uncertainty to justify a robust final Task 1 model.
+Use **cross-validation** for tuning and the **bootstrap** for uncertainty to justify a robust final Task 1 answer.
+
+What to do:
+
+- Use repeated K-fold CV to study stability of the chosen lambda.
+- Summarize the variation in selected lambda across repetitions.
+- Use the bootstrap for at least one descriptive uncertainty target such as `Var(y)` or `SD(y)`.
+- Compare a percentile CI and a normal approximation CI.
+- Explain how tuning evidence and uncertainty evidence answer different statistical questions.
+- State what combined conclusion you would trust most in a final exam answer.
+
+A strong answer should make clear that CV addresses **generalization/tuning**, while bootstrap addresses **sampling uncertainty**.
 
 ```{r}
 # Your code here
@@ -63,7 +118,23 @@ Use CV for model tuning and bootstrap for uncertainty to justify a robust final 
 
 ## (d) GAM enhancement + residual diagnostics (10 points)
 
-Assess whether nonlinearity handling with GAM meaningfully improves over linear baselines.
+Assess whether nonlinear structure is strong enough to justify a **GAM** over simpler linear baselines.
+
+What to do:
+
+- Fit a linear baseline.
+- Fit a GAM with smooth terms for plausible nonlinear predictors.
+- Compare MSE and an R²-style measure.
+- Summarize residual spread for the competing models.
+- Interpret the estimated smoothness of the GAM terms.
+- Decide whether the extra flexibility seems justified.
+
+What the examiner wants to see:
+
+- correct intuition for smooth terms,
+- awareness of the bias-variance trade-off,
+- awareness that better fit is only part of the decision,
+- interpretation of whether the nonlinearity appears meaningful or weak.
 
 ```{r}
 # Your code here
@@ -71,7 +142,16 @@ Assess whether nonlinearity handling with GAM meaningfully improves over linear 
 
 ## (e) Exam-style interpretation summary (10 points)
 
-Write a concise conclusion that links method choice, assumptions, and expected generalization behavior.
+Write a short final Task 1 conclusion that links **method choice**, **assumptions**, **uncertainty**, and **expected generalization behavior**.
+
+What to include:
+
+- which model you would report as the main answer,
+- why that model is preferable to the alternatives,
+- what assumptions or risks still matter,
+- how you would defend the answer in one short BAN404 paragraph.
+
+The best answers sound like a polished exam conclusion rather than a list of outputs.
 
 ```{r}
 # Your code here
@@ -79,9 +159,29 @@ Write a concise conclusion that links method choice, assumptions, and expected g
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
+## Context for Task 2
+
+This task focuses on **end-to-end churn modeling under decision constraints**. You should keep separate the ideas of **descriptive risk patterns**, **predictive model quality**, and **final operating policy**. In this mock exam, assume that a **false negative costs 4 times as much as a false positive**, so the final threshold choice should reflect that business asymmetry rather than defaulting blindly to `0.5`.
+
 ## (a) Build a production-ready churn dataset (8 points)
 
-Prepare and split the data with clear justification of removals and factor handling.
+Prepare the churn data so the later models can be defended as realistic and leakage-safe.
+
+What to do:
+
+- Read and clean the data.
+- Recode variables into appropriate types.
+- Remove deterministic or duplicated predictors.
+- Exclude fields you cannot justify from a realistic intervention perspective.
+- Perform an 80/20 train/test split with a fixed seed.
+- Explain why the test set must stay untouched until final evaluation.
+
+What the examiner wants to see:
+
+- sensible factor handling,
+- awareness of duplicated information,
+- awareness of realistic deployment logic,
+- clean separation between training work and test evaluation.
 
 ```{r}
 # Your code here
@@ -89,7 +189,18 @@ Prepare and split the data with clear justification of removals and factor handl
 
 ## (b) Risk-pattern EDA and intervention ideas (8 points)
 
-Use EDA to propose two concrete retention actions and how they map to predictors.
+Use the training data to build a **first churn story** and turn it into possible intervention ideas.
+
+What to do:
+
+- Quantify class imbalance.
+- Create grouped churn summaries for meaningful customer segments.
+- Produce at least two informative EDA plots.
+- State at least three risk hypotheses suggested by the data.
+- Propose at least two concrete retention actions linked to predictors.
+- Mention one limitation of the descriptive stage.
+
+This is not only an EDA task. It is a reasoning task where descriptive patterns become **candidate decision rules** and **candidate model stories**.
 
 ```{r}
 # Your code here
@@ -97,15 +208,37 @@ Use EDA to propose two concrete retention actions and how they map to predictors
 
 ## (c) Logistic baseline and threshold selection (12 points)
 
-Train logistic regression, evaluate threshold grid, and select an operating point.
+Fit a logistic regression model and select an operating threshold under the **4:1 false-negative cost ratio**.
+
+What to do:
+
+- Fit logistic regression on the training data.
+- Predict probabilities on the test data.
+- Evaluate a threshold grid.
+- Report sensitivity, specificity, AUC, and expected cost.
+- Choose one threshold and defend it in business language.
+- Interpret a few coefficients using odds-ratio reasoning.
+
+A strong answer should explicitly explain why the best business threshold is not automatically `0.5`.
 
 ```{r}
 # Your code here
 ```
 
-## (d) Ensemble comparison: RF vs boosting (12 points)
+## (d) Ensemble comparison: Random Forest vs boosting (12 points)
 
-Tune both models, compare hold-out metrics, and explain why one may dominate under class imbalance.
+Tune **Random Forest** and **boosting**, compare them fairly, and explain why one might dominate the other.
+
+What to do:
+
+- Tune Random Forest on the training data only.
+- Fit boosting and choose the number of trees using staged evaluation.
+- Compare both models on the hold-out test data.
+- Compare their AUC and threshold-based performance.
+- Discuss why tree ensembles may outperform logistic regression when interactions or thresholds matter.
+- Explain why strong predictive performance does not automatically mean stronger interpretability.
+
+The best answers clearly separate **prediction quality**, **threshold policy**, and **explanation quality**.
 
 ```{r}
 # Your code here
@@ -114,6 +247,16 @@ Tune both models, compare hold-out metrics, and explain why one may dominate und
 ## (e) Final exam recommendation memo (10 points)
 
 Provide a final model recommendation with metric evidence and business-constraint reasoning.
+
+Your memo should explicitly state:
+
+1. which model you recommend,
+2. which metric or objective mattered most,
+3. which threshold policy you would deploy,
+4. what business trade-off the company is accepting,
+5. why the recommendation is still defensible even if another model wins on a different metric.
+
+A strong answer should sound like the final paragraph of a polished exam submission.
 
 ```{r}
 # Your code here
