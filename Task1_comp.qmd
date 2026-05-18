@@ -35,7 +35,7 @@ execute:
 
 # TASK 1 CHEAT SHEET: "Explain the Code" Dictionary
 
-**How to use this section in the exam:** 1. Look at the code the professor gives you. 2. Scan the code for "The Tell" (the specific keyword or math symbol that gives away the secret). 3. Find the matching block below. 4. Copy the "Plug-and-Play Answer" and adjust the variable names in the brackets `[ ]`.
+**How to use this section in the exam:** 1. Look at the code the professor gives you. 2. Scan the code for "The Tell" (the specific keyword or math symbol that gives away the secret). 3. Find the matching code in the table. 4. Go to that section and read the theory/explanation.
 
 ------------------------------------------------------------------------
 
@@ -57,7 +57,7 @@ execute:
 | `for(s in candidates)` + RSS/Gini     | Tree split              | 12      |
 | `mincut` / pruning loop               | Tree tuning             | 13      |
 | `mtry` in randomForest                | Random forest           | 15      |
-| `r <- y - fhat` in loop               | Boosting                | 16      |
+| ` r <- y - fhat ` in loop               | Boosting                | 16      |
 | nested loops over `cost`/`gamma`      | SVM tuning              | 21      |
 | `prcomp()` + `pca$x`                  | PCR                     | 23      |
 | `ROC` / `AUC` code                    | ROC/AUC                 | 24      |
@@ -69,7 +69,7 @@ execute:
 
 ### 1. The Bootstrap
 
-**Math / Theory:** We want the sampling distribution and standard error of a statistic. We simulate $B$ datasets of size $n$ **with replacement** and compute the statistic each time. This is used when analytic standard errors are hard to derive.
+**Math / Theory:** We want the sampling distribution and standard error of a statistic. We simulate $B$ datasets of size $n$ **with replacement** and compute the statistic each time. This is used when analytical formulas are too hard.
 
 **Why it matters (model improvement):** The bootstrap gives *uncertainty estimates* around parameters or performance, which is essential for inference and for comparing models honestly.
 
@@ -93,7 +93,7 @@ f_boot <- function(data, B=1000) {              # Function takes data and number
 
 **The Tell:** `sample(..., replace = TRUE)`.
 
-**Plug-and-Play Answer:** \> "This R-function implements the **Bootstrap** method. It estimates the standard error of the \[INSERT METRIC\]. It runs a `for` loop `B` times, and in each iteration it draws a random sample of size `n` **with replacement** (`replace=TRUE`). It fits the model on this simulated dataset, stores the statistic, and finally returns the standard deviation of the simulated statistics, which is the bootstrapped standard error."
+**Plug-and-Play Answer:** \> "This R-function implements the **Bootstrap** method. It estimates the standard error of the \[INSERT METRIC\]. It runs a `for` loop `B` times, and in each iteration it draws a random sample of size $n$ with replacement. It then computes and saves the statistic. Finally, it returns the standard deviation of these $B$ estimates."
 
 **Typical follow‑up questions (and how to solve):** - *“Compute a 95% CI using bootstrap (normal or percentile).”*
 
@@ -171,9 +171,9 @@ f_kfold <- function(X, y, K=5) {                # X predictors, y response, K fo
 
 **The Tell:** `for(i in 1:K)` with `folds != i` vs `folds == i`.
 
-**Plug-and-Play Answer:** This function implements **K‑fold cross‑validation**, a method for estimating test error. The dataset is split into K roughly equal subsets called folds. The model is trained on K‑1 folds and tested on the remaining fold. This is repeated K times so that every observation serves as test data exactly once.
+**Plug-and-Play Answer:** This function implements **K‑fold cross‑validation**, a method for estimating test error. The dataset is split into K roughly equal subsets called folds. The model is trained on K‑1 folds and evaluated on the held‑out fold. This repeats K times so every data point is tested exactly once.
 
-The method produces an average test error that is more reliable than a single train/test split. Compared to LOOCV, K‑fold has slightly more bias but **much lower variance**, making it a better choice in practice. The value of K controls the trade‑off: smaller K gives more bias but less variance; larger K gives less bias but more variance and higher computation.
+The method produces an average test error that is more reliable than a single train/test split. Compared to LOOCV, K‑fold has slightly more bias but **much lower variance**, making it a better choice in practice.
 
 **Typical follow‑up questions (and how to solve):** - *“Use CV to choose the best K or λ.”*
 
@@ -186,7 +186,7 @@ mseK <- sapply(Kgrid, function(K)          # For each K, compute CV error
 Kopt <- Kgrid[which.min(mseK)]             # Pick the K giving smallest CV error
 ```
 
-**Theory answer:** CV selects the hyperparameter that minimizes estimated test error, balancing bias/variance. We evaluate each candidate K using CV and select the one with the **lowest estimated test MSE**. This is the standard method for hyperparameter tuning because it balances fit and generalization.
+**Theory answer:** CV selects the hyperparameter that minimizes estimated test error, balancing bias/variance. We evaluate each candidate K using CV and select the one with the **lowest estimated test error**.
 
 ------------------------------------------------------------------------
 
@@ -217,7 +217,7 @@ loo <- function(X, y) {                          # X predictors, y response
 
 **The Tell:** `for(i in 1:n)` and `X[-i, ]`.
 
-**Plug-and-Play Answer:** \> "This R-function implements **LOOCV**. It trains the model on all observations except one, predicts the left-out observation, and repeats for every row. The returned value is the mean squared prediction error across all left-out observations."
+**Plug-and-Play Answer:** \> "This R-function implements **LOOCV**. It trains the model on all observations except one, predicts the left-out observation, and repeats for every row. The returned value is the average Mean Squared Error (MSE) across all n test cases."
 
 **Typical follow‑up questions (and how to solve):** - *“Use LOOCV to pick λ in ridge/lasso.”*
 
@@ -230,7 +230,7 @@ mses <- sapply(lavec, function(la)         # For each lambda, compute LOOCV erro
 la_opt <- lavec[which.min(mses)]           # Pick lambda with smallest LOOCV error
 ```
 
-**Theory answer:** LOOCV approximates test error; the λ that minimizes LOOCV is preferred for generalization. We compute LOOCV error for each λ and choose the one that minimizes estimated test error. This is a principled tuning method when the dataset is small.
+**Theory answer:** LOOCV approximates test error; the λ that minimizes LOOCV is preferred for generalization. We compute LOOCV error for each λ and choose the one that minimizes estimated test error.
 
 ✅ `loo(la, X, y)` **if λ is defined in the function (tuning param)**\
 ✅ `loo(X, y)` **if λ is NOT in the function**
@@ -286,9 +286,9 @@ g <- function(X, y, la) {
 This code implements **ridge regression**, which minimizes the penalized objective\
 RSS+λ∑jβj2The RSS term forces the model to fit the data, while the penalty shrinks coefficients. This shrinkage reduces variance, especially when predictors are correlated or when the model is high‑dimensional.
 
-The function `g` centers y and each column of X because ridge penalties are applied to coefficients, and we want that penalty to treat all predictors fairly. If variables are not centered, the intercept can be distorted and the penalty can behave incorrectly. After centering, the intercept is simply the mean of y.
+The function `g` centers y and each column of X because ridge penalties are applied to coefficients, and we want that penalty to treat all predictors fairly. If variables are not centered, the intercept and predictors with large scales would be penalized unfairly.
 
-By optimizing the ridge objective, we obtain coefficients that are **more stable** than OLS. When λ = 0, ridge reduces to OLS. As λ increases, coefficients shrink toward zero, giving a smoother, less overfit model. This is exactly why ridge improves generalization.
+By optimizing the ridge objective, we obtain coefficients that are **more stable** than OLS. When λ = 0, ridge reduces to OLS. As λ increases, coefficients shrink toward zero, giving a smoother, less variable fit.
 
 **Typical follow‑up questions (and how to solve):** - *“Compare OLS vs ridge; what happens as λ increases?”*
 
@@ -321,7 +321,7 @@ for(k in 1:ncol(X)) {
 
 **The Tell:** Division by `sd()` after subtracting the mean.
 
-**Plug-and-Play Answer:** \> "This code **standardizes** the predictors before applying a shrinkage method. It ensures the penalty treats all variables fairly regardless of units, which is crucial for ridge and lasso."
+**Plug-and-Play Answer:** \> "This code **standardizes** the predictors before applying a shrinkage method. It ensures the penalty treats all variables fairly regardless of units, which is crucial for Ridge/Lasso."
 
 **Typical follow‑up questions (and how to solve):** - *“Why not only center?”* — Centering aligns means; scaling aligns variances so penalties are comparable.
 
@@ -344,7 +344,7 @@ f_lasso <- function(b1, X, y, la) {              # b1 = coefficients
 
 **The Tell:** `abs(b1)` instead of `b1^2`.
 
-**Plug-and-Play Answer:** \> "This function computes the **Lasso** objective: RSS plus the L1 penalty $\lambda \sum |\beta|$. The absolute value penalty allows coefficients to become exactly zero, so Lasso performs shrinkage and variable selection."
+**Plug-and-Play Answer:** \> "This function computes the **Lasso** objective: RSS plus the L1 penalty $\lambda \sum |\beta|$. The absolute value penalty allows coefficients to become exactly zero, so Lasso performs variable selection."
 
 **Typical follow‑up questions (and how to solve):** - *“Which predictors are selected?”* — those with non‑zero coefficients after tuning λ.
 
@@ -398,7 +398,7 @@ f_knn <- function(x0, x, y, K=3) {
 
 **The Tell:** `abs(x - x0)` and `order(d)[1:K]`.
 
-**Plug-and-Play Answer:** \> "This function implements **KNN local regression**. It calculates distances from `x0`, selects the K nearest observations, fits a local regression on those K points, and predicts the value at `x0`."
+**Plug-and-Play Answer:** \> "This function implements **KNN local regression**. It calculates distances from `x0`, selects the K nearest observations, fits a local regression on those K points, and predicts the value for `x0`."
 
 **Typical follow‑up questions (and how to solve):** - *“Choose K using LOOCV.”*
 
@@ -464,7 +464,7 @@ f_backfit <- function(x1, x2, y) {
 
 **The Tell:** `y - f2` and `y - f1` inside a smooth.
 
-**Plug-and-Play Answer:** \> "This code implements **backfitting** for a GAM. It alternates between fitting a smooth function for $x_1$ on the residuals after removing $f_2$, then fitting $f_2$ on residuals after removing $f_1$. Repeating this yields the additive model $f_1(x_1)+f_2(x_2)$."
+**Plug-and-Play Answer:** \> "This code implements **backfitting** for a GAM. It alternates between fitting a smooth function for $x_1$ on the residuals after removing $f_2$, then fitting $f_2$ on residuals without $f_1$. This continues until both functions converge."
 
 **Typical follow‑up questions (and how to solve):** - *“Compare GAM vs linear model.”* — fit both and compare MSE / R².
 
@@ -533,7 +533,7 @@ best_split <- function(x, y) {
 
 **The Tell:** Loop over split points and compute RSS or Gini for each.
 
-**Plug-and-Play Answer:** \> "This code implements **tree split selection**. It tests each candidate split point, computes impurity (here RSS), and chooses the split that minimizes impurity. This is the core of recursive binary splitting in decision trees."
+**Plug-and-Play Answer:** \> "This code implements **tree split selection**. It tests each candidate split point, computes impurity (here RSS), and chooses the split that minimizes impurity. This is the core logic of decision trees."
 
 ------------------------------------------------------------------------
 
@@ -586,7 +586,7 @@ f_bagging <- function(X, y, B=100) {
 
 **The Tell:** `sample(..., replace=TRUE)` inside a loop + model fit + `rowMeans()`.
 
-**Plug-and-Play Answer:** \> "This function implements **Bagging**. It creates many bootstrap samples, fits a decision tree to each, and averages the predictions. Averaging reduces variance and improves prediction accuracy compared to a single tree."
+**Plug-and-Play Answer:** \> "This function implements **Bagging**. It creates many bootstrap samples, fits a decision tree to each, and averages the predictions. Averaging reduces variance and improves stability."
 
 ------------------------------------------------------------------------
 
@@ -604,7 +604,7 @@ rf <- randomForest(y ~ ., data=train, mtry=3, importance=TRUE)  # mtry < p
 
 **The Tell:** `mtry` smaller than number of predictors.
 
-**Plug-and-Play Answer:** \> "This code fits a **Random Forest**. It is like bagging, but each split only considers a random subset of predictors (`mtry`). This decorrelates the trees and improves predictive accuracy."
+**Plug-and-Play Answer:** \> "This code fits a **Random Forest**. It is like bagging, but each split only considers a random subset of predictors (`mtry`). This decorrelates the trees and improves predictive performance."
 
 ------------------------------------------------------------------------
 
@@ -629,9 +629,9 @@ boost <- function(X, y, B=100, nu=0.1) {
 }
 ```
 
-**The Tell:** Residual update each loop (`r <- y - fhat`).
+**The Tell:** Residual update each loop (` r <- y - fhat `).
 
-**Plug-and-Play Answer:** \> "This function implements **boosting**. It starts with predictions 0, computes residuals, fits a weak learner to the residuals, and updates the prediction by adding a shrunken version of that learner. This sequential procedure reduces bias and improves accuracy."
+**Plug-and-Play Answer:** \> "This function implements **boosting**. It starts with predictions 0, computes residuals, fits a weak learner to the residuals, and updates the prediction by adding a shrunken version of the new tree's predictions."
 
 ------------------------------------------------------------------------
 
@@ -746,7 +746,7 @@ for(C in c(0.1,1,10)) {
 
 **The Tell:** Nested loops over `cost` and `gamma` with error comparison.
 
-**Plug-and-Play Answer:** \> "This code performs a grid search to tune **SVM hyperparameters** (cost and gamma). It trains a model for each combination, evaluates validation error, and selects the parameters with the lowest error."
+**Plug-and-Play Answer:** \> "This code performs a grid search to tune **SVM hyperparameters** (cost and gamma). It trains a model for each combination, evaluates validation error, and selects the parameters that perform best."
 
 ------------------------------------------------------------------------
 
@@ -791,7 +791,7 @@ reg <- lm(y ~ Z)                                # Regress y on components
 
 **The Tell:** `prcomp()` + using `pca$x` as predictors.
 
-**Plug-and-Play Answer:** \> "This code performs **PCR**. It first computes principal components of X, then uses the first K components as predictors in a regression model. The goal is dimension reduction with predictive modelling."
+**Plug-and-Play Answer:** \> "This code performs **PCR**. It first computes principal components of X, then uses the first K components as predictors in a regression model. The goal is dimension reduction and reducing variance."
 
 ------------------------------------------------------------------------
 
