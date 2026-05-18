@@ -308,6 +308,7 @@ Use when exam asks for tree-based ensemble regression and variable importance.
 **How to adapt (minimum):**
 - Set `NTREE` and `MTRY` if exam requests tuning.
 - If runtime is limited, reduce `NTREE`.
+- If `MTRY` is left `NULL`, regression uses the package default (about `floor(p/3)` where `p` is number of predictors).
 
 ```{r}
 #| label: task1_11_random_forest
@@ -316,7 +317,7 @@ suppressPackageStartupMessages(library(randomForest))
 TARGET_VAR <- "Y_VAR"
 rf_formula <- as.formula(paste(TARGET_VAR, "~ ."))
 NTREE <- 500
-MTRY <- NULL # NULL uses randomForest's regression default (about floor(p/3)); set explicit integer only if exam asks tuning/specification
+MTRY <- NULL # keep NULL unless exam asks for explicit tuning
 
 SEED_VALUE <- 123
 set.seed(SEED_VALUE)
