@@ -1,0 +1,477 @@
+---
+title: "BAN404 Prospect Snippets"
+subtitle: "Broader snippet ideas from old exam themes and compendiums"
+author: "Exam preparation"
+date: "2026"
+format:
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    colorlinks: true
+    papersize: a4
+    fontsize: 10pt
+    geometry:
+      - top=20mm
+      - left=20mm
+      - right=20mm
+      - bottom=20mm
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: flatly
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: true
+---
+
+# Prospect snippets (not yet merged into ExamPrep naming convention)
+
+These are **candidate snippet types** found from recurring old-exam patterns in `Previous Exam/` compendiums/transcripts.
+
+```{r}
+# Shared setup so all prospect chunks run in one file
+suppressPackageStartupMessages({
+  library(tidyverse)
+})
+```
+
+## 1) Local linear regression helper (K-nearest local fit)
+
+Use when exam gives a custom function `f(x0, x, y, K)` or asks to explain/implement local regression beyond plain KNN.
+
+**How to adapt:**
+- Change `X_VEC`, `Y_VEC`, `X0`, `K_VAL`.
+- Keep `K_VAL < length(X_VEC)`.
+
+```{r}
+# Prospect: local linear regression at a query point x0
+X_VEC <- c(DATA_HERE)
+Y_VEC <- c(DATA_HERE)
+X0 <- X0_VALUE
+K_VAL <- K_VALUE
+
+local_lin_pred <- function(x0, x, y, k) {
+  # Find indices of k closest points to x0
+  nn_idx <- order(abs(x - x0))[1:k]
+  # Fit local linear model on neighbors only
+  fit <- lm(y ~ x, data = tibble(x = x[nn_idx], y = y[nn_idx]))
+  # Predict at x0
+  as.numeric(predict(fit, newdata = tibble(x = x0)))
+}
+
+local_lin_pred(X0, X_VEC, Y_VEC, K_VAL)
+```
+
+Interpretation template: The local prediction at `x0=[X0]` is `[PRED]` using `K=[K_VAL]`; this reflects a **local** trend rather than one global slope.
+
+## 2) Generic LOOCV loop for tuning K/lambda
+
+Use when exam asks LOOCV for hyperparameter selection (seen repeatedly for K and lambda questions).
+
+**How to adapt:**
+- Replace `FIT_FN` and `PRED_FN` logic for your model type.
+- Edit `GRID_VALUES` to tested candidates.
+
+```{r}
+# Prospect: generic LOOCV tuner
+DF <- tibble(x = X_VAR, y = Y_VAR) # replace with your data frame/columns
+GRID_VALUES <- c(1, 3, 5, 7, 9)
+
+loo_mse <- map_dbl(GRID_VALUES, function(g) {
+  preds <- map_dbl(seq_len(nrow(DF)), function(i) {
+    train <- DF[-i, ]
+    test  <- DF[i, ]
+    # Example model: local polynomial degree = g placeholder
+    fit <- lm(y ~ poly(x, degree = g, raw = TRUE), data = train)
+    as.numeric(predict(fit, newdata = test))
+  })
+  mean((DF$y - preds)^2)
+})
+
+tibble(param = GRID_VALUES, loo_mse = loo_mse) %>% arrange(loo_mse)
+```
+
+Interpretation template: LOOCV is minimized at `[BEST_PARAM]`, so that is the preferred complexity/tuning value.
+
+## 3) Threshold tuning by CV for logistic predictions
+
+Use when exam says “0.5 is not optimal; find better threshold with cross-validation”.
+
+**How to adapt:**
+- Change `TARGET_BIN`, `FORMULA_HERE`, `THRESH_GRID`.
+- Replace objective metric if exam prioritizes sensitivity/specificity/cost.
+
+```{r}
+# Prospect: threshold CV for logistic model
+set.seed(123)
+DF <- DATAFRAME_HERE
+TARGET_BIN <- "TARGET_VAR"
+FORMULA_HERE <- as.formula("TARGET_VAR ~ X1 + X2 + X3")
+THRESH_GRID <- seq(0.1, 0.9, by = 0.05)
+K <- 5
+
+fold_id <- sample(rep(1:K, length.out = nrow(DF)))
+
+score_threshold <- function(thr) {
+  fold_scores <- map_dbl(1:K, function(k) {
+    tr <- DF[fold_id != k, ]
+    va <- DF[fold_id == k, ]
+
+    fit <- glm(FORMULA_HERE, data = tr, family = binomial())
+    p <- predict(fit, newdata = va, type = "response")
+    yhat <- if_else(p >= thr, 1, 0)
+    y <- as.integer(va[[TARGET_BIN]])
+
+    # Balanced accuracy objective (good for imbalance)
+    sens <- mean(yhat[y == 1] == 1)
+    spec <- mean(yhat[y == 0] == 0)
+    mean(c(sens, spec), na.rm = TRUE)
+  })
+  mean(fold_scores)
+}
+
+res <- tibble(threshold = THRESH_GRID, score = map_dbl(THRESH_GRID, score_threshold))
+res %>% arrange(desc(score))
+```
+
+Interpretation template: The best threshold is `[THR]` because it maximizes `[METRIC]` instead of defaulting to 0.5.
+
+## 4) Full classification metric table from confusion matrix
+
+Use when exam asks for richer evaluation than plain accuracy.
+
+**How to adapt:**
+- Set positive class level in `POS_LABEL`.
+- Use your predicted labels/probabilities.
+
+```{r}
+# Prospect: confusion-matrix derived metrics
+ACTUAL <- factor(ACTUAL_HERE, levels = c("NO", "YES"))
+PRED   <- factor(PRED_HERE, levels = c("NO", "YES"))
+POS_LABEL <- "YES"
+
+cm <- table(Pred = PRED, Actual = ACTUAL)
+TP <- cm[POS_LABEL, POS_LABEL]
+TN <- cm["NO", "NO"]
+FP <- cm[POS_LABEL, "NO"]
+FN <- cm["NO", POS_LABEL]
+
+metrics <- tibble(
+  accuracy = (TP + TN) / sum(cm),
+  sensitivity = TP / (TP + FN),
+  specificity = TN / (TN + FP),
+  precision = TP / (TP + FP),
+  recall = TP / (TP + FN),
+  f1 = 2 * (precision * recall) / (precision + recall),
+  balanced_accuracy = (sensitivity + specificity) / 2
+)
+metrics
+```
+
+Interpretation template: Model performance is `[GOOD/WEAK]` on `[METRIC]`; trade-off shows `[HIGH_SENS_LOW_SPEC or vice versa]`.
+
+## 5) ROC + AUC + Youden threshold chooser
+
+Use when exam asks for threshold-independent evaluation and optimal operating point.
+
+**How to adapt:**
+- Replace `P_PROB` and `Y_TRUE`.
+- If package unavailable, keep confusion-grid fallback.
+
+```{r}
+# Prospect: ROC/AUC + best threshold (Youden J)
+library(pROC)
+
+Y_TRUE <- as.integer(Y_TRUE_HERE) # 0/1
+P_PROB <- PRED_PROB_HERE
+
+roc_obj <- roc(response = Y_TRUE, predictor = P_PROB)
+auc_val <- auc(roc_obj)
+
+best_thr <- coords(roc_obj, x = "best", best.method = "youden", ret = "threshold")
+plot(roc_obj)
+auc_val
+best_thr
+```
+
+Interpretation template: AUC is `[AUC]`, indicating `[DISCRIMINATION_QUALITY]`; Youden-optimal threshold is `[THR]`.
+
+## 6) Cost-sensitive threshold search
+
+Use when false negatives and false positives have different business costs.
+
+**How to adapt:**
+- Set `COST_FN` and `COST_FP` from exam text.
+- Adjust threshold grid granularity.
+
+```{r}
+# Prospect: minimize expected classification cost
+Y_TRUE <- as.integer(Y_TRUE_HERE)
+P_PROB <- PRED_PROB_HERE
+COST_FN <- 5
+COST_FP <- 1
+THRESH <- seq(0.05, 0.95, by = 0.01)
+
+cost_tbl <- tibble(threshold = THRESH) %>%
+  mutate(
+    pred = map(threshold, ~ if_else(P_PROB >= .x, 1L, 0L)),
+    fn = map_dbl(pred, ~ sum(.x == 0 & Y_TRUE == 1)),
+    fp = map_dbl(pred, ~ sum(.x == 1 & Y_TRUE == 0)),
+    total_cost = COST_FN * fn + COST_FP * fp
+  ) %>%
+  arrange(total_cost)
+
+cost_tbl %>% select(threshold, fn, fp, total_cost) %>% head(10)
+```
+
+Interpretation template: With `Cost(FN)=[COST_FN]` and `Cost(FP)=[COST_FP]`, threshold `[THR]` minimizes expected total error cost.
+
+## 7) Ridge (manual matrix form) + lambda comparison
+
+Use when exam asks conceptual/explicit ridge implementation without high-level wrappers.
+
+**How to adapt:**
+- Change `LAMBDA` values and matrix objects.
+- Keep centering if intercept should be unpenalized.
+
+```{r}
+# Prospect: manual ridge using matrix algebra
+X <- as.matrix(X_HERE)
+y <- as.numeric(Y_HERE)
+LAMBDA <- 100
+
+# Center X and y so intercept is handled separately
+Xc <- scale(X, center = TRUE, scale = FALSE)
+yc <- y - mean(y)
+
+p <- ncol(Xc)
+I_p <- diag(p)
+
+beta_ridge <- solve(t(Xc) %*% Xc + LAMBDA * I_p, t(Xc) %*% yc)
+beta_ridge
+```
+
+Interpretation template: Increasing lambda shrinks coefficient magnitudes; this lowers variance but may increase bias.
+
+## 8) Regression tree pruning with CV
+
+Use when exam asks “fit tree, then improve/prune and justify complexity”.
+
+**How to adapt:**
+- Set formula and response.
+- Choose best tree size using CV deviance.
+
+```{r}
+# Prospect: regression tree + pruning
+library(tree)
+
+DF <- DATAFRAME_HERE
+TREE_FORMULA <- as.formula("Y_VAR ~ .")
+
+tree_fit <- tree(TREE_FORMULA, data = DF)
+cv_fit <- cv.tree(tree_fit)
+
+best_size <- cv_fit$size[which.min(cv_fit$dev)]
+pruned <- prune.tree(tree_fit, best = best_size)
+
+plot(pruned)
+text(pruned, pretty = 0)
+best_size
+```
+
+Interpretation template: CV suggests tree size `[SIZE]`; pruning improves generalization by removing weak splits.
+
+## 9) Random forest tuning grid (mtry, ntree)
+
+Use when exam asks “can RF be improved” instead of single default model.
+
+**How to adapt:**
+- Adjust `MTRY_GRID`, `NTREE_GRID`.
+- Replace metric for classification/regression target.
+
+```{r}
+# Prospect: RF tuning mini-grid
+library(randomForest)
+
+TRAIN <- TRAIN_DF
+TEST  <- TEST_DF
+TARGET <- "Y_VAR"
+
+MTRY_GRID <- c(2, 3, 4)
+NTREE_GRID <- c(200, 500)
+
+grid <- crossing(mtry = MTRY_GRID, ntree = NTREE_GRID)
+
+rf_res <- grid %>%
+  mutate(
+    fit = map2(mtry, ntree, ~ randomForest(as.formula(paste(TARGET, "~ .")),
+                                           data = TRAIN, mtry = .x, ntree = .y, importance = TRUE)),
+    pred = map(fit, ~ predict(.x, newdata = TEST)),
+    mse = map_dbl(pred, ~ mean((TEST[[TARGET]] - .x)^2))
+  ) %>%
+  arrange(mse)
+
+rf_res %>% select(mtry, ntree, mse)
+```
+
+Interpretation template: Best RF setting is `mtry=[MTRY], ntree=[NTREE]` with test error `[ERR]`.
+
+## 10) Interaction-term check in logistic/linear model
+
+Use when exam asks whether effect of one predictor depends on another.
+
+**How to adapt:**
+- Replace interacting variables and family.
+- Compare nested models (with vs without interaction).
+
+```{r}
+# Prospect: interaction test via nested models
+DF <- DATAFRAME_HERE
+
+mod_main <- glm(TARGET_VAR ~ X1 + X2 + X3, data = DF, family = binomial())
+mod_int  <- glm(TARGET_VAR ~ X1 * X2 + X3, data = DF, family = binomial())
+
+anova(mod_main, mod_int, test = "Chisq")
+summary(mod_int)
+```
+
+Interpretation template: Interaction term `[X1:X2]` is `[SIGNIFICANT / NOT SIGNIFICANT]`, so dependency between effects is `[SUPPORTED / NOT SUPPORTED]`.
+
+## 11) Stratified train/test split for imbalanced classification
+
+Use when class imbalance makes random split unstable.
+
+**How to adapt:**
+- Set target factor and train fraction.
+- Keep class proportions matched across splits.
+
+```{r}
+# Prospect: stratified split (tidyverse only)
+set.seed(123)
+DF <- DATAFRAME_HERE
+TARGET <- "TARGET_VAR"
+TRAIN_FRAC <- 0.8
+
+train_idx <- DF %>%
+  mutate(.row_id = row_number()) %>%
+  group_by(.data[[TARGET]]) %>%
+  slice_sample(prop = TRAIN_FRAC) %>%
+  pull(.row_id)
+
+train_df <- DF %>% slice(train_idx)
+test_df  <- DF %>% slice(setdiff(seq_len(nrow(DF)), train_idx))
+
+prop.table(table(train_df[[TARGET]]))
+prop.table(table(test_df[[TARGET]]))
+```
+
+Interpretation template: Stratification preserves class mix in train/test, making metric comparison more reliable under imbalance.
+
+## 12) Bootstrap CI for a proportion (binary rate)
+
+Use when exam asks CI for churn/claim probability using bootstrap and normal comparison.
+
+**How to adapt:**
+- Replace binary vector and `B` iterations.
+- Change confidence level via quantiles.
+
+```{r}
+# Prospect: bootstrap CI for p = P(Y=1)
+set.seed(123)
+Y_BIN <- as.integer(BINARY_VECTOR_HERE) # 0/1
+B <- 2000
+
+boot_p <- replicate(B, {
+  yb <- sample(Y_BIN, size = length(Y_BIN), replace = TRUE)
+  mean(yb)
+})
+
+ci_pct <- quantile(boot_p, probs = c(0.025, 0.975))
+p_hat <- mean(Y_BIN)
+se_hat <- sd(boot_p)
+ci_norm <- p_hat + c(-1.96, 1.96) * se_hat
+
+ci_pct
+ci_norm
+```
+
+Interpretation template: Bootstrap percentile CI is `[L,U]`; compared with normal CI `[L2,U2]`, they are `[SIMILAR/DIFFERENT]`, indicating `[APPROX_NORMALITY / SKEWNESS]` in sampling distribution.
+
+## 13) Confidence vs prediction interval helper (quick exam text)
+
+Use when exam asks both interval types for one profile and conceptual distinction.
+
+**How to adapt:**
+- Build `new_obs` with exact model predictors.
+- Change `level` to exam requirement.
+
+```{r}
+# Prospect: CI vs PI from OLS
+fit <- lm(Y_VAR ~ X1 + X2 + X3, data = TRAIN_DF)
+new_obs <- tibble(X1 = X1_VALUE, X2 = X2_VALUE, X3 = X3_VALUE)
+
+ci <- predict(fit, newdata = new_obs, interval = "confidence", level = 0.95)
+pi <- predict(fit, newdata = new_obs, interval = "prediction", level = 0.95)
+
+ci
+pi
+```
+
+Interpretation template: CI estimates the mean response for this profile, while PI estimates one new individual outcome and is therefore wider.
+
+## 14) Operational-model filter (availability-at-prediction-time)
+
+Use when exam asks to remove variables “not plausibly available” at prediction time.
+
+**How to adapt:**
+- Set leakage/late variables in `DROP_VARS`.
+- Keep this before all modeling chunks.
+
+```{r}
+# Prospect: operational predictor filtering
+DF <- DATAFRAME_HERE
+DROP_VARS <- c("LEAKAGE_VAR1", "POST_EVENT_VAR2")
+
+df_operational <- DF %>% select(-any_of(DROP_VARS))
+
+names(df_operational)
+```
+
+Interpretation template: We removed `[DROP_VARS]` because they are unavailable or leakage-prone at scoring time, improving realism of model evaluation.
+
+## 15) Model leaderboard with one unified table
+
+Use when exam asks to compare many models and recommend one.
+
+**How to adapt:**
+- Fill with your computed metrics.
+- Add business metric column if required.
+
+```{r}
+# Prospect: unified model comparison table
+leaderboard <- tibble(
+  model = c("OLS", "LASSO", "Tree", "RF", "Logistic", "ClassTree"),
+  task = c("reg", "reg", "reg", "reg", "class", "class"),
+  metric_primary = c(MSE_OLS, MSE_LASSO, MSE_TREE, MSE_RF, BALACC_LOGIT, BALACC_TREE)
+) %>%
+  arrange(desc(metric_primary))
+
+leaderboard
+```
+
+Interpretation template: Based on `[PRIMARY_METRIC]`, `[BEST_MODEL]` is preferred; final choice should also consider interpretability and operational constraints.
+
+# Notes on why these prospects were selected
+
+These themes were repeatedly seen in:
+- `/home/runner/work/BAN404/BAN404/Previous Exam/BAN404_exam_2021.md` (bootstrap + regression coefficient bootstrap)
+- `/home/runner/work/BAN404/BAN404/Previous Exam/BAN404_exam_2022.md` (threshold CV, logistic vs tree)
+- `/home/runner/work/BAN404/BAN404/Previous Exam/BAN404_exam_2024.md` (LOOCV, logistic/tree/RF comparisons)
+- `/home/runner/work/BAN404/BAN404/Previous Exam/BAN404_exam_2025.md` (bootstrap variance CI, threshold tuning)
+- `/home/runner/work/BAN404/BAN404/Previous Exam/R_exam_comp_2024.qmd`
+- `/home/runner/work/BAN404/BAN404/Previous Exam/2025/R_exam_comp_2025.qmd`
+- `/home/runner/work/BAN404/BAN404/Previous Exam/ExamQuestion_thematic_analysis/Mapping_PreviousQuestions.csv`
