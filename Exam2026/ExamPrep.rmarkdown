@@ -33,9 +33,15 @@ execute:
   error: true
 ---
 
+
+
+
 **General Setup and Package Loading**
 
 Before tackling any specific task, we load the standard suite of BAN404 packages. We use `tidyverse` for data manipulation and visualization, `janitor` for safe column naming, and the core statistical learning packages (`glmnet`, `gam`, `tree`, `randomForest`, `gbm`) so we don't have to interrupt our workflow later.
+
+
+
 
 ```{r setup_and_load}
 # 0. Load necessary libraries
@@ -54,6 +60,9 @@ df_task1 <- read_csv("task1_data.csv", show_col_types = FALSE) %>% clean_names()
 df_customer <- read_csv("customer_data.csv", show_col_types = FALSE) %>% clean_names()
 ```
 
+
+
+
 # Task 1: Regression (Continuous Outcome)
 
 Before fitting any models, we must understand the data generating process. The goal of this Exploratory Data Analysis (EDA) is to inform our model selection. We will systematically now do checks for:
@@ -69,16 +78,25 @@ Before fitting any models, we must understand the data generating process. The g
 
 **Reasoning:** Many machine learning algorithms (like standard Random Forests or `lm()` without `na.action` adjustments) will fail or drop rows entirely if missing values are present. We must verify completeness first.
 
+
+
+
 ```{r t1_missing}
 # Check for missing values in each column
 colSums(is.na(df_task1))
 ```
+
+
+
 
 *Conclusion:* There are 0 missing values. The dataset is complete, so no imputation is necessary.
 
 ### Distribution of the Target Variable (y)
 
 **Reasoning:** The distribution of the continuous outcome `y` tells us if we need to transform the data. Severe skewness can violate OLS residual assumptions and make the model overly sensitive to outliers.
+
+
+
 
 ```{r t1_target_dist}
 ggplot(df_task1, aes(x = y)) +
@@ -88,11 +106,17 @@ ggplot(df_task1, aes(x = y)) +
        subtitle = "Checking for severe skewness or extreme outliers")
 ```
 
+
+
+
 *Conclusion:* The histogram shows a right-skewed distribution with a long tail extending towards 50. Normally, this suggests a `log(y)` transformation. However, **the data contains negative values (down to approximately -8)**. Because $\log(x)$ is undefined for $x \le 0$, a standard log transformation is invalid here without shifting the entire dataset. We will proceed with the un-transformed `y`, but we note that our OLS model may yield non-normal residuals.
 
 ### Multicollinearity and Feature Scaling
 
 **Reasoning:** If predictor variables are highly correlated (multicollinearity), OLS coefficient estimates become highly unstable (high variance). This is the primary justification for using Ridge Regression. We also check the summary statistics to see if predictors need standardization.
+
+
+
 
 ```{r t1_multicollinearity}
 # Check summary to see if scales are wildly different
@@ -103,11 +127,17 @@ cor_matrix <- cor(df_task1)
 round(cor_matrix, 2)
 ```
 
+
+
+
 *Conclusion:* The `summary()` shows all predictors are roughly centered around 0 with similar ranges, meaning massive scale disparities won't artificially inflate penalties in regularized models. More importantly, the correlation matrix shows **zero correlation between the independent variables**. Because there is no multicollinearity, Ridge regression is unlikely to provide any significant variance-reduction benefit over OLS. **demeaning vs standardization observation.**
 
 ### Checking the Linearity Assumption
 
 **Reasoning:** OLS, Ridge, and LASSO all assume a strictly linear relationship between $X$ and $Y$. If the true relationship is non-linear, these models will severely underfit. We plot each predictor against `y`, overlaying a strict linear fit (blue) and a flexible LOESS fit (red).
+
+
+
 
 ```{r t1_linearity}
 #| eval: true
@@ -123,6 +153,9 @@ df_task1 %>%
   labs(title = "Predictors vs. y (Blue = Linear, Red = Flexible)",
        subtitle = "Looking for gaps between the straight line and flexible curve")
 ```
+
+
+
 
 *Conclusion:* This plot dictates our entire modeling strategy: 1. `x1` and `x5` are strictly linear. 2. `x4` and `x6` appear to be pure noise (both lines are flat). 3. **`x2` and `x3` display severe non-linear relationships.** Specifically, `x2` forms a distinct U-shape (quadratic).
 
@@ -146,6 +179,9 @@ Based on the exploratory data analysis, we can draw several critical conclusions
 **Possible Exam Question:** *"Split the dataset into a training and test set. Explain why this step is necessary before evaluating model performance."*
 
 **Exam-Ready Written Reasoning:** To accurately evaluate how well our models will generalize to unseen data, we must split the dataset into a training set and a test set. If we train and evaluate a model on the exact same data, complex models (like Random Forests) will simply memorize the data (overfitting), leading to an artificially low error rate. By holding out 50% of the data exclusively for testing, we get an honest, unbiased estimate of the model's true predictive power (Test MSE).
+
+
+
 
 ```{r t1_split}
 # Set a random seed. This locks the random number generator so our split is 
@@ -172,6 +208,9 @@ X_test  <- model.matrix(y ~ ., data = test_t1)[, -1] # Do the exact same for the
 y_test  <- test_t1$y
 ```
 
+
+
+
 ## Linear & Parametric Models (Baselines)
 
 ### OLS Baseline
@@ -179,6 +218,9 @@ y_test  <- test_t1$y
 **Possible Exam Question:** *"Fit an Ordinary Least Squares (OLS) model. Explain the limitations given your EDA."*
 
 **Exam-Ready Written Reasoning:** We begin with an OLS regression as our strict baseline. However, our EDA proved that `x2` has a severe U-shaped non-linear relationship with `y`. Because OLS only draws straight lines, we expect it to completely miss the signal in `x2` and perform poorly.
+
+
+
 
 ```{r t1_ols}
 # --- 1. OLS BASELINE ---
@@ -193,11 +235,17 @@ pred_ols <- predict(ols_fit, newdata = test_t1)
 mse_ols <- mean((test_t1$y - pred_ols)^2)
 ```
 
+
+
+
 ### Polynomial Regression (Fixing OLS Manually)
 
 **Possible Exam Question:** *"Without using a GAM or Tree, modify your OLS model to capture the non-linear relationship in x2. Explain your approach."*
 
 **Exam-Ready Written Reasoning:** Our EDA revealed that `x2` has a distinct U-shaped (quadratic) relationship with `y`. Standard OLS fits a straight line (degree 1), resulting in severe bias (underfitting). Without resorting to complex machine learning models, we can use Polynomial Regression by explicitly adding a squared term for `x2`. This allows the linear model to bend into a parabola for that specific variable, curing the bias while keeping the model entirely parametric and highly interpretable.
+
+
+
 
 ```{r t1_polynomial}
 # =====================================================================
@@ -217,6 +265,9 @@ mse_poly <- mean((test_t1$y - pred_poly)^2)
 print(paste("Polynomial OLS Test MSE:", round(mse_poly, 4)))
 ```
 
+
+
+
 *Written Analysis:* By manually adding a quadratic term `I(x2^2)` to our OLS model, the p-value for `I(x2^2)` was `< 2e-16`, proving it is highly statistically significant. By simply adding a quadratic term for `x2`, the previously useless OLS model is "rescued." The Test MSE drops massively compared to the baseline linear OLS, proving that the high error was purely due to functional form misspecification (bias), not a lack of signal in the data.
 
 ## Regularization & Variable Selection
@@ -226,6 +277,9 @@ print(paste("Polynomial OLS Test MSE:", round(mse_poly, 4)))
 **Possible Exam Question:** *"Fit a LASSO regression model. Does LASSO perform variable selection? Explain the limitations given your EDA."*
 
 **Exam-Ready Written Reasoning:** Next, we run a LASSO regression. LASSO applies an "L1 penalty" (absolute value penalty) to the coefficients. Unlike Ridge regression (which only shrinks coefficients towards zero), LASSO's mathematical penalty can force coefficients to exactly zero, effectively dropping them from the model. This performs automatic variable selection, which is perfect here because our EDA suggested `x4` and `x6` are pure noise. However, because LASSO is still a linear model, it will also fail to capture the non-linear curve of `x2`.
+
+
+
 
 ```{r t1_lasso}
 # --- 2. LASSO REGRESSION ---
@@ -250,6 +304,9 @@ print("LASSO Coefficients:")
 coef(lasso_fit)
 ```
 
+
+
+
 ## Flexible & Non-Parametric Models
 
 ### Generalized Additive Models (GAM)
@@ -257,6 +314,9 @@ coef(lasso_fit)
 **Possible Exam Question:** *"Based on your EDA, some variables are non-linear. Fit a model that captures these non-linearities while remaining highly interpretable."*
 
 **Exam-Ready Written Reasoning:** To fix the underfitting of the linear models, we upgrade to a Generalized Additive Model (GAM). A GAM allows us to apply "smoothing splines" to specific variables, letting the model bend to fit curves while still keeping the effects additive and highly interpretable. Based on our EDA and LASSO results, we manually drop the noise variables (`x4`, `x6`). We keep `x1` and `x5` as straight lines (linear), but we wrap `x2` and `x3` in the `s()` function to allow the model to capture their severe non-linear curves.
+
+
+
 
 ```{r t1_gam}
 # Fit the GAM. 
@@ -279,6 +339,9 @@ plot(gam_fit, se = TRUE, col = "blue")
 par(mfrow = c(1,1)) # Reset plot window back to normal
 ```
 
+
+
+
 **Written Analysis:** The Generalized Additive Model (GAM) successfully solves the underfitting problem of the linear models while remaining entirely interpretable. By looking at the partial dependence plots, we can see exactly how the model treats each variable:
 
 1.  **Linear terms (`x1` and `x5`):** The model correctly applies a strict, positive linear slope, perfectly matching our EDA.
@@ -291,6 +354,9 @@ This visual transparency is the core strength of a GAM. Unlike "black-box" model
 **Possible Exam Question:** *"Use a tree-based ensemble method to predict y. Evaluate its performance and explain which variables are most important for making predictions."*
 
 **Exam-Ready Written Reasoning:** Instead of manually specifying which variables are non-linear (like we did in the GAM), we can use a Random Forest. A Random Forest builds hundreds of deep decision trees using bootstrapped samples of the data, and randomly restricts the predictors available at each split (`mtry`). This decorrelates the trees, drastically reducing variance when their predictions are averaged. Decision trees naturally handle non-linearities and ignore useless variables without requiring manual intervention, making it an incredibly powerful "black-box" alternative to OLS.
+
+
+
 
 ```{r t1_rf}
 set.seed(123) # Lock seed because Random Forest uses random bootstrap sampling
@@ -314,11 +380,17 @@ importance(rf_fit)
 varImpPlot(rf_fit, main = "Random Forest Variable Importance")
 ```
 
+
+
+
 ### Boosting (Gradient Boosted Trees)
 
 **Possible Exam Question:** *"Fit a Gradient Boosting model (gbm). Explain how its approach to learning differs fundamentally from a Random Forest."*
 
 **Exam-Ready Written Reasoning:** While Random Forests build deep, high-variance trees independently and average them to reduce Variance, Boosting takes the exact opposite approach. Boosting builds shallow, weak trees *sequentially*. Each new tree is fit to the *residuals* (the mistakes) of the previous trees, slowly learning from its errors. Boosting primarily reduces Bias. Because it learns slowly (controlled by the shrinkage parameter), it is highly resistant to overfitting and often yields the best predictive performance among tree-based methods.
+
+
+
 
 ```{r t1_boosting}
 # =====================================================================
@@ -350,6 +422,9 @@ print("Boosting Variable Importance:")
 summary(boost_fit)
 ```
 
+
+
+
 **Written Analysis:** Boosting takes a fundamentally different approach to learning than Random Forests. While a Random Forest builds hundreds of deep, high-variance trees independently and averages them to reduce Variance, Boosting builds shallow, weak trees sequentially. Each new tree is fit to the residuals (the mistakes) of the previous trees. Because it attacks its own errors, Boosting is the ultimate Bias-reduction algorithm.
 
 **Understanding the Code Parameters:** - `n.trees = 1000`: We build 1000 trees sequentially. - `interaction.depth = 3`: We force the trees to be very shallow (only 3 splits). This ensures each individual tree is a "weak learner" with low variance. - `shrinkage = 0.01`: This is the learning rate. We multiply the predictions of each new tree by a tiny number (0.01) so the model learns very slowly. This slow learning prevents the model from overfitting to the noise.
@@ -361,6 +436,9 @@ summary(boost_fit)
 **Possible Exam Question:** *"Summarize the performance of all models tested. Which model is optimal for this dataset and why?"*
 
 **Exam-Ready Written Reasoning:** By comparing the Test Mean Squared Error (MSE) across all models, we can definitively conclude that capturing non-linearity was the most critical factor for this dataset. OLS and LASSO both performed poorly because their strict linear constraints caused them to completely miss the massive U-shaped signal in `x2`.
+
+
+
 
 ```{r t1_comparison}
 # Create a tidy dataframe to cleanly display the MSE of all 4 models
@@ -375,6 +453,9 @@ model_results <- tibble(
 print(model_results)
 ```
 
+
+
+
 **Possible Exam Question:** *"Based on your results, which model performed best? Explain this outcome using the concepts of bias, flexibility, and the true underlying data structure."*
 
 **Exam-Ready Written Reasoning:** The results cleanly illustrate the limitations of rigid linear assumptions and the power of flexible modeling.
@@ -386,6 +467,9 @@ print(model_results)
 **Possible Exam Question:** *"Calculate the Root Mean Squared Error (RMSE) and Test R-squared for all tested models. Create a final summary table and interpret the results."*
 
 **Exam-Ready Written Reasoning:** While Mean Squared Error (MSE) is useful for mathematical optimization, it is in squared units. By calculating RMSE, we return the error to the original units of the target variable ($y$), making it easily interpretable as the "average prediction error." Additionally, calculating the Test R-squared tells us the exact percentage of variance in the unseen test data that our models successfully explain. We compute these for all models to provide a comprehensive final comparison.
+
+
+
 
 ```{r t1_advanced_metrics}
 # =====================================================================
@@ -431,7 +515,13 @@ final_model_results <- tibble(
 print(final_model_results)
 ```
 
+
+
+
 *Written Analysis:* The master table confirms our theoretical expectations. The rigid linear models (OLS, LASSO) explain less than 40% of the variance in the test data (R² \~ 0.36) and are off by an average of \~2.25 units (RMSE). By capturing the non-linearities, the Random Forest explains \~73% of the variance, and the GAM captures an outstanding \~82% of the variance, with an average prediction error (RMSE) of just \~1.24 units.
+
+
+
 
 ```{r t1_final_master_table}
 # =====================================================================
@@ -446,6 +536,9 @@ master_results <- tibble(
 
 print(master_results)
 ```
+
+
+
 
 **Final Exam-Style Conclusion:** The journey from a Test MSE of \~5.08 down to \~1.54 perfectly demonstrates the core tenets of Statistical Learning:
 
@@ -462,6 +555,9 @@ print(master_results)
 **Possible Exam Question:** *"Use the Bootstrap method (B=1000) to estimate the standard error for the coefficient of x1. Calculate both the Normal Approximation 95% CI and the Percentile 95% CI. Which is more appropriate if the distribution is skewed?"*
 
 **Written Reasoning:** When model assumptions are violated, theoretical standard errors from `lm()` can be unreliable. We use Bootstrapping (resampling with replacement) to empirically estimate the standard error. We can calculate the Confidence Interval in two ways: 1. **Normal Approximation CI:** Assumes the bootstrap sampling distribution forms a perfect, symmetrical bell curve ($Mean \pm 1.96 \times SE$). 2. **Percentile CI:** Uses the actual empirical quantiles of our 1000 bootstrap estimates. If our plot shows the bootstrap distribution is highly skewed or asymmetric, the Normal Approximation is mathematically invalid, and we must rely on the Percentile CI because it perfectly traces the actual shape of the data.
+
+
+
 
 ```{r t1_bootstrap}
 # =====================================================================
@@ -529,6 +625,9 @@ legend("topright", legend=c("Normal CI", "Percentile CI"),
        col=c("red", "blue"), lty=c(2,3), lwd=2)
 ```
 
+
+
+
 **Written Analysis:** The bootstrap results perfectly illustrate why resampling is necessary when OLS assumptions are violated. Our OLS model assumed perfectly normally distributed residuals, but our EDA showed `y` is highly skewed.
 
 -   **Normal CI:** `[1.0125, 1.2679]`
@@ -542,6 +641,9 @@ Notice that the Percentile CI is slightly narrower and shifted compared to the N
 **Possible Exam Question:** *"Fit a Ridge regression model and extract the coefficients. Compare these to the LASSO coefficients. Why doesn't Ridge drop variables to exactly zero like LASSO does?"*
 
 **Exam-Ready Written Reasoning:** While both models shrink coefficients to reduce variance, they use different math. LASSO uses an **L1 penalty** (absolute value of coefficients), which creates a "corner" in the optimization geometry that forces coefficients to exactly zero. Ridge uses an **L2 penalty** (squared coefficients). Because it squares the penalty, as a coefficient gets closer to zero, the penalty for that coefficient shrinks exponentially. Therefore, Ridge will shrink the coefficients of the noise variables (`x4`, `x6`) asymptotically close to zero, but it will never mathematically force them to equal exactly zero.
+
+
+
 
 ```{r t1_ridge}
 # =====================================================================
@@ -561,11 +663,17 @@ print("LASSO Coefficients (Notice x4 and x6 are exactly '.' / zero):")
 coef(lasso_fit)
 ```
 
+
+
+
 ### Manual K-Fold Cross-Validation Loop
 
 **Possible Exam Question:** *"Instead of using cv.glmnet, write a manual 5-fold cross-validation loop to determine whether a polynomial of degree 2 or degree 3 is better for x2. Explain your findings."*
 
 **Exam-Ready Written Reasoning:** We use K-Fold Cross Validation to estimate the out-of-sample error without relying on a single, permanent train/test split. By dividing the data into 5 folds, we train the model 5 times (each time holding out a different 20% for testing) and average the Test MSEs. If the degree-3 polynomial does not significantly lower the CV Error compared to the degree-2 polynomial, we prefer the simpler degree-2 model (parabola) to adhere to the principle of parsimony and avoid overfitting.
+
+
+
 
 ```{r t1_manual_cv1}
 # =====================================================================
@@ -610,6 +718,9 @@ print(paste("5-Fold CV MSE (Degree 2):", round(mean_cv_deg2, 4)))
 print(paste("5-Fold CV MSE (Degree 3):", round(mean_cv_deg3, 4)))
 ```
 
+
+
+
 **Written Analysis:** The 5-Fold Cross-Validation loop confirms that a Degree 2 polynomial (quadratic/parabola) is optimal for `x2`. When we increased the complexity to a Degree 3 polynomial (cubic), the out-of-sample Test MSE actually *increased* from 11.4439 to 11.4462. This perfectly illustrates the **Bias-Variance Tradeoff** and the principle of **Parsimony**. The underlying true relationship is a simple U-shape (Degree 2). Adding a Degree 3 term did not reduce bias, but it did increase the model's variance (complexity), causing it to overfit the training folds and perform worse on the validation folds. Therefore, we firmly reject the Degree 3 model. *(Note: The MSE here is \~11 because this specific loop only modeled `y` against `x2` to isolate its effect, ignoring the other variables).*
 
 ### Manual K-Fold Cross-Validation Loop (Best Practice)
@@ -617,6 +728,9 @@ print(paste("5-Fold CV MSE (Degree 3):", round(mean_cv_deg3, 4)))
 **Possible Exam Question:** *"Instead of using cv.glmnet, write a manual 5-fold cross-validation loop to determine whether a polynomial of degree 2 or degree 3 is better for x2. Explain your findings based on the Principle of Parsimony."*
 
 **Exam-Ready Written Reasoning:** We use K-Fold Cross Validation to estimate out-of-sample error without relying on a single, "lucky" train/test split. By dividing the training data into 5 folds, we train the model 5 times (each time holding out a different 20% for testing) and average the Test MSEs. *Best Practice:* We don't just test `x2` by itself; we must test the polynomial *while controlling for the other valid predictors* (`x1`, `x3`, `x5`). If adding a 3rd degree (cubic) term to `x2` does not drastically lower the CV Error compared to the 2nd degree (parabola) term, we will reject it. The **Principle of Parsimony (Occam's Razor)** dictates that if two models have identical predictive power, we must always choose the simpler, less complex model to prevent variance and overfitting.
+
+
+
 
 ```{r t1_manual_cv}
 # =====================================================================
@@ -673,6 +787,9 @@ print(paste("5-Fold CV MSE (Degree 2):", round(mean_cv_deg2, 4)))
 print(paste("5-Fold CV MSE (Degree 3):", round(mean_cv_deg3, 4)))
 ```
 
+
+
+
 **Written Analysis:** By controlling for the other variables, our CV MSE dropped down to \~3.05 (which matches our earlier findings). Crucially, we observe that the MSE for the Degree 3 polynomial is virtually identical (or slightly worse) than the Degree 2 polynomial. This tiny difference is essentially statistical noise. Adding a 3rd degree (cubic) term provided absolutely zero predictive value; it is mathematically "dead weight" that only increases the model's complexity (variance). Following the Principle of Parsimony, we confidently reject the Degree 3 model and conclude that `x2` is strictly a quadratic (Degree 2) relationship.
 
 ### Confidence vs. Prediction Intervals
@@ -680,6 +797,9 @@ print(paste("5-Fold CV MSE (Degree 3):", round(mean_cv_deg3, 4)))
 **Possible Exam Question:** *"Create a synthetic new observation using the median values of the training data. Predict its 'y' value using the OLS model. Calculate both a 95% Confidence Interval and a 95% Prediction Interval. Explain the conceptual difference between the two."*
 
 **Exam-Ready Written Reasoning:** A **Confidence Interval (CI)** estimates the *average* target value ($\bar{y}$) for the entire sub-population of all observations that share this exact specific profile of $X$ predictors. It only accounts for the uncertainty in our model's coefficient estimates. A **Prediction Interval (PI)** estimates the specific target value ($y$) for **one single, brand-new observation**. It must account for both the uncertainty in the coefficients AND the **irreducible error (**$\epsilon$)—the inherent, random variability of individual data points. Because it must account for this extra individual randomness, a Prediction Interval is always mathematically wider than a Confidence Interval.
+
+
+
 
 ```{r t1_intervals}
 # =====================================================================
@@ -707,6 +827,9 @@ print(ci_95)
 print("95% Prediction Interval (Wider):")
 print(pi_95)
 ```
+
+
+
 
 **Written Analysis:** The output clearly demonstrates the fundamental difference in uncertainty between predicting a population mean and predicting an individual data point. - The **95% Confidence Interval** is very narrow `[3.51, 3.68]`. This tells us that if we gathered *thousands* of observations that all have these exact median characteristics, their *average* `y` value is highly likely to fall in this tight 0.18-unit range. - The **95% Prediction Interval** is massively wider `[-0.74, 7.93]`. This estimates the exact `y` value for **one single, newly generated observation**. It is much wider because it must account for the irreducible error ($\epsilon$). If a stakeholder asks "What is the expected *average* outcome for this data profile?", we use the CI. If they ask "What will the outcome be for this *one specific* new occurrence?", we must use the much wider PI to accurately communicate the higher level of uncertainty.
 
@@ -794,3 +917,4 @@ In BAN404, writing code is only half the battle. The professor will almost certa
 -   **Test Set Size (e.g., 50%):** A larger test set gives us a highly stable, reliable estimate of the Test MSE.
 
 **Justification for this specific dataset:** In Task 1, our dataset is quite large ($n = 5000$). A 50/50 split leaves 2500 observations for training. Because we only have 6 predictors, 2500 observations is *more than enough* data for the models to accurately capture the true signal without starving for data. Therefore, we can afford to leave 50% of the data for testing, ensuring that our final model comparisons (the Test MSEs) are extremely robust and trustworthy. (If our dataset only had 300 rows, an 80/20 split would be mandatory to ensure the model had enough data to learn).
+
