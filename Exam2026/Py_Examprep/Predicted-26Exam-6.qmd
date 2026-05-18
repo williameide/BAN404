@@ -18,50 +18,121 @@ execute:
 - **Duration:** 6 hours
 - **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
+- **Important exam expectation:** In every subquestion, combine **method choice + runnable code + interpretation + theory/business reasoning**. A BAN404 answer is strongest when it explains why a workflow is fair, why a model is defensible, and what trade-off the final recommendation is accepting.
+
+# How to use this mock exam
+
+This mock exam is designed as both a **practice exam** and a **lookup tool for decision quality**. Each subquestion therefore tells you what to compute, what kind of reasoning the examiner is likely to reward, and which methodological distinction matters most. If you work through it properly, you should practice not only **running code**, but also **writing short theory-grounded explanations** after each output.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
-## (a) Read method from objective function (10 points)
+## Context for Task 1
 
-Given
+This task is centered on **fair comparison**, **conservative reporting**, and **defensible model complexity**. That means the examiner is not only interested in whether you can fit Ridge or GAM, but whether you understand why **shared folds**, **one-standard-error logic**, and **uncertainty summaries** matter for a trustworthy answer. A strong BAN404 response therefore combines numerical performance with reasoning about **stability**, **overfitting risk**, and **interpretability**.
 
-```{r}
-f <- function(beta, X, y, lambda) {
-  rss <- sum((y - X %*% beta)^2)
-  penalty <- lambda * sum(beta^2)
-  rss + penalty
-}
-```
+## (a) Explain what the Ridge penalty is buying you (10 points)
 
-Explain method, geometry of shrinkage, and why coefficients rarely become exactly zero.
+You are given a penalized least-squares setup in which predictors are standardized and the penalty is proportional to the **sum of squared coefficients**.
 
-## (b) OLS vs Ridge vs LASSO (10 points)
+What to do:
 
-Fit OLS, Ridge, and LASSO. Compare coefficients and discuss stability vs sparsity.
+- Identify the method and explain how you can recognize it.
+- Explain why standardization matters before comparing penalty sizes across predictors.
+- Explain why the L2 penalty tends to **shrink together** rather than set coefficients exactly to zero.
+- Discuss what happens when predictors are correlated.
+- State one setting where this method is easier to defend than LASSO.
 
-```{r}
-# Your code here
-```
+What the examiner wants to see:
 
-## (c) K-fold CV + one-standard-error rule (10 points)
-
-Tune lambda with 10-fold CV. Report `lambda.min` and `lambda.1se` and justify which you would pick for exam robustness.
+- correct recognition of **Ridge regression**,
+- awareness that the penalty changes the **bias-variance trade-off**,
+- understanding that Ridge often helps when predictors overlap strongly,
+- theory-grounded language rather than only naming the method.
 
 ```{r}
 # Your code here
 ```
 
-## (d) Bootstrap variance uncertainty (10 points)
+## (b) Build a fair same-fold benchmark: OLS vs Ridge vs Elastic Net (10 points)
 
-Bootstrap `Var(y)` with B = 1500. Report percentile and normal CIs and explain any asymmetry.
+Compare **OLS**, **Ridge**, and **Elastic Net** under a shared validation design.
+
+What to do:
+
+- Fit OLS as the unpenalized baseline.
+- Create one common fold assignment and reuse it for Ridge and Elastic Net.
+- Report `lambda.min` and `lambda.1se` for the penalized models.
+- Compare coefficient patterns at the selected lambdas.
+- Explain why using the **same folds** makes the comparison fairer.
+- State whether the extra flexibility of Elastic Net appears worth it.
+
+What the examiner wants to see:
+
+- clear distinction between unpenalized and penalized regression,
+- awareness that differences in folds can contaminate method comparisons,
+- awareness that Ridge emphasizes stability while Elastic Net adds some selection pressure,
+- a final comparison grounded in both performance and model behavior.
 
 ```{r}
 # Your code here
 ```
 
-## (e) Linear vs smooth effects (10 points)
+## (c) Conservative tuning and residual-noise uncertainty (10 points)
 
-Diagnose non-linearity and compare OLS with GAM. Evaluate using MSE and adjusted R².
+Use the **one-standard-error rule** together with a **bootstrap uncertainty summary**.
+
+What to do:
+
+- Report both `lambda.min` and `lambda.1se` for the main penalized model.
+- Explain why `lambda.1se` is often easier to defend in an exam answer.
+- Use the bootstrap to study uncertainty in a residual-noise measure such as model sigma.
+- Compute a percentile CI and a normal approximation CI.
+- Explain what these two parts of the analysis answer conceptually.
+- State what “conservative reporting” means in this setting.
+
+A strong answer should make clear that tuning and uncertainty are related but **not the same statistical question**.
+
+```{r}
+# Your code here
+```
+
+## (d) Decide whether curvature is real or cosmetic (10 points)
+
+Fit a **GAM** and decide whether the detected nonlinearity is strong enough to matter.
+
+What to do:
+
+- Fit a linear baseline.
+- Fit a GAM with smooth terms for plausible nonlinear predictors.
+- Compare MSE and an R²-style fit measure.
+- Summarize residual spread for both models.
+- Interpret the GAM smoothness using EDF values.
+- Decide whether the nonlinear upgrade is practically meaningful or only marginal.
+
+What the examiner wants to see:
+
+- correct intuition for smooth terms and EDF,
+- awareness that better fit alone is not the full story,
+- awareness of the trade-off between flexibility and defendability,
+- a final judgment about whether the complexity increase is justified.
+
+```{r}
+# Your code here
+```
+
+## (e) Write the Task 1 examiner memo (10 points)
+
+End Task 1 with a short **exam-style recommendation paragraph**.
+
+What to include:
+
+- which model you would report as the main answer,
+- why it is preferable to the alternatives,
+- whether you would report `lambda.min` or `lambda.1se`,
+- how the uncertainty evidence affects your confidence,
+- how you would describe the role of nonlinearity in one compact BAN404 paragraph.
+
+The best answers sound like the final paragraph of a polished exam script, not a list of disconnected outputs.
 
 ```{r}
 # Your code here
@@ -69,41 +140,105 @@ Diagnose non-linearity and compare OLS with GAM. Evaluate using MSE and adjusted
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
-## (a) Prediction-time data design (8 points)
+## Context for Task 2
 
-Prepare data, remove deterministic duplicates, and create train/test split with fixed seed.
+This task focuses on **customer-friction targeting under asymmetric losses**. You should keep separate the ideas of **descriptive insight**, **probability ranking**, and **final intervention policy**. In this mock exam, assume that a **false negative costs 6 times as much as a false positive**, so the final threshold policy should clearly prioritize not missing high-risk churners.
 
-```{r}
-# Your code here
-```
+## (a) Create a decision-ready churn table (8 points)
 
-## (b) EDA with actionable hypotheses (8 points)
+Prepare the churn data so later models can be defended as realistic and leakage-aware.
 
-Create churn-rate summaries and at least two visuals. State three hypotheses to test in models.
+What to do:
 
-```{r}
-# Your code here
-```
+- Read and clean the data.
+- Recode important variables into suitable types.
+- Remove deterministic or duplicated predictors.
+- Remove or justify any fields that are weak from a deployment perspective.
+- Perform an 80/20 train/test split with a fixed seed.
+- Explain why the test set should stay untouched until the end.
 
-## (c) Logistic regression + threshold strategy (12 points)
+What the examiner wants to see:
 
-Fit logistic regression, evaluate multiple thresholds, and choose threshold using business cost of false negatives.
-
-```{r}
-# Your code here
-```
-
-## (d) Random forest tuning and interpretation (12 points)
-
-Tune `mtry` using CV on training set. Evaluate on test set and compare importance with EDA hypotheses.
+- sensible factor handling,
+- awareness of duplicated information,
+- awareness of deployment realism,
+- a clean separation between training work and final evaluation.
 
 ```{r}
 # Your code here
 ```
 
-## (e) Boosting and final recommendation (10 points)
+## (b) Build friction personas from EDA (8 points)
 
-Tune tree count by staged test AUC. Compare logistic, RF, and boosting and recommend one deployment model.
+Use the training data to create **customer-friction personas** and turn them into hypotheses.
+
+What to do:
+
+- Quantify class imbalance.
+- Create grouped churn summaries for meaningful customer personas.
+- Produce at least two informative plots.
+- Describe one high-risk persona and one lower-risk persona.
+- Propose at least two concrete retention actions tied to observed predictors.
+- Mention one limitation of persona-based EDA.
+
+This is not only a plotting task. It is a reasoning task where descriptive patterns become **candidate model stories** and **candidate interventions**.
+
+```{r}
+# Your code here
+```
+
+## (c) Separate ranking quality from action policy with logistic regression (12 points)
+
+Fit a logistic regression model and then choose an action threshold under the **6:1 false-negative cost ratio**.
+
+What to do:
+
+- Fit logistic regression on the training data.
+- Predict probabilities on the test data.
+- Report at least one ranking metric such as AUC.
+- Evaluate a grid of thresholds.
+- Report sensitivity, specificity, and expected cost.
+- Interpret at least three coefficients in odds-ratio language.
+- Explain why a strong ranking model still needs a separate decision threshold.
+
+A strong answer should explicitly separate **model discrimination** from **business action policy**.
+
+```{r}
+# Your code here
+```
+
+## (d) Compare tree ensembles under the same business objective (12 points)
+
+Use **Random Forest** and **boosting** to test whether flexible tree models improve the churn solution.
+
+What to do:
+
+- Tune Random Forest on the training data only.
+- Fit a boosting model and choose the number of trees using staged validation logic.
+- Compare the models on the hold-out test set.
+- Report their AUC and cost-sensitive threshold performance.
+- Compare tree-based importance patterns with the earlier EDA personas.
+- Explain what tree ensembles may capture that logistic regression may miss.
+
+The best answers explain that flexible ensembles can improve prediction while also becoming harder to explain in coefficient language.
+
+```{r}
+# Your code here
+```
+
+## (e) Write the final deployment note (10 points)
+
+Provide a final recommendation memo for management.
+
+Your memo should explicitly state:
+
+1. which model you recommend,
+2. which threshold you would deploy,
+3. which metric or objective mattered most,
+4. what trade-off the company is accepting,
+5. what you would monitor after deployment.
+
+A strong answer should sound like the closing paragraph of a high-quality BAN404 submission.
 
 ```{r}
 # Your code here
