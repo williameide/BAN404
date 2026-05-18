@@ -38,12 +38,21 @@ execute:
 - **Duration:** 6 hours
 - **Datasets:** `../task1_data.csv`, `../customer_data.csv`
 - **Point split:** Task 1 (50), Task 2 (50)
+- **Important exam expectation:** In every subquestion, combine **method choice + runnable code + interpretation + theory/business reasoning**. A strong BAN404 answer explains why a model is appropriate, what assumptions or trade-offs matter, and what the numbers imply for a decision.
+
+# How to use this mock exam
+
+This mock exam is written as both a **practice exam** and a **lookup tool**. That means each subquestion tells you not only what to compute, but also what the examiner is likely to reward in a strong written answer. When you solve it, aim to write short theory-grounded paragraphs after your code rather than stopping at tables or plots.
 
 # Task 1 (50 points) — Methodology + Regression (`task1_data.csv`)
 
+## Context for Task 1
+
+This task is centered on **Elastic Net**, which sits between **Ridge** and **LASSO**. That means the examiner is likely to care about whether you can explain **shrinkage**, **variable selection**, **multicollinearity handling**, and how `alpha` changes model behavior. The task also asks you to reason carefully about validation discipline, coefficient stability, and smooth terms, so method explanation is just as important as final output.
+
 ## (a) Identify Elastic Net objective mechanics (10 points)
 
-Interpret this objective and explain how `alpha` controls Ridge/LASSO balance:
+You are given the following function:
 
 ```{r}
 f <- function(beta, X, y, lambda, alpha) {
@@ -51,9 +60,34 @@ f <- function(beta, X, y, lambda, alpha) {
 }
 ```
 
+Write a theory-grounded answer that explains all of the following:
+
+1. **Which model family this objective belongs to**.
+2. **What the RSS part does** and what the penalty part does.
+3. **How `alpha = 0`, `alpha = 1`, and `0 < alpha < 1` should be interpreted**.
+4. **Why Elastic Net can be useful when predictors are correlated**.
+5. **Why Elastic Net may keep some sparsity while still stabilizing coefficients**.
+
+Your answer should read like a BAN404 theory paragraph, not just a method label.
+
 ## (b) Ridge vs LASSO vs Elastic Net comparison (10 points)
 
-Fit all three and compare CV-MSE and sparsity.
+Read `task1_data.csv` and compare **Ridge**, **LASSO**, and **Elastic Net**.
+
+What to do:
+
+- Fit all three methods using `glmnet`.
+- Tune or compare them using cross-validated MSE.
+- Report `lambda.min` for each method.
+- Compare coefficient sparsity at the selected lambda values.
+- Explain how the comparison reflects the theoretical difference between shrinkage-only and shrinkage-plus-selection methods.
+
+What the examiner wants to see:
+
+- correct separation of the three methods,
+- correct interpretation of `alpha`,
+- awareness that Ridge emphasizes stability, LASSO emphasizes sparsity, and Elastic Net mixes the two,
+- clear link between CV performance and model complexity.
 
 ```{r}
 # Your code here
@@ -61,7 +95,17 @@ Fit all three and compare CV-MSE and sparsity.
 
 ## (c) Validation discipline under preprocessing risk (10 points)
 
-Implement fold-specific preprocessing and explain how leakage inflates performance.
+Show how preprocessing can create leakage if it is done incorrectly.
+
+What to do:
+
+- Implement a validation comparison where scaling is done **incorrectly on the full dataset** and **correctly within each fold**.
+- Use Elastic Net as the model.
+- Compare validation MSE from the leakage-prone approach and the leakage-safe approach.
+- Explain why fold-specific preprocessing is the fairer procedure.
+- Briefly state what kind of exam answer would lose points here.
+
+A strong answer should make it clear that leakage does not make the model “better”; it makes the evaluation **too optimistic**.
 
 ```{r}
 # Your code here
@@ -69,7 +113,18 @@ Implement fold-specific preprocessing and explain how leakage inflates performan
 
 ## (d) Bootstrap coefficient stability (10 points)
 
-Bootstrap OLS coefficients and identify the least stable predictor.
+Use the bootstrap to study **OLS coefficient stability**.
+
+What to do:
+
+- Set a seed.
+- Draw many bootstrap samples.
+- Refit the OLS model in every bootstrap sample.
+- Store coefficient estimates for all predictors.
+- Identify the **least stable predictor**.
+- Explain what “least stable” means statistically.
+
+The best answers connect coefficient instability to sample variation, multicollinearity, or weak signal.
 
 ```{r}
 # Your code here
@@ -77,7 +132,17 @@ Bootstrap OLS coefficients and identify the least stable predictor.
 
 ## (e) GAM smoothness interpretation (10 points)
 
-Fit GAM and interpret EDF values to decide which predictors are effectively non-linear.
+Fit a **GAM** and interpret the smooth terms using their EDF values.
+
+What to do:
+
+- Fit a linear baseline.
+- Fit a GAM with smooths for the most plausible nonlinear predictors.
+- Report model fit using MSE and an R²-style measure.
+- Extract and interpret the smooth-term EDF values.
+- Decide which predictors are effectively nonlinear and which are close to linear.
+
+A strong answer should explain that **EDF close to 1 suggests a near-linear effect**, while higher EDF values suggest more flexible curvature.
 
 ```{r}
 # Your code here
@@ -85,9 +150,29 @@ Fit GAM and interpret EDF values to decide which predictors are effectively non-
 
 # Task 2 (50 points) — Churn (`customer_data.csv`)
 
+## Context for Task 2
+
+This task focuses on **segment-aware churn prediction**. You are expected to move between **EDA**, **interpretable modeling**, and **predictive modeling** without losing sight of business usefulness. In this mock exam, assume the company treats a **false negative as 3 times as costly as a false positive**, so the final threshold policy should reflect that cost asymmetry.
+
 ## (a) Data preparation and deployment assumptions (8 points)
 
-Prepare a prediction-ready dataset and justify each exclusion in terms of real-time availability.
+Prepare the churn data so it is realistic for prediction.
+
+What to do:
+
+- Read and clean the data.
+- Recode variables into suitable types.
+- Remove deterministic or duplicated predictors.
+- Exclude variables you cannot defend from a deployment perspective.
+- Perform an 80/20 train/test split with a fixed seed.
+- Briefly justify each exclusion in terms of real-time availability or interpretation quality.
+
+What the examiner wants:
+
+- sensible factor handling,
+- awareness of duplicated information,
+- awareness of what can and cannot be known at prediction time,
+- a clean split before later modeling.
 
 ```{r}
 # Your code here
@@ -95,7 +180,18 @@ Prepare a prediction-ready dataset and justify each exclusion in terms of real-t
 
 ## (b) Segment-centric exploratory analysis (8 points)
 
-Construct risk segments and identify one high-risk persona for intervention.
+Use the training data to create **risk segments** and describe a high-risk churn persona.
+
+What to do:
+
+- Create interpretable segments using customer behavior and/or service variables.
+- Summarize churn rates across segments.
+- Produce at least two informative plots.
+- Identify one **high-risk persona** worth targeting.
+- Explain why the EDA supports that persona description.
+- Mention one limitation of segment-based descriptive analysis.
+
+This is not only a plotting task. It is a reasoning task where you translate patterns into a story that later models can test.
 
 ```{r}
 # Your code here
@@ -103,7 +199,18 @@ Construct risk segments and identify one high-risk persona for intervention.
 
 ## (c) Logistic baseline with odds interpretation (12 points)
 
-Fit logistic regression and explain at least three coefficients in odds-ratio language.
+Fit a logistic regression model and interpret it carefully.
+
+What to do:
+
+- Fit the model on the training data.
+- Predict churn probabilities on the test set.
+- Report at least one global performance measure such as AUC.
+- Interpret at least **three coefficients** in odds-ratio language.
+- Explain which effects look practically meaningful.
+- Comment on why logistic regression remains useful even if more flexible models later perform better.
+
+A strong answer should clearly separate **direction of effect**, **size of effect**, and **business meaning**.
 
 ```{r}
 # Your code here
@@ -111,7 +218,18 @@ Fit logistic regression and explain at least three coefficients in odds-ratio la
 
 ## (d) Random forest interaction gains (12 points)
 
-Tune and evaluate RF; explain where nonlinear interactions likely improve over logistic baseline.
+Fit and tune a Random Forest, then compare it with the logistic baseline.
+
+What to do:
+
+- Tune `mtry` using CV on the training data only.
+- Fit the final forest.
+- Evaluate it on the test set.
+- Report variable importance.
+- Compare the Random Forest story to the logistic-regression story.
+- Explain where nonlinearities or interactions may help the forest outperform the logistic model.
+
+The best answers explain that tree ensembles can discover structure that a default additive logistic model does not capture automatically.
 
 ```{r}
 # Your code here
@@ -119,7 +237,22 @@ Tune and evaluate RF; explain where nonlinear interactions likely improve over l
 
 ## (e) Boosting for final scorecard (10 points)
 
-Tune staged boosting and deliver model recommendation with clear threshold policy.
+Fit a boosting model and recommend a final targeting strategy.
+
+What to do:
+
+- Fit a boosting model on the training data.
+- Tune or choose the number of trees using staged validation.
+- Compare logistic regression, Random Forest, and boosting.
+- Choose a threshold policy under the **3:1 false-negative cost structure**.
+- Give a final recommendation for campaign targeting.
+
+Your final paragraph should explicitly state:
+
+1. which model you recommend,
+2. which metric or objective matters most,
+3. why the threshold should not simply be `0.5`,
+4. what trade-off the company accepts when it targets more customers to avoid missing churners.
 
 ```{r}
 # Your code here
