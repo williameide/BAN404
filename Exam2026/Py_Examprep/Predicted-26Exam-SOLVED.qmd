@@ -1,0 +1,590 @@
+---
+title: "BAN404 – Predicted Exam 2026 — Model Solution"
+author: "Candidate"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: false
+execute:
+  eval: true
+  echo: true
+---
+
+# Exam Information
+
+**Date:** 19 May 2026 | **Duration:** 6 hours | **Attachments:** `task1_data.csv` · `customer_data.csv`
+
+---
+
+# Task 1 (50 points) — Methodological Topics
+
+## (a) — Code reading (10 points)
+
+```{python}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.optimize import minimize
+
+def f(b, X, y, la):
+    rss     = np.sum((y - X @ b) ** 2)
+    penalty = la * np.sum(np.abs(b))          # (*)
+    return rss + penalty
+
+def g(X, y, la):
+    p       = X.shape[1]
+    b0      = np.mean(y)                      # (**)
+    y_c     = y - b0
+    X_c     = X - X.mean(axis=0)             # (***)
+    b_start = np.zeros(p)
+    result  = minimize(f, b_start,
+                       args=(X_c, y_c, la),
+                       method='L-BFGS-B')
+    return b0, result.x
+```
+
+**i.**
+
+`f` computes the **Lasso objective function**: the sum of squared residuals (RSS) plus an L1 regularisation penalty. It takes a coefficient vector `b`, design matrix `X`, response vector `y`, and regularisation strength `la` ($\lambda$), and returns a scalar to be minimised:
+
+$$\text{Lasso objective} = \underbrace{\sum_{i=1}^n (y_i - \mathbf{x}_i^\top \mathbf{b})^2}_{\text{RSS}} + \lambda \sum_{j=1}^p |\beta_j|$$
+
+`g` is the Lasso estimator. It first estimates the intercept as $\hat\beta_0 = \bar y$ (step 1), then centres both $y$ and the columns of $X$ (steps 2–3), and finally calls `scipy.optimize.minimize` to find the $p$ slope coefficients that minimise `f` on the centred data. It returns the intercept and the optimised slope vector separately.
+
+This is a version of **Lasso regression** (Least Absolute Shrinkage and Selection Operator).
+
+---
+
+**ii.**
+
+`(*)` defines the **L1 penalty**: `la * np.sum(np.abs(b))` computes $\lambda \sum_j |\beta_j|$. Taking the absolute value rather than squaring the coefficients is the defining characteristic of Lasso — it is what allows coefficients to be set to exactly zero, enabling variable selection.
+
+`(**)` estimates the **intercept** as the sample mean of $y$: $\hat\beta_0 = \bar y$. This is done *before* any centering or optimisation. The intercept is never included in the penalty term — it must be estimated separately so that regularisation only acts on the slope coefficients $\beta_1, \ldots, \beta_p$.
+
+`(***)` **demeans** each column of $X$ by subtracting its column mean: $\tilde X_{ij} = X_{ij} - \bar X_j$. This is demeaning — not standardisation, since we do not divide by the standard deviation. Because all predictors in this dataset are already on comparable scales (approximately standard normal), demeaning is sufficient. In practice with variables on different scales, standardisation would be recommended to ensure the penalty treats all predictors fairly.
+
+---
+
+**iii.**
+
+As `la` increases, the L1 penalty grows stronger and forces the coefficients in `result.x` to shrink toward zero. Crucially, unlike Ridge regression, the L1 penalty creates **corner solutions** in the optimisation: some coefficients are driven to *exactly* zero. At sufficiently large $\lambda$, only a subset of predictors remains in the model, while the rest are set to exactly zero.
+
+The most important difference from Ridge regression is this capacity for **exact zeroing and variable selection**. Ridge uses an L2 penalty ($\lambda \sum \beta_j^2$), which can only shrink coefficients towards zero asymptotically — they never reach exactly zero. Lasso's L1 penalty ($\lambda \sum |\beta_j|$) produces sparse solutions, making it a simultaneous shrinkage and variable selection method. This matters because it produces interpretable models in high-dimensional settings where many predictors may be irrelevant.
+
+---
+
+## (b) — Applying the method (10 points)
+
+```{python}
+Xy = pd.read_csv("task1_data.csv")
+X  = Xy[["x1","x2","x3","x4","x5","x6"]].values
+y  = Xy["y"].values
+n, p = X.shape
+print(f"n = {n}, p = {p}")
+
+# OLS
+X_aug = np.column_stack([np.ones(n), X])
+b_ols, _, _, _ = np.linalg.lstsq(X_aug, y, rcond=None)
+
+# Lasso
+b0_1,   b1_1   = g(X, y, la=1)
+b0_100, b1_100 = g(X, y, la=100)
+
+results = pd.DataFrame({
+    "OLS":       b_ols[1:],
+    "Lasso 1":   b1_1,
+    "Lasso 100": b1_100,
+}, index=[f"x{i+1}" for i in range(p)])
+
+print(results.round(4))
+print(f"\nIntercept — OLS: {b_ols[0]:.4f} | Lasso 1: {b0_1:.4f} | Lasso 100: {b0_100:.4f}")
+```
+
+With $n = 5000$ observations and only $p = 6$ predictors, OLS is well-determined and its estimates are precise. The Lasso with `la=1` produces coefficients that are virtually identical to OLS — the penalty is too mild relative to the RSS to cause meaningful shrinkage.
+
+With `la=100`, all coefficients shrink slightly but none is set to exactly zero. This reflects the fact that three predictors have genuinely large effects: **x1** ($\approx 1.02$), **x3** ($\approx -1.60$), and **x5** ($\approx 1.98$). These are robust to regularisation. The remaining predictors (x2, x4, x6) have small but non-zero OLS coefficients, and Lasso with `la=100` reduces them further toward zero without eliminating them entirely.
+
+Neither method correctly identifies a clear sparse structure at these $\lambda$ values — the CV-selected optimal $\lambda$ from part (c) provides the principled choice. The key observation is that **x4 and x6** have near-zero coefficients across all methods, suggesting they contribute little to explaining $y$.
+
+---
+
+## (c) — Cross-validation (10 points)
+
+```{python}
+def cv_lasso(X, y, la, K=5, seed=42):
+    rng   = np.random.default_rng(seed)
+    n     = len(y)
+    idx   = rng.permutation(n)
+    folds = np.array_split(idx, K)
+    mse_k = np.zeros(K)
+
+    for k in range(K):
+        test_idx  = folds[k]
+        train_idx = np.concatenate([folds[j] for j in range(K) if j != k])
+
+        b0_k, b1_k  = g(X[train_idx], y[train_idx], la)
+        X_c_te      = X[test_idx] - X[train_idx].mean(axis=0)   # (*)
+        y_pred      = b0_k + X_c_te @ b1_k
+        mse_k[k]    = np.mean((y[test_idx] - y_pred) ** 2)
+
+    return np.mean(mse_k)
+
+la_grid = np.logspace(-1, 3, 40)
+cv_mse  = [cv_lasso(X, y, la) for la in la_grid]
+
+plt.figure(figsize=(8, 4))
+plt.semilogx(la_grid, cv_mse, "b-o", markersize=4)
+plt.xlabel("lambda (log scale)")
+plt.ylabel("5-fold CV MSE")
+plt.title("Cross-validation for Lasso")
+plt.tight_layout()
+plt.show()
+
+best_la = la_grid[np.argmin(cv_mse)]
+print(f"Optimal lambda: {best_la:.4f}")
+print(f"Minimum CV-MSE: {min(cv_mse):.4f}")
+```
+
+`cv_lasso` implements **5-fold cross-validation** for Lasso. The $n$ observations are randomly partitioned into $K=5$ folds. For each fold $k$, the model is trained on the remaining $K-1$ folds and evaluated on fold $k$. The function returns the average test MSE across all folds, providing an estimate of generalisation error for a given $\lambda$.
+
+**Why K-fold over LOOCV?** With $n = 5000$, LOOCV would require fitting 5000 separate models per $\lambda$ value. Over a grid of 40 $\lambda$ values, this is 200 000 model fits — computationally prohibitive. K-fold with $K=5$ requires only 200 fits in total. Moreover, for large $n$, LOOCV is not statistically necessary: K-fold is a nearly unbiased estimator of test error when $n$ is large, and has lower variance than LOOCV.
+
+**Why use the training mean in line (\*)?** `g` fits on demeaned data, so the returned coefficients `b1_k` are calibrated for demeaned inputs. At prediction time, we must apply the same transformation to the test fold — but using the *training fold's* mean, not the full-data mean. Using the full-data mean would leak information from the test fold into the feature construction, violating the principle of cross-validation. The training mean is the only mean the model "saw" during fitting.
+
+The optimal $\lambda \approx 78.8$ gives a minimum CV-MSE of $\approx 4.995$, which is very close to the OLS MSE of $4.970$. With $n \gg p$, OLS is already efficient and regularisation provides little benefit for a linear model. The substantial room for improvement revealed in part (e) comes from non-linearity, not from variable selection.
+
+---
+
+## (d) — Bootstrap (10 points)
+
+```{python}
+def bootstrap_var(y, B=1000, seed=42):
+    rng  = np.random.default_rng(seed)
+    n    = len(y)
+    boot = np.zeros(B)
+
+    for b in range(B):
+        idx     = rng.choice(n, size=n, replace=True)    # (*)
+        y_b     = y[idx]                                  # (**)
+        boot[b] = np.var(y_b, ddof=1)                    # (***)
+
+    se = np.std(boot)
+    ci = np.percentile(boot, [2.5, 97.5])
+    return boot, se, ci
+
+boot_dist, se, ci = bootstrap_var(y, B=1000)
+s2_full = np.var(y, ddof=1)
+
+plt.figure(figsize=(7, 4))
+plt.hist(boot_dist, bins=50, color="steelblue", edgecolor="white")
+plt.axvline(ci[0], color="red", linestyle="--", label=f"2.5%  = {ci[0]:.3f}")
+plt.axvline(ci[1], color="red", linestyle="--", label=f"97.5% = {ci[1]:.3f}")
+plt.axvline(s2_full, color="black", linestyle="-",
+            label=f"Sample var = {s2_full:.3f}")
+plt.xlabel("Bootstrap estimate of Var(y)")
+plt.ylabel("Frequency")
+plt.title("Bootstrap distribution of sample variance of y")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+print(f"Sample variance of y:  {s2_full:.4f}")
+print(f"Bootstrap SE:          {se:.4f}")
+print(f"95% CI: [{ci[0]:.4f}, {ci[1]:.4f}]")
+```
+
+`bootstrap_var` implements the **Bootstrap** method to estimate the sampling distribution of the sample variance $S^2 = \frac{1}{n-1}\sum_i (y_i - \bar y)^2$. It simulates $B = 1000$ datasets by resampling, computes $S^2$ for each, and returns the empirical standard error and a percentile-based 95% confidence interval.
+
+**(\*)** `rng.choice(n, size=n, replace=True)` draws $n$ indices uniformly **with replacement**. This is the defining operation of the bootstrap — the same observation can appear multiple times in a bootstrap sample while others may be absent entirely. This simulates drawing a new dataset of the same size from the same population.
+
+**(\*\*)** `y_b = y[idx]` constructs the bootstrap sample by selecting the rows of $y$ corresponding to the drawn indices. Only $y$ is resampled here (not a paired $(X, y)$ dataset), because the quantity of interest is a univariate statistic of $y$ alone.
+
+**(\*\*\*)** `np.var(y_b, ddof=1)` computes the unbiased sample variance of bootstrap sample $b$. After $B$ iterations, `boot` contains the full empirical sampling distribution of $S^2$.
+
+**Why with replacement?** Sampling without replacement would always return the original dataset (in a different order), giving the same statistic every time — no variation and no uncertainty estimate. Sampling with replacement creates datasets that differ from the original, mimicking the random variation that would occur if we drew a new sample from the population.
+
+**Results:** The sample variance of $y$ is $\hat\sigma^2_y = 12.658$. The bootstrap standard error is $0.634$ and the 95% percentile confidence interval is $[11.606,\ 13.999]$. The bootstrap distribution is approximately normal and centred on the sample estimate, indicating the estimator is approximately unbiased.
+
+---
+
+## (e) — Non-linearity and GAMs (10 points)
+
+```{python}
+from pygam import LinearGAM, s, l
+
+fig, axes = plt.subplots(1, 5, figsize=(16, 3))
+for i, ax in enumerate(axes):
+    ax.scatter(X[:, i], y, alpha=0.08, s=4)
+    ax.set_xlabel(f"x{i+1}")
+    ax.set_ylabel("y" if i == 0 else "")
+plt.suptitle("y vs predictors x1–x5")
+plt.tight_layout()
+plt.show()
+
+# GAM: smooth on x2 (index 1) and x3 (index 2), linear for the rest
+gam = LinearGAM(l(0) + s(1) + s(2) + l(3) + l(4) + l(5))
+gam.fit(X, y)
+y_hat_gam = gam.predict(X)
+y_hat_ols = X_aug @ b_ols
+
+mse_null = np.mean((y - y.mean()) ** 2)
+mse_ols  = np.mean((y - y_hat_ols) ** 2)
+mse_gam  = np.mean((y - y_hat_gam) ** 2)
+
+r2_ols = 1 - mse_ols / mse_null
+r2_gam = 1 - mse_gam / mse_null
+
+print(f"MSE OLS: {mse_ols:.4f}  |  R² OLS: {r2_ols:.4f}")
+print(f"MSE GAM: {mse_gam:.4f}  |  R² GAM: {r2_gam:.4f}")
+```
+
+The scatter plots reveal a clear non-linear pattern for **x2** and **x3**:
+
+- **x2 vs y**: U-shaped — $y$ is small for moderate $x_2$ and large for extreme values (both positive and negative). This is a quadratic relationship: $y$ increases with $x_2^2$.
+- **x3 vs y**: A declining trend combined with curvature — the relationship is both linear and quadratic. The most extreme values of $y$ occur at the most negative values of $x_3$, consistent with a $-1.6 \cdot x_3 + 0.8 \cdot x_3^2$ structure.
+- **x1, x4, x5**: Approximately linear relationships (or no clear pattern for x4).
+
+A GAM with smooth spline terms on x2 and x3 and linear terms for the remaining predictors captures these non-linearities:
+
+| Model | Training MSE | $R^2$ |
+|-------|-------------|-------|
+| OLS (linear) | 4.970 | 0.607 |
+| GAM (s(x2) + s(x3)) | **1.120** | **0.911** |
+
+The GAM reduces training MSE by 77.5% relative to OLS, and $R^2$ rises from 0.607 to 0.911. This dramatic improvement confirms that the linear model was badly misspecified: the true relationship involves non-linear effects of x2 and x3 that OLS cannot capture. The Lasso in parts (b)–(c) did not improve substantially over OLS for the same reason — both impose a linear structure. The GAM reveals that the real modelling challenge in this dataset is non-linearity, not variable selection or regularisation.
+
+Note that these are **in-sample** (training) MSE values. A fair comparison on held-out data would be needed to confirm that the GAM's improvement generalises and is not due to overfitting.
+
+---
+
+# Task 2 (50 points) — Applied Analysis: Customer Churn
+
+## Background
+
+```{python}
+df = pd.read_csv("customer_data.csv")
+print(df.shape)
+print(df.dtypes)
+print(f"\nChurn rate: {df['Churn'].mean():.3f}  ({df['Churn'].sum()} churners of {len(df)})")
+```
+
+## (a) — Data preparation (6 points)
+
+```{python}
+from sklearn.model_selection import train_test_split
+
+df['Churn'] = df['Churn'].astype(int)
+
+# Drop perfectly collinear variables: keep minutes, drop charge
+# corr(Total X minutes, Total X charge) = 1.00 for all four pairs
+# Keeping both is mathematically redundant and causes issues in logistic regression
+drop_cols = ['Total day charge', 'Total eve charge',
+             'Total night charge', 'Total intl charge']
+
+# Drop State (51 categories — too many levels for reliable estimation)
+# and Area code (only 3 values, near-zero association with Churn)
+drop_cols += ['State', 'Area code']
+
+df2 = df.drop(columns=drop_cols)
+
+# Encode binary categoricals
+df2['International plan'] = (df2['International plan'] == 'Yes').astype(int)
+df2['Voice mail plan']    = (df2['Voice mail plan'] == 'Yes').astype(int)
+
+feature_cols = [c for c in df2.columns if c != 'Churn']
+X2 = df2[feature_cols].values
+y2 = df2['Churn'].values
+
+# Stratified split to preserve churn rate in both sets
+Xtr, Xte, ytr, yte = train_test_split(
+    X2, y2, test_size=0.2, random_state=42, stratify=y2
+)
+
+print(f"Training set: {len(ytr)} obs  (churn rate: {ytr.mean():.3f})")
+print(f"Test set:     {len(yte)} obs  (churn rate: {yte.mean():.3f})")
+print(f"\nFeatures used ({len(feature_cols)}):")
+print(feature_cols)
+```
+
+**Recoding decisions:**
+
+*Categorical variables:* `International plan` and `Voice mail plan` are binary Yes/No variables encoded as 0/1. `State` has 51 categories — including it as a factor would add 50 dummy variables, making the model difficult to estimate reliably and hard to interpret. It is excluded. `Area code` has only three distinct values and near-zero correlation with Churn (all codes have ~14% churn rate); it is excluded.
+
+*Perfectly collinear pairs:* `Total day minutes` and `Total day charge` have correlation 1.000 (the charge is simply the minutes × a fixed rate). The same holds for evening, night, and international usage. Including both from each pair is mathematically equivalent to including one, but causes numerical problems. We retain the minutes variables and drop the charge columns.
+
+*Training vs test:* For understanding *why* customers churn (tasks a–e), model evaluation should be on the **test set** to ensure findings generalise. We use a stratified split so both sets have the same churn rate (~14.6%).
+
+---
+
+## (b) — Exploratory data analysis (8 points)
+
+```{python}
+# Churn rate by International plan and Voice mail plan
+print("Churn rate by International plan:")
+print(df.groupby('International plan')['Churn'].mean().round(3).to_string())
+
+print("\nChurn rate by Voice mail plan:")
+print(df.groupby('Voice mail plan')['Churn'].mean().round(3).to_string())
+
+# Customer service calls threshold effect
+print("\nChurn rate by Customer service calls:")
+print(df.groupby('Customer service calls')['Churn'].mean().round(3).to_string())
+```
+
+```{python}
+# Numeric means by Churn
+churn_means = df2.groupby('Churn')[feature_cols].mean().T
+churn_means.columns = ['No churn', 'Churn']
+churn_means['Difference'] = churn_means['Churn'] - churn_means['No churn']
+print(churn_means.round(3).sort_values('Difference', key=abs, ascending=False).to_string())
+```
+
+```{python}
+fig, axes = plt.subplots(1, 3, figsize=(14, 4))
+
+# International plan vs Churn
+grp = df.groupby('International plan')['Churn'].mean()
+axes[0].bar(grp.index, grp.values, color=['steelblue','tomato'])
+axes[0].set_title('Churn rate by International plan')
+axes[0].set_ylabel('Churn rate')
+
+# Customer service calls
+csc = df.groupby('Customer service calls')['Churn'].mean()
+axes[1].bar(csc.index, csc.values, color='steelblue')
+axes[1].axvline(3.5, color='red', linestyle='--', label='Threshold at 4')
+axes[1].set_title('Churn rate by Customer service calls')
+axes[1].set_xlabel('Number of calls')
+axes[1].legend()
+
+# Total day minutes distribution
+for label, grp in df.groupby('Churn')['Total day minutes']:
+    axes[2].hist(grp, bins=40, alpha=0.5, label='Churn' if label else 'No churn', density=True)
+axes[2].set_title('Total day minutes by Churn')
+axes[2].set_xlabel('Total day minutes')
+axes[2].legend()
+
+plt.tight_layout()
+plt.show()
+```
+
+Three variables stand out as the strongest predictors:
+
+**1. International plan:** Customers with an international plan churn at 43.7%, compared to 11.3% for those without. This is the single strongest predictor. A possible explanation is that international calling is expensive and customers switch to better alternatives.
+
+**2. Customer service calls:** There is a clear non-linear threshold effect. Customers who called service 0–3 times churn at approximately 10–14%. Those who called 4 or more times churn at 48–100%. Repeated contact with customer service strongly signals dissatisfaction.
+
+**3. Total day minutes:** Churners average 205 minutes per day vs 175 for non-churners (+30 min, a 17% difference). High usage may correlate with higher bills, prompting customers to seek cheaper alternatives.
+
+`Voice mail plan` acts as a protective factor: users churn at 8.9% vs 16.7% without it, possibly indicating higher engagement and satisfaction.
+
+---
+
+## (c) — Logistic regression (10 points)
+
+```{python}
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import (accuracy_score, confusion_matrix,
+                             roc_auc_score, RocCurveDisplay)
+
+# Standardize for logistic regression (improves convergence and coefficient comparability)
+sc = StandardScaler()
+Xtr_s = sc.fit_transform(Xtr)
+Xte_s = sc.transform(Xte)
+
+lr = LogisticRegression(max_iter=2000, random_state=42)
+lr.fit(Xtr_s, ytr)
+
+y_prob_lr = lr.predict_proba(Xte_s)[:, 1]
+y_pred_lr = (y_prob_lr >= 0.5).astype(int)
+
+acc_lr = accuracy_score(yte, y_pred_lr)
+auc_lr = roc_auc_score(yte, y_prob_lr)
+cm_lr  = confusion_matrix(yte, y_pred_lr)
+tn, fp, fn, tp = cm_lr.ravel()
+sens_lr = tp / (tp + fn)
+spec_lr = tn / (tn + fp)
+
+print(f"Accuracy:    {acc_lr:.4f}")
+print(f"AUC:         {auc_lr:.4f}")
+print(f"Sensitivity: {sens_lr:.4f}")
+print(f"Specificity: {spec_lr:.4f}")
+print(f"\nConfusion matrix:\n{cm_lr}")
+
+# ROC curve
+fig, ax = plt.subplots(figsize=(5, 5))
+RocCurveDisplay.from_predictions(yte, y_prob_lr, ax=ax,
+                                  name=f"Logistic Regression (AUC={auc_lr:.3f})")
+ax.plot([0,1],[0,1],'k--', alpha=0.4)
+ax.set_title("ROC curve — Logistic Regression")
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+# Top coefficients (standardized → comparable magnitude)
+coef_df = pd.DataFrame({
+    'Feature': feature_cols,
+    'Coefficient': lr.coef_[0]
+}).sort_values('Coefficient', key=abs, ascending=False)
+print(coef_df.round(4).to_string(index=False))
+```
+
+The logistic regression achieves accuracy of 83.7% and AUC of 0.758. However, sensitivity is only 16.7% — the model correctly identifies only 13 out of 78 actual churners in the test set, misclassifying 65 as non-churners (false negatives).
+
+**The threshold of 0.5 is inappropriate here.** With only 14.6% churners, the model is biased toward predicting no-churn for nearly all observations — this yields high accuracy (since 85.4% truly do not churn) but fails catastrophically at detecting churners. From a business perspective, a false negative (missing a churner) is costly: the company loses a customer it could have retained. Lowering the threshold to, for example, 0.3 would increase sensitivity at the cost of more false alarms — a more useful trade-off.
+
+**Two most influential predictors (standardized coefficients):**
+
+- **International plan** (coef ≈ +0.69): Customers with an international plan have substantially higher log-odds of churning, holding all else equal. This is consistent with the EDA finding (43.7% vs 11.3% churn rate).
+- **Customer service calls** (coef ≈ +0.74): Each additional standard deviation in customer service call frequency significantly increases the probability of churning. This reflects deep-seated dissatisfaction that the company fails to resolve.
+
+---
+
+## (d) — Random forest (12 points)
+
+```{python}
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
+
+kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+print("5-fold CV AUC for different max_features:")
+results_rf = {}
+for mf in [2, 4, 'sqrt', None]:
+    rf = RandomForestClassifier(n_estimators=500, max_features=mf,
+                                 random_state=42, n_jobs=-1)
+    scores = []
+    for tr_idx, te_idx in kf.split(Xtr, ytr):
+        rf.fit(Xtr[tr_idx], ytr[tr_idx])
+        prob = rf.predict_proba(Xtr[te_idx])[:,1]
+        scores.append(roc_auc_score(ytr[te_idx], prob))
+    mean_auc = np.mean(scores)
+    results_rf[str(mf)] = mean_auc
+    print(f"  max_features={str(mf):>6}: CV AUC = {mean_auc:.4f}")
+
+best_mf = None   # best from CV
+rf_best = RandomForestClassifier(n_estimators=500, max_features=best_mf,
+                                  random_state=42, n_jobs=-1)
+rf_best.fit(Xtr, ytr)
+
+y_prob_rf = rf_best.predict_proba(Xte)[:, 1]
+y_pred_rf = (y_prob_rf >= 0.5).astype(int)
+acc_rf  = accuracy_score(yte, y_pred_rf)
+auc_rf  = roc_auc_score(yte, y_prob_rf)
+cm_rf   = confusion_matrix(yte, y_pred_rf)
+tn, fp, fn, tp = cm_rf.ravel()
+sens_rf = tp / (tp + fn)
+spec_rf = tn / (tn + fp)
+
+print(f"\nRandom Forest (max_features={best_mf}) — Test set:")
+print(f"  Accuracy:    {acc_rf:.4f}")
+print(f"  AUC:         {auc_rf:.4f}")
+print(f"  Sensitivity: {sens_rf:.4f}")
+print(f"  Specificity: {spec_rf:.4f}")
+print(f"  Confusion matrix:\n{cm_rf}")
+```
+
+```{python}
+# Variable importance
+imp = pd.DataFrame({
+    'Feature':    feature_cols,
+    'Importance': rf_best.feature_importances_
+}).sort_values('Importance', ascending=False)
+
+fig, ax = plt.subplots(figsize=(7, 5))
+ax.barh(imp['Feature'], imp['Importance'], color='steelblue')
+ax.set_xlabel('Feature importance (mean decrease in impurity)')
+ax.set_title('Random Forest — Variable importance')
+ax.invert_yaxis()
+plt.tight_layout()
+plt.show()
+
+print(imp.round(4).to_string(index=False))
+```
+
+Cross-validation selected `max_features=None` (all features at each split, equivalent to Bagging) as the best configuration. The Random Forest achieves test AUC of **0.878** and sensitivity of **71.8%** — a dramatic improvement over logistic regression's AUC of 0.758 and sensitivity of 16.7%. The forest correctly identifies 56 out of 78 churners, with only 2 false positives.
+
+**Variable importances** are consistent with EDA: `Total day minutes` is the single most important predictor (importance 0.247), followed by `Total eve minutes` (0.143), `Customer service calls` (0.123), `Total intl minutes` (0.096), and `International plan` (0.089). Usage-based variables dominate, suggesting churn is primarily driven by billing pressure. The Random Forest's superior performance over logistic regression indicates that the relationships are non-linear or involve interactions that the linear model cannot capture.
+
+---
+
+## (e) — Gradient boosting (10 points)
+
+```{python}
+from sklearn.ensemble import GradientBoostingClassifier
+
+gb = GradientBoostingClassifier(n_estimators=500, learning_rate=0.05,
+                                 max_depth=3, random_state=42)
+gb.fit(Xtr, ytr)
+
+staged_auc = [roc_auc_score(yte, yp[:,1])
+              for yp in gb.staged_predict_proba(Xte)]
+
+best_B = int(np.argmax(staged_auc)) + 1
+
+plt.figure(figsize=(8, 4))
+plt.plot(range(1, 501), staged_auc, color='steelblue', linewidth=1)
+plt.axvline(best_B, color='red', linestyle='--',
+            label=f'Optimal B = {best_B}  (AUC = {staged_auc[best_B-1]:.4f})')
+plt.xlabel("Number of trees (B)")
+plt.ylabel("Test AUC")
+plt.title("Gradient Boosting — Test AUC as a function of B")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# Refit with optimal B
+gb_opt = GradientBoostingClassifier(n_estimators=best_B, learning_rate=0.05,
+                                     max_depth=3, random_state=42)
+gb_opt.fit(Xtr, ytr)
+y_prob_gb = gb_opt.predict_proba(Xte)[:, 1]
+y_pred_gb = (y_prob_gb >= 0.5).astype(int)
+acc_gb  = accuracy_score(yte, y_pred_gb)
+auc_gb  = roc_auc_score(yte, y_prob_gb)
+cm_gb   = confusion_matrix(yte, y_pred_gb)
+tn, fp, fn, tp = cm_gb.ravel()
+sens_gb = tp / (tp + fn)
+spec_gb = tn / (tn + fp)
+
+print(f"Optimal B: {best_B}")
+print(f"Accuracy:    {acc_gb:.4f}")
+print(f"AUC:         {auc_gb:.4f}")
+print(f"Sensitivity: {sens_gb:.4f}")
+print(f"Specificity: {spec_gb:.4f}")
+print(f"Confusion matrix:\n{cm_gb}")
+```
+
+The staged AUC plot shows rapid improvement in the first ~50 trees, reaching its peak at **B = 113** with AUC = **0.883**. After this point, test AUC declines slightly — the model begins to overfit the training data. This demonstrates why early stopping via staged prediction is important: continuing to add trees beyond the optimum does not improve generalisation and can hurt it.
+
+---
+
+## (f) — Comparison and recommendation (4 points)
+
+```{python}
+summary = pd.DataFrame({
+    'Model':       ['Logistic Regression', f'Random Forest (max_features={best_mf})',
+                    f'Gradient Boosting (B={best_B})'],
+    'Accuracy':    [0.8371, acc_rf, acc_gb],
+    'AUC':         [0.7575, auc_rf, auc_gb],
+    'Sensitivity': [0.1667, sens_rf, sens_gb],
+    'Specificity': [0.9518, spec_rf, spec_gb],
+})
+print(summary.round(4).to_string(index=False))
+```
+
+**i. Why do some customers churn?**
+
+The analysis consistently points to three drivers. First, customers with an international calling plan churn at nearly four times the base rate (43.7% vs 11.3%), suggesting that international rates or plan conditions are a major source of dissatisfaction. Second, customers who contact customer service four or more times are highly likely to churn — repeated contact signals unresolved problems that eventually cause them to leave. Third, heavy day-time usage is associated with higher bills and higher churn, suggesting price sensitivity among high-usage customers. Customers with a voice mail plan, by contrast, are less likely to churn — possibly reflecting higher engagement with the company's services.
+
+**ii. Model recommendation**
+
+Gradient Boosting with B = 113 is the recommended model, achieving the highest test AUC (0.883) and strong sensitivity (67.9%). It narrowly outperforms Random Forest on AUC while maintaining similarly high specificity.
+
+From a business perspective, **sensitivity is the most critical metric**: a missed churner (false negative) represents a lost customer, while a false positive (unnecessarily contacting a loyal customer) has low cost. Both tree ensemble models greatly outperform logistic regression on this criterion (67–72% sensitivity vs 17%). Gradient Boosting's slight AUC advantage and its built-in regularisation via the learning rate make it the preferred choice.
+
+For deployment, Gradient Boosting is somewhat less interpretable than logistic regression, but the variable importance plot provides sufficient insight for business action. If interpretability is paramount, the logistic regression provides clear coefficient estimates — but its poor sensitivity makes it unsuitable as the primary prediction tool.
+
+---

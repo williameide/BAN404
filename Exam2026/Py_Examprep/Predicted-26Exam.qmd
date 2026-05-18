@@ -1,0 +1,475 @@
+---
+title: "BAN404 – Predicted Exam 2026"
+author: "Candidate"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: false
+execute:
+  eval: true
+  echo: true
+---
+
+# Exam Information
+
+**Date:** 19 May 2026
+**Duration:** 6 hours
+**Support materials:** Calculator. All written material (Category III).
+**Attachments:** `task1_data.csv` · `customer_data.csv`
+**Submission:** Single `.qmd` or `.ipynb` file via WISEflow
+
+**General recommendations:** Be pragmatic if you run into difficulties.
+Find models that answer the questions asked — do not let the perfect model stand
+in the way of a good one. Plan your time so you do not spend all of it on a
+single task.
+
+Write your answers as **text below each sub-task**. Show code and relevant
+output. Numerical results alone are not sufficient — always write a brief
+text explanation.
+
+| Task | Topic | Points |
+|------|-------|--------|
+| 1 | Methodological topics | 50 |
+| 2 | Applied analysis — Customer Churn | 50 |
+| | **Total** | **100** |
+
+---
+
+# Task 1 (50 points) — Methodological Topics
+
+## (a) — Code reading (10 points)
+
+Consider the following two Python functions:
+
+```{python}
+import numpy as np
+from scipy.optimize import minimize
+
+def f(b, X, y, la):
+    rss     = np.sum((y - X @ b) ** 2)
+    penalty = la * np.sum(np.abs(b))          # (*)
+    return rss + penalty
+
+def g(X, y, la):
+    p       = X.shape[1]
+    b0      = np.mean(y)                      # (**)
+    y_c     = y - b0
+    X_c     = X - X.mean(axis=0)             # (***)
+    b_start = np.zeros(p)
+    result  = minimize(f, b_start,
+                       args=(X_c, y_c, la),
+                       method='L-BFGS-B')
+    return b0, result.x
+```
+
+**i.** Explain what `f` and `g` do, step by step.
+Which method, treated in the course, is this a version of?
+
+*Your answer here:*
+
+---
+
+**ii.** Explain what the lines marked `(*)`, `(**)`, and `(***)` do.
+
+*Your answer here:*
+
+---
+
+**iii.** What happens to the values in `result.x` as `la` increases?
+What is the most important difference between this method and Ridge regression?
+
+*Your answer here:*
+
+---
+
+## (b) — Applying the method (10 points)
+
+The file `task1_data.csv` contains $n = 5000$ observations of six predictors
+(`x1`–`x6`) and one response variable `y`.
+
+```{python}
+import pandas as pd
+
+Xy = pd.read_csv("task1_data.csv")
+X  = Xy[["x1","x2","x3","x4","x5","x6"]].values
+y  = Xy["y"].values
+n, p = X.shape
+print(f"n = {n}, p = {p}")
+```
+
+Fit the model using:
+
+- Ordinary least squares (`np.linalg.lstsq`)
+- `g` with `la = 1`
+- `g` with `la = 100`
+
+Present the estimated coefficients side by side in a table.
+Comment on the differences between the results. What explains the difference?
+Does either regularised model appear to perform variable selection?
+
+```{python}
+# OLS
+X_aug = np.column_stack([np.ones(n), X])
+b_ols, _, _, _ = np.linalg.lstsq(X_aug, y, rcond=None)
+
+# Lasso la=1
+b0_1, b1_1 = g(X, y, la=1)
+
+# Lasso la=100
+b0_100, b1_100 = g(X, y, la=100)
+
+results = pd.DataFrame({
+    "OLS":      b_ols[1:],
+    "Lasso 1":  b1_1,
+    "Lasso 100": b1_100,
+}, index=[f"x{i+1}" for i in range(p)])
+
+print(results.round(4))
+```
+
+*Your answer here:*
+
+---
+
+## (c) — Cross-validation (10 points)
+
+Explain what the following function does. Use it to determine an optimal
+value of `la` for the dataset in (b). Plot the CV-MSE as a function of
+`la` on a log scale and state the optimal value.
+
+Why is K-fold cross-validation preferred over leave-one-out cross-validation
+(LOOCV) for a dataset of this size?
+
+Why is it important in line `(*)` to use the **training mean** of X
+rather than the full-data mean when constructing the test predictions?
+
+```{python}
+def cv_lasso(X, y, la, K=5, seed=42):
+    rng   = np.random.default_rng(seed)
+    n     = len(y)
+    idx   = rng.permutation(n)
+    folds = np.array_split(idx, K)
+    mse_k = np.zeros(K)
+
+    for k in range(K):
+        test_idx  = folds[k]
+        train_idx = np.concatenate([folds[j] for j in range(K) if j != k])
+
+        b0_k, b1_k  = g(X[train_idx], y[train_idx], la)
+        X_c_te      = X[test_idx] - X[train_idx].mean(axis=0)   # (*)
+        y_pred      = b0_k + X_c_te @ b1_k
+        mse_k[k]    = np.mean((y[test_idx] - y_pred) ** 2)
+
+    return np.mean(mse_k)
+```
+
+```{python}
+import matplotlib.pyplot as plt
+
+la_grid = np.logspace(-1, 3, 40)
+cv_mse  = [cv_lasso(X, y, la) for la in la_grid]
+
+plt.figure(figsize=(8, 4))
+plt.semilogx(la_grid, cv_mse, "b-o", markersize=4)
+plt.xlabel("lambda (log scale)")
+plt.ylabel("5-fold CV MSE")
+plt.title("Cross-validation for Lasso")
+plt.tight_layout()
+plt.show()
+
+best_la = la_grid[np.argmin(cv_mse)]
+print(f"Optimal lambda: {best_la:.4f}")
+print(f"Minimum CV-MSE: {min(cv_mse):.4f}")
+```
+
+*Your answer here:*
+
+---
+
+## (d) — Bootstrap (10 points)
+
+Explain what the following function does and which statistical concept it
+implements. Explain lines `(*)`, `(**)`, and `(***)` in detail.
+Why must the rows of `y` be resampled **with replacement**?
+
+```{python}
+def bootstrap_var(y, B=1000, seed=42):
+    rng  = np.random.default_rng(seed)
+    n    = len(y)
+    boot = np.zeros(B)
+
+    for b in range(B):
+        idx     = rng.choice(n, size=n, replace=True)    # (*)
+        y_b     = y[idx]                                  # (**)
+        boot[b] = np.var(y_b, ddof=1)                    # (***)
+
+    se = np.std(boot)
+    ci = np.percentile(boot, [2.5, 97.5])
+    return boot, se, ci
+```
+
+Use `bootstrap_var` with `B = 1000`.
+Report the bootstrap standard error and 95% confidence interval for
+$\sigma^2_y = \text{Var}(y)$.
+Show the bootstrap distribution as a histogram and mark the CI boundaries.
+Also mark the sample variance computed from the full data.
+
+```{python}
+boot_dist, se, ci = bootstrap_var(y, B=1000)
+
+s2_full = np.var(y, ddof=1)
+
+plt.figure(figsize=(7, 4))
+plt.hist(boot_dist, bins=50, color="steelblue", edgecolor="white")
+plt.axvline(ci[0], color="red", linestyle="--",
+            label=f"2.5%  = {ci[0]:.3f}")
+plt.axvline(ci[1], color="red", linestyle="--",
+            label=f"97.5% = {ci[1]:.3f}")
+plt.axvline(s2_full, color="black", linestyle="-",
+            label=f"Sample var = {s2_full:.3f}")
+plt.xlabel("Bootstrap estimate of Var(y)")
+plt.ylabel("Frequency")
+plt.title("Bootstrap distribution of sample variance of y")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+print(f"Sample variance of y:  {s2_full:.4f}")
+print(f"Bootstrap SE:          {se:.4f}")
+print(f"95% CI: [{ci[0]:.4f}, {ci[1]:.4f}]")
+```
+
+*Your answer here:*
+
+---
+
+## (e) — Non-linearity and GAMs (10 points)
+
+There may be one or more variables with a non-linear relationship to $y$.
+Try to identify such variables by plotting $y$ against each of `x1`–`x5`.
+
+Can you improve the in-sample (training) MSE by using a Generalized Additive
+Model (GAM)? Fit at least one GAM and compare the training MSE with the OLS
+estimate from (b). Also compute $R^2$ for both models:
+
+$$R^2 = 1 - \frac{\text{MSE}_{\text{model}}}{\text{MSE}_{\text{null}}},
+\qquad \text{where} \qquad
+\text{MSE}_{\text{null}} = \frac{1}{n}\sum_{i=1}^n (y_i - \bar{y})^2$$
+
+If you do not obtain reliable MSE values from your models, you may use
+$\text{MSE}_{\text{OLS}} = 5.0$ and $\text{MSE}_{\text{GAM}} = 1.7$.
+
+```{python}
+from pygam import LinearGAM, s, l
+
+# Plot y against x1...x5
+fig, axes = plt.subplots(1, 5, figsize=(16, 3))
+for i, ax in enumerate(axes):
+    ax.scatter(X[:, i], y, alpha=0.15, s=5)
+    ax.set_xlabel(f"x{i+1}")
+    ax.set_ylabel("y" if i == 0 else "")
+plt.suptitle("y vs predictors x1–x5")
+plt.tight_layout()
+plt.show()
+
+# Fit GAM — smooth the variables that look most non-linear
+gam = LinearGAM(l(0) + s(1) + s(2) + l(3) + l(4) + l(5))
+gam.fit(X, y)
+
+y_hat_gam = gam.predict(X)
+y_hat_ols = X_aug @ b_ols
+
+mse_null = np.mean((y - y.mean()) ** 2)
+mse_ols  = np.mean((y - y_hat_ols) ** 2)
+mse_gam  = np.mean((y - y_hat_gam) ** 2)
+
+r2_ols = 1 - mse_ols / mse_null
+r2_gam = 1 - mse_gam / mse_null
+
+print(f"MSE OLS: {mse_ols:.4f}  |  R² OLS: {r2_ols:.4f}")
+print(f"MSE GAM: {mse_gam:.4f}  |  R² GAM: {r2_gam:.4f}")
+```
+
+*Your answer here:*
+
+---
+
+# Task 2 (50 points) — Applied Analysis: Customer Churn
+
+## Background
+
+The file `customer_data.csv` contains data from a telecom company.
+Each row represents a customer. The outcome variable `Churn` equals `True`
+if the customer cancelled their subscription and `False` otherwise.
+
+The company wants to answer two questions:
+
+1. **Why** do some customers churn?
+2. **Which** new customers are at high risk of churning, so that targeted
+   retention measures can be put in place?
+
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("customer_data.csv")
+print(df.shape)
+print(df.dtypes)
+print(df.head(3))
+```
+
+## (a) — Data preparation (6 points)
+
+Inspect the dataset carefully. Identify which variables need to be recoded
+before modelling, and explain your choices. In particular:
+
+- Which categorical variables should be encoded, and how?
+- The dataset contains pairs of variables that are perfectly collinear.
+  Identify these pairs and explain which variable you drop from each pair
+  and why.
+- Split the data into a training set (80%) and a test set (20%).
+  Use `random_state = 42`.
+
+For tasks (a)–(e), you are answering the question *"Why do some customers
+churn?"*. With this in mind, explain whether you evaluate models on
+training data, test data, or both.
+
+```{python}
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
+# Your code here:
+
+```
+
+*Your answer here:*
+
+---
+
+## (b) — Exploratory data analysis (8 points)
+
+Use descriptive statistics and plots to identify variables associated with
+`Churn`. Explain which types of summaries you use and why.
+
+Give examples of your code but do not repeat identical code for every
+variable. Summarise your findings in text, mentioning the most relevant
+numbers.
+
+Based on this EDA: which three variables do you expect to be the strongest
+predictors of churn, and why?
+
+```{python}
+# Your code here:
+
+```
+
+*Your answer here:*
+
+---
+
+## (c) — Logistic regression (10 points)
+
+Fit a logistic regression model on the training data.
+You may choose to include all variables or a motivated subset.
+
+Evaluate the model on the **test data** using:
+
+- Accuracy
+- Confusion matrix, with sensitivity (true positive rate) and
+  specificity (true negative rate) computed explicitly
+- ROC curve and AUC
+
+Is a classification threshold of 0.5 appropriate for this problem?
+Explain your reasoning from a business perspective.
+
+Interpret the coefficients for the two most influential predictors.
+
+```{python}
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (accuracy_score, confusion_matrix,
+                             roc_auc_score, RocCurveDisplay)
+
+# Your code here:
+
+```
+
+*Your answer here:*
+
+---
+
+## (d) — Random forest (12 points)
+
+Fit a Random Forest classifier with `n_estimators = 500` on the training data.
+
+Use 5-fold cross-validation on the **training data** to choose `max_features`
+from the candidates `[2, 4, "sqrt", None]`. Refit on the full training set
+with the best value.
+
+Evaluate the best model on the **test data**: accuracy, AUC, and confusion
+matrix.
+
+Plot the variable importances and identify the five most important predictors.
+Do the results agree with your EDA findings in (b)?
+
+Compare the test AUC with the logistic regression from (c).
+
+```{python}
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
+
+# Your code here:
+
+```
+
+*Your answer here:*
+
+---
+
+## (e) — Gradient boosting (10 points)
+
+Fit a Gradient Boosting classifier on the training data with:
+`n_estimators = 500`, `learning_rate = 0.05`, `max_depth = 3`.
+
+Use `staged_predict_proba` to compute test AUC after each tree and plot
+it as a function of the number of trees. At which number of trees does
+the model reach its peak test AUC? What happens to test AUC after that point?
+
+Refit the model using only the optimal number of trees.
+Report test accuracy and AUC.
+
+```{python}
+from sklearn.ensemble import GradientBoostingClassifier
+
+# Your code here:
+
+```
+
+*Your answer here:*
+
+---
+
+## (f) — Comparison and recommendation (4 points)
+
+Fill in the table below with your results:
+
+| Model | Test Accuracy | Test AUC | Sensitivity | Specificity |
+|-------|--------------|----------|-------------|-------------|
+| Logistic Regression | | | | |
+| Random Forest | | | | |
+| Gradient Boosting (optimal B) | | | | |
+
+Based on your full analysis:
+
+**i.** What is your answer to the company's question *"Why do some customers
+churn?"* Summarise the key drivers in two to three sentences.
+
+**ii.** Which model would you recommend for identifying at-risk customers,
+and why? Consider predictive performance, interpretability, and the cost
+of false negatives (failing to identify a customer who will churn).
+
+*Your answer here:*
+
+---
