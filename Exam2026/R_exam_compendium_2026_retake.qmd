@@ -234,6 +234,54 @@ args(randomForest) # Helpful when you forget where mtry or ntree belongs.
 
 # Universal wrangling and split templates
 
+## Live 2026 setup objects used in the dataset-tailored templates below
+
+```{r}
+# Read the live Task 1 dataset that is actually attached for the 2026 exam.  # We keep the path short because the compendium lives in the same folder.
+task1_2026 <- read_csv("task1_data.csv", show_col_types = FALSE)  # Continuous-response dataset for likely Task 1 regression questions.
+
+# Read the live Task 2 dataset that is actually attached for the 2026 exam.  # This is the churn/customer classification dataset.
+customer_2026_raw <- read_csv("customer_data.csv", show_col_types = FALSE)  # Raw customer data before cleaning and recoding.
+
+# Clean and recode the customer dataset into a model-ready BAN404 classification table.  # We keep the coding explicit so the later chunks are plug-and-play.
+customer_2026 <- customer_2026_raw %>%
+  janitor::clean_names() %>%  # Convert column names to lower snake_case so later code is easier to type and less error-prone.
+  mutate(
+    churn = factor(churn, levels = c(FALSE, TRUE), labels = c("no", "yes")),  # Make the binary target explicit with a clear negative/positive class order.
+    international_plan = factor(international_plan),  # Yes/no plan indicator should be categorical.
+    voice_mail_plan = factor(voice_mail_plan),        # Same logic for voice-mail subscription.
+    state = factor(state),                            # State is a category, not a numeric scale.
+    area_code = factor(area_code)                     # Area code is better handled as a category than as a continuous number.
+  ) %>%
+  select(
+    -total_day_charge,    # Drop redundant charge column because total_day_minutes already contains the underlying usage information.
+    -total_eve_charge,    # Same redundancy logic for evening usage.
+    -total_night_charge,  # Same redundancy logic for night usage.
+    -total_intl_charge    # Same redundancy logic for international usage.
+  )
+
+# Create a reproducible Task 1 split.  # We use one consistent split so all Task 1 model comparisons are fair.
+set.seed(404)  # Fixed seed so your written answer can be reproduced later.
+idx_task1_2026 <- sample(seq_len(nrow(task1_2026)), size = floor(0.70 * nrow(task1_2026)))  # 70 percent of rows go to training.
+task1_train_2026 <- task1_2026[idx_task1_2026, ]   # Training data for Task 1 models.
+task1_test_2026  <- task1_2026[-idx_task1_2026, ]  # Test data for honest out-of-sample evaluation.
+
+# Create a reproducible Task 2 split.  # We use the same split across logistic, tree, RF, and boosting comparisons.
+idx_customer_2026 <- sample(seq_len(nrow(customer_2026)), size = floor(0.70 * nrow(customer_2026)))  # 70 percent of customers go to training.
+customer_train_2026 <- customer_2026[idx_customer_2026, ]   # Training customers.
+customer_test_2026  <- customer_2026[-idx_customer_2026, ]  # Test customers.
+
+# Build full-data Task 1 matrix objects for custom ridge/LOOCV style questions.  # Some BAN404 Task 1 questions work directly with X and y.
+X_task1_full_2026 <- task1_2026 %>% select(-y) %>% as.matrix()  # Predictor matrix for formula-free custom code.
+y_task1_full_2026 <- task1_2026$y                                # Continuous response vector.
+
+# Build train/test Task 1 matrices for glmnet-based ridge and LASSO.  # glmnet expects numeric matrices, not tibbles.
+X_task1_train_2026 <- model.matrix(y ~ ., data = task1_train_2026)[, -1]  # Dummy-ready numeric training matrix.
+y_task1_train_2026 <- task1_train_2026$y                                   # Training response vector.
+X_task1_test_2026  <- model.matrix(y ~ ., data = task1_test_2026)[, -1]    # Matching numeric test matrix.
+y_task1_test_2026  <- task1_test_2026$y                                    # Test response vector.
+```
+
 ## Create or modify columns safely
 
 ```{r}
@@ -288,13 +336,13 @@ test  <- df[-idx, ] # Evaluate final predictions here.
 ## Model matrix for `glmnet`
 
 ```{r}
-# Build X and y for regularized regression.  # glmnet requires a numeric matrix, so factors must become dummies.
-X_train <- model.matrix(y ~ ., data = train)[, -1]  # model.matrix creates dummy variables and drops the intercept column manually.
-y_train <- train$y                                   # Response stays as a numeric vector for regression.
+# Build X and y for regularized regression on the live Task 1 data.  # glmnet requires a numeric matrix, so factors must become dummies.
+X_train_task1_2026 <- model.matrix(y ~ ., data = task1_train_2026)[, -1]  # model.matrix creates dummy variables and drops the intercept column manually.
+y_train_task1_2026 <- task1_train_2026$y                                   # Response stays as a numeric vector for regression.
 
 # Build a test matrix using the same formula.  # We need the same columns at prediction time.
-X_test <- model.matrix(y ~ ., data = test)[, -1]    # Same dummy structure for test data.
-y_test <- test$y                                    # True test response for evaluation.
+X_test_task1_2026 <- model.matrix(y ~ ., data = task1_test_2026)[, -1]    # Same dummy structure for test data.
+y_test_task1_2026 <- task1_test_2026$y                                     # True test response for evaluation.
 ```
 
 ## When to use full data, training data, test data, or CV
@@ -463,20 +511,20 @@ OLS draws the line or hyperplane that makes the residual sum of squares as small
 ### Full runnable template
 
 ```{r}
-# Fit a multiple linear regression model.  # This is the standard baseline for a continuous response in BAN404.
-ols_fit <- lm(y ~ ., data = train)  # The dot means "use all remaining predictors in train".
+# Fit a multiple linear regression model on the live 2026 Task 1 data.  # This is the standard baseline for a continuous-response Task 1 question.
+ols_task1_2026 <- lm(y ~ ., data = task1_train_2026)  # The dot means "use all remaining predictors in the Task 1 training split".
 
 # View the coefficient table.  # This helps with interpretation and with deciding whether some variables look weak.
-summary(ols_fit)  # Gives coefficients, standard errors, t-values, p-values, and model fit summaries.
+summary(ols_task1_2026)  # Gives coefficients, standard errors, t-values, p-values, and model fit summaries.
 
 # Predict on the held-out test set.  # Test data gives an honest view of generalization performance.
-y_pred <- predict(ols_fit, newdata = test)  # Use the fitted linear model to predict unseen observations.
+y_pred_task1_2026 <- predict(ols_task1_2026, newdata = task1_test_2026)  # Use the fitted linear model to predict unseen Task 1 observations.
 
 # Evaluate with test MSE.  # Continuous responses should usually be scored with MSE in BAN404.
-mse_ols <- mean((test$y - y_pred)^2)  # Smaller MSE means better predictive performance.
+mse_ols_task1_2026 <- mean((task1_test_2026$y - y_pred_task1_2026)^2)  # Smaller MSE means better predictive performance.
 
 # Optional: compute test R-squared.  # Useful when the exam asks for explained variation.
-r2_ols <- 1 - sum((test$y - y_pred)^2) / sum((test$y - mean(test$y))^2)  # Higher is better.
+r2_ols_task1_2026 <- 1 - sum((task1_test_2026$y - y_pred_task1_2026)^2) / sum((task1_test_2026$y - mean(task1_test_2026$y))^2)  # Higher is better.
 ```
 
 ### Typical BAN404 variations
@@ -532,15 +580,15 @@ Logistic regression predicts the **probability** that an observation belongs to 
 
 ```{r}
 # Check class balance first.  # Rare positives often mean accuracy alone is misleading.
-prop.table(table(train$y))  # This tells us whether the problem is balanced or rare-event style.
+prop.table(table(customer_train_2026$churn))  # This tells us whether the live customer churn problem is balanced or rare-event style.
 
-# Fit the logistic model.  # We inspect the summary for coefficient direction and possible warnings.
-logit_fit <- glm(y ~ ., data = train, family = binomial())  # Standard binary-response model.
-summary(logit_fit)  # Watch for huge standard errors, warnings, or suspicious coefficient magnitudes.
+# Fit the logistic model on the live customer dataset.  # We inspect the summary for coefficient direction and possible warnings.
+logit_customer_2026 <- glm(churn ~ ., data = customer_train_2026, family = binomial())  # Standard binary-response model for churn.
+summary(logit_customer_2026)  # Watch for huge standard errors, warnings, or suspicious coefficient magnitudes.
 
 # Look at predicted probabilities.  # If nearly all are tiny, a 0.5 threshold may be inappropriate.
-pred_prob_train <- predict(logit_fit, newdata = train, type = "response")  # Training probabilities for threshold thinking.
-hist(pred_prob_train)  # Rare-event data often produces many small fitted probabilities.
+pred_prob_customer_train_2026 <- predict(logit_customer_2026, newdata = customer_train_2026, type = "response")  # Training probabilities for threshold thinking.
+hist(pred_prob_customer_train_2026)  # Rare-event data often produces many small fitted probabilities.
 ```
 
 ### Base logistic → improved logistic → flexible classifier
@@ -560,51 +608,51 @@ hist(pred_prob_train)  # Rare-event data often produces many small fitted probab
 ### Full runnable template
 
 ```{r}
-# Fit logistic regression for a binary outcome.  # family = binomial tells R this is a classification probability model.
-logit_fit <- glm(y ~ ., data = train, family = binomial())  # This is the standard BAN404 logistic workflow.
+# Fit logistic regression for the live churn outcome.  # family = binomial tells R this is a classification probability model.
+logit_customer_2026 <- glm(churn ~ ., data = customer_train_2026, family = binomial())  # This is the standard BAN404 logistic workflow.
 
 # Inspect coefficients.  # Signs tell direction and p-values help with explanatory discussion.
-summary(logit_fit)  # Positive coefficient means higher log-odds of class 1, all else equal.
+summary(logit_customer_2026)  # Positive coefficient means higher log-odds of churn = yes, all else equal.
 
 # Predict probabilities on test data.  # Logistic regression naturally gives probabilities first, not class labels.
-pred_prob <- predict(logit_fit, newdata = test, type = "response")  # response returns probabilities between 0 and 1.
+pred_prob_customer_test_2026 <- predict(logit_customer_2026, newdata = customer_test_2026, type = "response")  # response returns probabilities between 0 and 1.
 
-# Choose a threshold.  # 0.5 is the default unless the exam asks you to explore another choice.
-threshold <- 0.5  # A lower threshold catches more positives but may create more false positives.
+# Choose a threshold.  # 0.30 is a sensible live-data starting point because churn is the minority class.
+threshold_customer_2026 <- 0.30  # A lower threshold catches more positives but may create more false positives.
 
 # Convert probabilities to class predictions.  # We now turn probability into the final yes/no answer.
-pred_class <- if_else(pred_prob > threshold, "yes", "no") %>%
-  factor(levels = levels(train$y))  # Matching levels avoids confusion matrix ordering mistakes.
+pred_class_customer_2026 <- if_else(pred_prob_customer_test_2026 > threshold_customer_2026, "yes", "no") %>%
+  factor(levels = levels(customer_train_2026$churn))  # Matching levels avoids confusion matrix ordering mistakes.
 
 # Evaluate predictions.  # Confusion matrix plus accuracy is the standard BAN404 output.
-cm_logit <- table(actual = test$y, predicted = pred_class)  # Shows true/false positives and negatives.
-acc_logit <- sum(diag(cm_logit)) / sum(cm_logit)            # Share classified correctly.
+cm_logit_customer_2026 <- table(actual = customer_test_2026$churn, predicted = pred_class_customer_2026)  # Shows true/false positives and negatives.
+acc_logit_customer_2026 <- sum(diag(cm_logit_customer_2026)) / sum(cm_logit_customer_2026)                # Share classified correctly.
 ```
 
 ### Threshold tuning template for rare-event classification
 
 ```{r}
-# Create a small grid of candidate thresholds.  # Rare-event data often needs a threshold far below 0.5.
-threshold_grid <- seq(0.01, 0.50, by = 0.01)  # Search from very low to standard threshold values.
+# Create a small grid of candidate thresholds for the live churn data.  # Rare-event data often needs a threshold far below 0.5.
+threshold_grid_customer_2026 <- seq(0.10, 0.50, by = 0.05)  # Search from clearly low to standard threshold values.
 
 # Score each threshold on training data.  # Threshold choice should happen before touching final test performance.
-threshold_scores <- purrr::map_dfr(threshold_grid, function(th) {
-  pred_class_train <- if_else(pred_prob_train > th, levels(train$y)[2], levels(train$y)[1]) %>%
-    factor(levels = levels(train$y))  # Convert probabilities to classes using one candidate threshold.
-  cm_train <- table(actual = train$y, predicted = pred_class_train)  # Training confusion matrix for that threshold.
+threshold_scores_customer_2026 <- purrr::map_dfr(threshold_grid_customer_2026, function(th) {
+  pred_class_train_customer_2026 <- if_else(pred_prob_customer_train_2026 > th, levels(customer_train_2026$churn)[2], levels(customer_train_2026$churn)[1]) %>%
+    factor(levels = levels(customer_train_2026$churn))  # Convert probabilities to classes using one candidate threshold.
+  cm_train_customer_2026 <- table(actual = customer_train_2026$churn, predicted = pred_class_train_customer_2026)  # Training confusion matrix for that threshold.
   tibble(
     threshold = th,  # Candidate threshold value.
-    sensitivity = cm_train[2, 2] / sum(cm_train[2, ]),  # True positive rate.
-    specificity = cm_train[1, 1] / sum(cm_train[1, ])   # True negative rate.
+    sensitivity = cm_train_customer_2026[2, 2] / sum(cm_train_customer_2026[2, ]),  # True positive rate.
+    specificity = cm_train_customer_2026[1, 1] / sum(cm_train_customer_2026[1, ])   # True negative rate.
   )
 })
 
 # Add balanced accuracy as a simple summary.  # This is often more informative than plain accuracy in imbalanced problems.
-threshold_scores <- threshold_scores %>%
+threshold_scores_customer_2026 <- threshold_scores_customer_2026 %>%
   mutate(balanced_accuracy = (sensitivity + specificity) / 2)  # Average of the two class-wise hit rates.
 
 # Choose the best threshold by your chosen criterion.  # Balanced accuracy is a safe exam-friendly default.
-best_threshold <- threshold_scores %>%
+best_threshold_customer_2026 <- threshold_scores_customer_2026 %>%
   slice_max(order_by = balanced_accuracy, n = 1) %>%
   pull(threshold)  # Extract the winning threshold value.
 ```
@@ -689,8 +737,8 @@ CV estimates how well a model generalizes to new data. LOOCV is the extreme vers
 
 ```{r}
 # Define a generic LOOCV function for a tuning parameter.  # This is the classic BAN404 structure from 2024 and 2025.
-loo_model <- function(tune_value, X, y) {                    # tune_value could be lambda, K, threshold, etc.
-  n <- nrow(X)                                               # Number of observations.
+loo_model_task1_2026 <- function(tune_value, X, y) {         # tune_value could be lambda, K, threshold, etc.
+  n <- nrow(X)                                               # Number of observations in the live Task 1 matrix.
   pred <- numeric(n)                                         # Storage for one prediction per left-out row.
 
   for (i in seq_len(n)) {                                    # Loop once per observation.
@@ -699,7 +747,7 @@ loo_model <- function(tune_value, X, y) {                    # tune_value could 
     X_test  <- X[i, , drop = FALSE]                          # Test predictors: the left-out observation.
 
     # Replace the next line with the model fit that uses tune_value.  # This is where ridge/KNN/etc. is fitted.
-    fit_i <- lm(y_train ~ ., data = as.data.frame(X_train))  # Placeholder example using OLS.
+    fit_i <- lm(y_train ~ ., data = as.data.frame(X_train))  # Placeholder example using OLS on the Task 1 predictors.
 
     # Predict the held-out case.  # LOOCV works by repeating this for every single row.
     pred[i] <- predict(fit_i, newdata = as.data.frame(X_test))
@@ -712,14 +760,14 @@ loo_model <- function(tune_value, X, y) {                    # tune_value could 
 ### Generic tuning loop
 
 ```{r}
-# Create candidate tuning values.  # The question usually wants the value that minimizes estimated test error.
-param_grid <- seq(0, 1000, length.out = 20)  # Example grid for lambda or another continuous tuning parameter.
+# Create candidate tuning values for the live Task 1 data.  # The question usually wants the value that minimizes estimated test error.
+param_grid_task1_2026 <- seq(0, 1000, length.out = 20)  # Example grid for lambda or another continuous tuning parameter.
 
 # Score every candidate value.  # sapply makes a compact loop over the grid.
-cv_scores <- sapply(param_grid, function(v) loo_model(v, X, y))  # One CV score per candidate.
+cv_scores_task1_2026 <- sapply(param_grid_task1_2026, function(v) loo_model_task1_2026(v, X_task1_full_2026, y_task1_full_2026))  # One CV score per candidate.
 
 # Pick the best tuning value.  # Best means smallest error for regression or largest accuracy for classification.
-best_value <- param_grid[which.min(cv_scores)]  # which.min finds the index of the smallest CV error.
+best_value_task1_2026 <- param_grid_task1_2026[which.min(cv_scores_task1_2026)]  # which.min finds the index of the smallest CV error.
 ```
 
 ### Past exam links
@@ -778,24 +826,24 @@ The bootstrap pretends your sample is the population. It repeatedly samples **wi
 ### Bootstrap a variance or mean
 
 ```{r}
-# Set bootstrap parameters.  # B should be fairly large so the estimated sampling distribution is stable.
-set.seed(1)                 # Makes the bootstrap reproducible in the exam write-up.
-B <- 1000                   # Number of bootstrap resamples.
-n <- length(y)              # Original sample size.
-boot_stat <- numeric(B)     # Storage for one bootstrap statistic per iteration.
+# Set bootstrap parameters for the live Task 1 response.  # B should be fairly large so the estimated sampling distribution is stable.
+set.seed(1)                             # Makes the bootstrap reproducible in the exam write-up.
+B_task1_2026 <- 1000                    # Number of bootstrap resamples.
+n_task1_2026 <- length(y_task1_full_2026)  # Original sample size in the live Task 1 response.
+boot_stat_task1_2026 <- numeric(B_task1_2026)  # Storage for one bootstrap statistic per iteration.
 
 # Run the bootstrap loop.  # The tell is sample(..., replace = TRUE).
-for (b in seq_len(B)) {     # Repeat B times.
-  y_boot <- sample(y, size = n, replace = TRUE)  # Draw a fake sample with replacement.
-  boot_stat[b] <- var(y_boot)                    # Replace var() with mean(), coef(), or another statistic if needed.
+for (b in seq_len(B_task1_2026)) {                    # Repeat B times.
+  y_boot_task1_2026 <- sample(y_task1_full_2026, size = n_task1_2026, replace = TRUE)  # Draw a fake sample with replacement.
+  boot_stat_task1_2026[b] <- var(y_boot_task1_2026)  # Replace var() with mean(), coef(), or another statistic if needed.
 }
 
 # Plot the bootstrap distribution.  # BAN404 has explicitly asked for histograms of bootstrap results.
-hist(boot_stat, breaks = 40)                     # Visualizes the estimated sampling distribution.
+hist(boot_stat_task1_2026, breaks = 40)          # Visualizes the estimated sampling distribution.
 
 # Compute two common 95 percent confidence intervals.  # Use both when the exam asks you to compare methods.
-ci_percentile <- quantile(boot_stat, c(0.025, 0.975))                    # Empirical percentile interval.
-ci_normal <- mean(boot_stat) + c(-1, 1) * 1.96 * sd(boot_stat)           # Normal approximation interval.
+ci_percentile_task1_2026 <- quantile(boot_stat_task1_2026, c(0.025, 0.975))           # Empirical percentile interval.
+ci_normal_task1_2026 <- mean(boot_stat_task1_2026) + c(-1, 1) * 1.96 * sd(boot_stat_task1_2026)  # Normal approximation interval.
 ```
 
 ### Bootstrap a regression coefficient
@@ -859,26 +907,26 @@ Ridge is OLS plus a penalty on large coefficients. It shrinks coefficients towar
 
 ```{r}
 # Define the ridge objective function.  # This is the exact 2025-style method tell.
-ridge_objective <- function(b1, X, y, la) {                     # b1 = slope coefficients, la = lambda penalty.
+ridge_objective_task1_2026 <- function(b1, X, y, la) {         # b1 = slope coefficients, la = lambda penalty.
   sum((y - X %*% b1)^2) + la * sum(b1^2)                       # RSS plus L2 penalty.
 }
 
 # Define a ridge fitting helper.  # Demeaning isolates the intercept so the penalty does not shrink it.
-g_ridge <- function(X, y, la) {                                # Inputs are predictor matrix, response vector, lambda.
+g_ridge_task1_2026 <- function(X, y, la) {                     # Inputs are predictor matrix, response vector, lambda.
   q <- ncol(X)                                                 # Number of predictors.
   b0 <- mean(y)                                                # Intercept becomes mean(y) after centering.
   yd <- y - b0                                                 # Center the response.
   Xd <- X                                                      # Copy X so we can center every predictor column.
   for (k in seq_len(q)) Xd[, k] <- X[, k] - mean(X[, k])       # Demean predictors column by column.
   b1start <- rep(0, q)                                         # Start optimization at zero coefficients.
-  opt <- nlminb(b1start, ridge_objective, X = Xd, y = yd, la = la)  # Numerically minimize the ridge criterion.
+  opt <- nlminb(b1start, ridge_objective_task1_2026, X = Xd, y = yd, la = la)  # Numerically minimize the ridge criterion.
   opt$par                                                      # Return the estimated slope coefficients.
 }
 
-# Compare OLS, ridge with lambda = 0, and ridge with strong shrinkage.  # This was central in 2025 Task 1b.
-b_ols <- coef(lm(y ~ X))[-1]                  # OLS slopes only.
-b_ridge0 <- g_ridge(X, y, la = 0)             # Ridge with zero penalty should match OLS.
-b_ridge1000 <- g_ridge(X, y, la = 1000)       # Strong penalty shrinks coefficients toward zero.
+# Compare OLS, ridge with lambda = 0, and ridge with strong shrinkage on the live Task 1 data.  # This is exactly the kind of Task 1 comparison likely to reappear.
+b_ols_task1_2026 <- coef(lm(y ~ ., data = task1_2026))[-1]                                       # OLS slopes only from the full live Task 1 data.
+b_ridge0_task1_2026 <- g_ridge_task1_2026(X_task1_full_2026, y_task1_full_2026, la = 0)         # Ridge with zero penalty should match OLS.
+b_ridge1000_task1_2026 <- g_ridge_task1_2026(X_task1_full_2026, y_task1_full_2026, la = 1000)   # Strong penalty shrinks coefficients toward zero.
 ```
 
 ### Common BAN404 written point
@@ -937,24 +985,24 @@ LASSO is like ridge, but the penalty is based on **absolute values**. This means
 
 ```{r}
 # Build design matrices first.  # glmnet cannot use factors directly, so model.matrix creates dummies.
-X_train <- model.matrix(y ~ ., data = train)[, -1]          # Numeric matrix of predictors with dummy-coded factors.
-y_train <- train$y                                          # Response vector.
-X_test <- model.matrix(y ~ ., data = test)[, -1]            # Matching predictor matrix for test data.
+X_train_task1_2026 <- model.matrix(y ~ ., data = task1_train_2026)[, -1]  # Numeric matrix of predictors with dummy-coded factors.
+y_train_task1_2026 <- task1_train_2026$y                                   # Response vector.
+X_test_task1_2026 <- model.matrix(y ~ ., data = task1_test_2026)[, -1]     # Matching predictor matrix for test data.
 
 # Tune lambda with cross-validation.  # alpha = 1 means LASSO rather than ridge.
-cv_lasso <- cv.glmnet(X_train, y_train, alpha = 1, standardize = TRUE)  # Cross-validated LASSO fit.
+cv_lasso_task1_2026 <- cv.glmnet(X_train_task1_2026, y_train_task1_2026, alpha = 1, standardize = TRUE)  # Cross-validated LASSO fit.
 
 # Fit final LASSO at the best lambda.  # lambda.min is the tuning value with the lowest CV error.
-lasso_fit <- glmnet(X_train, y_train, alpha = 1, lambda = cv_lasso$lambda.min, standardize = TRUE)  # Final tuned model.
+lasso_fit_task1_2026 <- glmnet(X_train_task1_2026, y_train_task1_2026, alpha = 1, lambda = cv_lasso_task1_2026$lambda.min, standardize = TRUE)  # Final tuned model.
 
 # Predict on test data.  # We evaluate it the same way as other regression models.
-y_pred_lasso <- as.numeric(predict(lasso_fit, newx = X_test))  # Convert matrix output to plain numeric vector.
+y_pred_lasso_task1_2026 <- as.numeric(predict(lasso_fit_task1_2026, newx = X_test_task1_2026))  # Convert matrix output to plain numeric vector.
 
 # Score with MSE.  # Same metric as OLS or ridge for fair comparison.
-mse_lasso <- mean((test$y - y_pred_lasso)^2)  # Smaller is better.
+mse_lasso_task1_2026 <- mean((task1_test_2026$y - y_pred_lasso_task1_2026)^2)  # Smaller is better.
 
 # Inspect coefficients.  # Exact zeros are the key LASSO signature.
-coef(lasso_fit)  # Variables with zero coefficients are effectively removed.
+coef(lasso_fit_task1_2026)  # Variables with zero coefficients are effectively removed.
 ```
 
 ### How to improve it
@@ -1010,27 +1058,27 @@ A GAM lets some predictors stay linear while other predictors are allowed to ben
 ### Full runnable template
 
 ```{r}
-# Plot y against candidate predictors first.  # BAN404 often expects you to identify nonlinearity visually.
-train %>%
-  ggplot(aes(x = x1, y = y)) +
+# Plot y against a candidate predictor from the live Task 1 data first.  # BAN404 often expects you to identify nonlinearity visually.
+task1_train_2026 %>%
+  ggplot(aes(x = x2, y = y)) +
   geom_point(alpha = 0.4) +
   geom_smooth(se = FALSE, color = "red")  # Curvature in the smooth suggests a non-linear relationship.
 
 # Fit the OLS baseline.  # We need a benchmark before claiming GAM improves anything.
-ols_fit <- lm(y ~ ., data = train)  # Linear benchmark.
-mse_ols <- mean(residuals(ols_fit)^2)  # In-sample MSE for baseline comparison.
+ols_task1_2026 <- lm(y ~ ., data = task1_train_2026)  # Linear benchmark.
+mse_ols_task1_2026 <- mean(residuals(ols_task1_2026)^2)  # In-sample MSE for baseline comparison.
 
-# Fit a GAM with one smooth term.  # Replace x1 with whichever variable looks clearly non-linear.
-gam_fit <- gam(y ~ s(x1) + x2 + x3, data = train)  # x1 is modeled flexibly, others stay linear here.
-mse_gam <- mean(residuals(gam_fit)^2)              # In-sample MSE for the GAM.
+# Fit a GAM with smooth terms that are plausible for the live Task 1 data.  # x2 and x3 are natural first smooth candidates here.
+gam_task1_2026 <- gam(y ~ x1 + s(x2) + s(x3) + x4 + x5 + x6, data = task1_train_2026)  # Let x2 and x3 bend while the other predictors stay linear.
+mse_gam_task1_2026 <- mean(residuals(gam_task1_2026)^2)                                  # In-sample MSE for the GAM.
 
 # Compute explained variation from MSE if asked.  # This mirrors the 2025 Task 1e style calculation.
-var_y <- mean((train$y - mean(train$y))^2)         # Total variation benchmark.
-r2_ols <- 1 - mse_ols / var_y                      # Share explained by OLS.
-r2_gam <- 1 - mse_gam / var_y                      # Share explained by GAM.
+var_y_task1_2026 <- mean((task1_train_2026$y - mean(task1_train_2026$y))^2)  # Total variation benchmark.
+r2_ols_task1_2026 <- 1 - mse_ols_task1_2026 / var_y_task1_2026                # Share explained by OLS.
+r2_gam_task1_2026 <- 1 - mse_gam_task1_2026 / var_y_task1_2026                # Share explained by GAM.
 
 # Plot the smooth term.  # This gives a visual interpretation of the non-linear effect.
-plot(gam_fit, se = TRUE)                           # Shows the estimated smooth relationship.
+plot(gam_task1_2026, se = TRUE)                   # Shows the estimated smooth relationship.
 ```
 
 ### Backfitting in plain English
@@ -1107,9 +1155,9 @@ loo_local <- function(K, x, y) {
   mean((y - pred)^2)                                   # Average left-out squared error.
 }
 
-K_grid <- 2:10                                         # Candidate neighborhood sizes.
-cv_mse <- sapply(K_grid, function(k) loo_local(k, x, y))  # CV score for each K.
-K_best <- K_grid[which.min(cv_mse)]                    # Best K minimizes LOOCV MSE.
+K_grid_task1_2026 <- 2:10                                                           # Candidate neighborhood sizes.
+cv_mse_task1_2026 <- sapply(K_grid_task1_2026, function(k) loo_local(k, task1_2026$x2, task1_2026$y))  # CV score for each K using one live predictor/response pair.
+K_best_task1_2026 <- K_grid_task1_2026[which.min(cv_mse_task1_2026)]                # Best K minimizes LOOCV MSE.
 ```
 
 ### Multi-predictor note
@@ -1168,18 +1216,18 @@ A regression tree repeatedly splits the predictor space into regions and predict
 ### Full runnable template
 
 ```{r}
-# Fit a regression tree.  # Trees split the predictor space into boxes and predict the mean inside each box.
-tree_reg <- tree(y ~ ., data = train)  # Continuous response automatically means regression tree.
+# Fit a regression tree on the live Task 1 data.  # Trees split the predictor space into boxes and predict the mean inside each box.
+tree_reg_task1_2026 <- tree(y ~ ., data = task1_train_2026)  # Continuous response automatically means regression tree.
 
 # Plot the tree.  # BAN404 often expects a plot plus interpretation of a branch.
-plot(tree_reg)                         # Draws the split structure.
-text(tree_reg, pretty = 0)             # Prints split labels and terminal node predictions.
+plot(tree_reg_task1_2026)              # Draws the split structure.
+text(tree_reg_task1_2026, pretty = 0)  # Prints split labels and terminal node predictions.
 
 # Predict on test data.  # Same honest evaluation logic as OLS.
-y_pred_tree <- predict(tree_reg, newdata = test)  # Continuous predictions from the tree.
+y_pred_tree_task1_2026 <- predict(tree_reg_task1_2026, newdata = task1_test_2026)  # Continuous predictions from the tree.
 
 # Evaluate with MSE.  # Continuous response means regression metric.
-mse_tree <- mean((test$y - y_pred_tree)^2)        # Lower is better.
+mse_tree_task1_2026 <- mean((task1_test_2026$y - y_pred_tree_task1_2026)^2)        # Lower is better.
 ```
 
 ### How to evaluate
@@ -1233,23 +1281,23 @@ A classification tree repeatedly splits the predictor space into regions that be
 ### Full runnable template
 
 ```{r}
-# Fit a classification tree.  # This is the tree analogue of logistic regression for class outcomes.
-tree_cls <- tree(y ~ ., data = train)  # y should be a factor for a clean classification workflow.
+# Fit a classification tree on the live customer churn data.  # This is the tree analogue of logistic regression for class outcomes.
+tree_cls_customer_2026 <- tree(churn ~ ., data = customer_train_2026)  # churn is already a factor for a clean classification workflow.
 
 # Plot and label the tree.  # Exam answers look stronger when you show the rules visually.
-plot(tree_cls)                         # Tree structure.
-text(tree_cls, pretty = 0)             # Split labels and terminal nodes.
+plot(tree_cls_customer_2026)           # Tree structure.
+text(tree_cls_customer_2026, pretty = 0)  # Split labels and terminal nodes.
 
 # Get predicted probabilities.  # Many BAN404 tasks want class predictions based on a threshold.
-pred_prob_tree <- predict(tree_cls, newdata = test)  # For classification trees this is usually a probability matrix.
+pred_prob_tree_customer_2026 <- predict(tree_cls_customer_2026, newdata = customer_test_2026)  # For classification trees this is usually a probability matrix.
 
 # Convert probabilities to class labels.  # Use the probability of the positive class.
-pred_class_tree <- if_else(pred_prob_tree[, 2] > 0.5, levels(train$y)[2], levels(train$y)[1]) %>%
-  factor(levels = levels(train$y))
+pred_class_tree_customer_2026 <- if_else(pred_prob_tree_customer_2026[, 2] > 0.30, levels(customer_train_2026$churn)[2], levels(customer_train_2026$churn)[1]) %>%
+  factor(levels = levels(customer_train_2026$churn))
 
 # Evaluate the classification tree.  # Same metric style as logistic regression.
-cm_tree <- table(actual = test$y, predicted = pred_class_tree)
-acc_tree <- sum(diag(cm_tree)) / sum(cm_tree)
+cm_tree_customer_2026 <- table(actual = customer_test_2026$churn, predicted = pred_class_tree_customer_2026)
+acc_tree_customer_2026 <- sum(diag(cm_tree_customer_2026)) / sum(cm_tree_customer_2026)
 ```
 
 ### How to evaluate
@@ -1304,11 +1352,11 @@ Bagging means fitting many trees on bootstrap samples and averaging them. This r
 
 ```{r}
 # Approximate bagging with randomForest by letting mtry equal all predictors.  # This is the standard trick in R.
-p <- ncol(train) - 1                                          # Number of predictors, excluding the response.
-bag_fit <- randomForest(y ~ ., data = train, mtry = p, ntree = 200)  # mtry = p means bagging rather than classic RF.
+p_customer_2026 <- ncol(customer_train_2026) - 1                                              # Number of predictors, excluding the churn response.
+bag_fit_customer_2026 <- randomForest(churn ~ ., data = customer_train_2026, mtry = p_customer_2026, ntree = 200)  # mtry = p means bagging rather than classic RF.
 
 # Predict and evaluate.  # Use MSE for regression or confusion matrix/accuracy for classification.
-pred_bag <- predict(bag_fit, newdata = test)                  # Averaged prediction across bootstrap trees.
+pred_bag_customer_2026 <- predict(bag_fit_customer_2026, newdata = customer_test_2026)        # Averaged prediction across bootstrap trees.
 ```
 
 ### How to evaluate
@@ -1362,32 +1410,32 @@ Random forest is like bagging plus extra randomness in predictor selection. This
 ### Classification template
 
 ```{r}
-# Fit random forest for classification.  # RF is a high-frequency BAN404 improvement model.
-rf_cls <- randomForest(y ~ ., data = train, ntree = 300)  # ntree controls how many trees are averaged.
+# Fit random forest for classification on the live churn dataset.  # RF is a high-frequency BAN404 improvement model.
+rf_cls_customer_2026 <- randomForest(churn ~ ., data = customer_train_2026, ntree = 300)  # ntree controls how many trees are averaged.
 
 # Predict classes on test data.  # randomForest handles the voting internally.
-pred_rf_cls <- predict(rf_cls, newdata = test)            # Default for factor y is predicted class.
+pred_rf_cls_customer_2026 <- predict(rf_cls_customer_2026, newdata = customer_test_2026)  # Default for factor churn is predicted class.
 
 # Evaluate.  # Same classification scorecard as logistic and trees.
-cm_rf <- table(actual = test$y, predicted = pred_rf_cls)
-acc_rf <- sum(diag(cm_rf)) / sum(cm_rf)
+cm_rf_customer_2026 <- table(actual = customer_test_2026$churn, predicted = pred_rf_cls_customer_2026)
+acc_rf_customer_2026 <- sum(diag(cm_rf_customer_2026)) / sum(cm_rf_customer_2026)
 
 # Inspect variable importance.  # BAN404 often asks for plot plus interpretation.
-varImpPlot(rf_cls)                                        # Visual importance summary.
-importance(rf_cls)                                        # Numeric importance values.
+varImpPlot(rf_cls_customer_2026)                          # Visual importance summary.
+importance(rf_cls_customer_2026)                          # Numeric importance values.
 ```
 
 ### Regression template
 
 ```{r}
-# Fit random forest for regression.  # Same idea, but continuous y means averaging numeric predictions.
-rf_reg <- randomForest(y ~ ., data = train, ntree = 300)  # RF regression often captures nonlinearities and interactions well.
+# Fit random forest for regression on the live Task 1 data.  # Same idea, but continuous y means averaging numeric predictions.
+rf_reg_task1_2026 <- randomForest(y ~ ., data = task1_train_2026, ntree = 300)  # RF regression often captures nonlinearities and interactions well.
 
 # Predict on test data.  # Honest out-of-sample comparison.
-y_pred_rf <- predict(rf_reg, newdata = test)
+y_pred_rf_task1_2026 <- predict(rf_reg_task1_2026, newdata = task1_test_2026)
 
 # Evaluate with MSE.  # Same regression metric as other continuous-response models.
-mse_rf <- mean((test$y - y_pred_rf)^2)
+mse_rf_task1_2026 <- mean((task1_test_2026$y - y_pred_rf_task1_2026)^2)
 ```
 
 ### How to evaluate
@@ -1444,15 +1492,15 @@ Boosting builds trees **sequentially**, where each new tree tries to correct the
 ### Classification template
 
 ```{r}
-# Convert y to 0/1 if gbm needs numeric Bernoulli coding.  # Some implementations work more smoothly with numeric targets.
-train_boost <- train %>% mutate(y_num = if_else(y == levels(y)[2], 1, 0))  # Positive class coded as 1.
-test_boost  <- test  %>% mutate(y_num = if_else(y == levels(y)[2], 1, 0))  # Same coding for evaluation.
+# Convert churn to 0/1 if gbm needs numeric Bernoulli coding.  # Some implementations work more smoothly with numeric targets.
+train_boost_customer_2026 <- customer_train_2026 %>% mutate(churn_num = if_else(churn == levels(churn)[2], 1, 0))  # Positive class coded as 1.
+test_boost_customer_2026  <- customer_test_2026 %>% mutate(churn_num = if_else(churn == levels(churn)[2], 1, 0))   # Same coding for evaluation.
 
 # Fit a boosted classification model.  # distribution = "bernoulli" means binary classification.
-boost_fit <- gbm(
-  y_num ~ . - y,                  # Use predictors to predict the numeric class target.
-  data = train_boost,             # Training data only.
-  distribution = "bernoulli",    # Binary outcome setup.
+boost_fit_customer_2026 <- gbm(
+  churn_num ~ . - churn,          # Use predictors to predict the numeric class target.
+  data = train_boost_customer_2026,  # Training data only.
+  distribution = "bernoulli",     # Binary outcome setup.
   n.trees = 1000,                 # Number of boosting steps.
   interaction.depth = 2,          # Tree depth per boosting step.
   shrinkage = 0.01,               # Learning rate; smaller means slower, often stabler learning.
@@ -1460,25 +1508,25 @@ boost_fit <- gbm(
 )
 
 # Predict test probabilities.  # Boosting naturally gives probabilities for Bernoulli tasks.
-pred_prob_boost <- predict(boost_fit, newdata = test_boost, n.trees = 1000, type = "response")
+pred_prob_boost_customer_2026 <- predict(boost_fit_customer_2026, newdata = test_boost_customer_2026, n.trees = 1000, type = "response")
 
-# Convert to classes at threshold 0.5.  # Same final classification logic as logistic regression.
-pred_class_boost <- if_else(pred_prob_boost > 0.5, levels(train$y)[2], levels(train$y)[1]) %>%
-  factor(levels = levels(train$y))
+# Convert to classes at a lower threshold.  # Same final classification logic as logistic regression, but adjusted for class imbalance.
+pred_class_boost_customer_2026 <- if_else(pred_prob_boost_customer_2026 > 0.30, levels(customer_train_2026$churn)[2], levels(customer_train_2026$churn)[1]) %>%
+  factor(levels = levels(customer_train_2026$churn))
 
 # Evaluate predictions.  # Confusion matrix plus accuracy remains the safe BAN404 choice.
-cm_boost <- table(actual = test$y, predicted = pred_class_boost)
-acc_boost <- sum(diag(cm_boost)) / sum(cm_boost)
+cm_boost_customer_2026 <- table(actual = customer_test_2026$churn, predicted = pred_class_boost_customer_2026)
+acc_boost_customer_2026 <- sum(diag(cm_boost_customer_2026)) / sum(cm_boost_customer_2026)
 ```
 
 ### Regression template
 
 ```{r}
-# Fit a boosted regression tree.  # Gaussian distribution is the usual choice for continuous y.
-boost_reg <- gbm(
+# Fit a boosted regression tree on the live Task 1 data.  # Gaussian distribution is the usual choice for continuous y.
+boost_reg_task1_2026 <- gbm(
   y ~ .,                         # Predict continuous y from the predictors.
-  data = train,                  # Training data only.
-  distribution = "gaussian",    # Continuous-response setup.
+  data = task1_train_2026,       # Training data only.
+  distribution = "gaussian",     # Continuous-response setup.
   n.trees = 1000,                # Number of boosting trees.
   interaction.depth = 2,         # Controls how much interaction structure each tree can model.
   shrinkage = 0.01,              # Small learning rate helps regularize the sequential fitting.
@@ -1486,10 +1534,10 @@ boost_reg <- gbm(
 )
 
 # Predict on test data.  # Use the same number of trees chosen in the fitted model if not separately tuned.
-y_pred_boost <- predict(boost_reg, newdata = test, n.trees = 1000)
+y_pred_boost_task1_2026 <- predict(boost_reg_task1_2026, newdata = task1_test_2026, n.trees = 1000)
 
 # Evaluate with MSE.  # Same metric as other regression models.
-mse_boost <- mean((test$y - y_pred_boost)^2)
+mse_boost_task1_2026 <- mean((task1_test_2026$y - y_pred_boost_task1_2026)^2)
 ```
 
 ### How to evaluate
