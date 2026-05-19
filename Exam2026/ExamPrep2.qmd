@@ -1,7 +1,36 @@
 ---
-title: "ExamPrep2"
-format: html
-editor: visual
+title: "BAN404 R Task 2 Comp"
+subtitle: "Comprehensive solution guide based on dataset and possible questions"
+author: "Self-study preparation file"
+date: "2026"
+format:
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    colorlinks: true
+    papersize: a4
+    fontsize: 10pt
+    geometry:
+      - top=20mm
+      - left=20mm
+      - right=20mm
+      - bottom=20mm
+    fig-align: center
+    fig-width: 6
+    fig-height: 4
+  html:
+    toc: true
+    toc-depth: 4
+    number-sections: true
+    theme: flatly
+    highlight-style: kate
+execute:
+  echo: true
+  warning: false
+  message: false
+  eval: true
+  error: true
 ---
 
 **General Setup and Package Loading**
@@ -37,9 +66,8 @@ Before touching the code, we must recognize what the professor typically asks fo
 
 **Possible Exam Question:** *"Load the dataset. Inspect its dimensions and data types. Check for missing values. Create a visual summary (e.g., boxplots) of all continuous variables in their raw state to identify differences in scale."*
 
-<<<<<<< Updated upstream
 **Exam-Ready Written Reasoning:** The very first step in any machine learning pipeline is to import the data safely and inspect its raw structure. Classification algorithms in R require the target variable to be a "factor". We must also check for missing values (`NAs`), as algorithms will either crash or drop rows, distorting our results. Finally, checking the raw scale of continuous variables via boxplots tells us if we need to standardize the data later for distance-based models (like KNN) or regularized models (like LASSO). We keep our original dataset untouched (`df_customer_raw`) as a reliable fallback.
-=======
+
 **Exam-Ready Written Reasoning:** The very first step in any machine learning task is to understand the dimensions and data types of the dataset. Many algorithms in R (like `glmnet` or `randomForest`) will fail or behave unpredictably if categorical variables are stored as "character" or "logical" types rather than "factors". We must also check the summary statistics to see if predictors are on vastly different scales, which would require standardization later.
 
 ```{r t2_structure}
@@ -115,7 +143,7 @@ cor(df_customer$total_eve_minutes, df_customer$total_eve_charge)
 
 **Reasoning:** In binary classification (like churn, default, or fraud), identifying **class imbalance** is the most critical step. If the vast majority of customers do not churn, a naive model could achieve high overall accuracy simply by predicting "FALSE" for everyone (the accuracy paradox). This dictates that we must evaluate our models later using confusion matrices, sensitivity, and specificity, rather than just raw accuracy.
 
-```{r t2_imbalance}
+```{r t2_imbalance_1}
 # Calculate the raw counts for each class in the target variable
 table(df_customer$churn)
 
@@ -220,7 +248,7 @@ ggplot(df_clean, aes(x = as.factor(customer_service_calls), fill = churn)) +
        y = "Proportion of Customers")
 ```
 
-```{r}
+```{r t2_jitter_plots}
 # VISUALIZING ALL NUMERIC VARIABLES VS CHURN
 # We take our clean dataset and pipe it into the plotting workflow
 df_clean %>%
@@ -316,164 +344,8 @@ Here is the **Ultimate EDA Section** for your compendium. It includes the histor
 
 ------------------------------------------------------------------------
 
-## 2.0 Historical Exam Context & Strategy
-
-Before touching the code, we must recognize what the professor typically asks for in Classification EDA. Look at these past exam prompts: \* **2025:** *"Remove variables that cannot plausibly be assumed to be available... Use descriptive statistics and graphs in order to find potentially useful predictors."* \* **2024:** *"If necessary, recode categorical variables as factors. Motivate your choices in words."* \* **2023:** *"Remove variables if you mean that they are unreasonable to include... present results as tables and graphs and comment."*
-
-**Our Strategy:** We will not just plot data blindly. We will systematically verify data types, hunt for "illegal" or "unreasonable" variables (multicollinearity, extreme cardinality, data leakage), visualize the predictors iteratively (showing why some plots fail and others succeed), and output concrete summary tables.
-
-## 2.1 Initial Import and Raw Data Inspection
-
-**Possible Exam Question:** *"Load the dataset. Inspect its dimensions and data types. Check for missing values. Are all variables in the correct format for a classification model?"*
-
-**Exam-Ready Written Reasoning:** The very first step in any machine learning pipeline is to import the data safely and inspect its raw structure. Many R algorithms will fail if categorical variables are stored as "character" or "numeric" rather than "factors". We must also check for missing values (`NAs`), as classification models like logistic regression or random forests will either crash or silently drop rows with missing data, distorting our results. We keep our original dataset untouched (`df_customer_raw`) so we have a reliable fallback.
->>>>>>> Stashed changes
-
-```{r t2_raw_inspect}
-# 1. LOAD DATA SAFELY
-# read_csv is robust; clean_names() standardizes column names.
-df_customer_raw <- read_csv("customer_data.csv", show_col_types = FALSE) %>% clean_names()
-
-# 2. DIMENSIONS AND TYPES
-# glimpse() allows us to quickly see rows/cols and data types.
-glimpse(df_customer_raw)
-
-# 3. MISSING VALUES CHECK
-# colSums(is.na()) counts missing values per column.
-colSums(is.na(df_customer_raw))
-
-# 4. RAW DESCRIPTIVE BOXPLOTS
-# We want to see the scale and outliers of all numeric variables BEFORE cleaning.
-df_customer_raw %>%
-  select(where(is.numeric)) %>%
-  pivot_longer(cols = everything(), names_to = "variable", values_to = "value") %>%
-  ggplot(aes(x = variable, y = value)) +
-  geom_boxplot(fill = "lightgray", color = "black") +
-  coord_flip() + # Turns the plot sideways so variable names are readable
-  theme_minimal() +
-  labs(title = "Raw Scale and Outliers of All Numeric Variables")
-```
-
-**Written analysis of findings/output:** The `glimpse()` output reveals 2,666 observations and 20 columns, and `colSums` confirms there are exactly 0 missing values (meaning no imputation is required). However, the raw boxplots reveal three critical insights that will dictate our preprocessing: 1. **Scale Disparity:** Variables are on vastly different mathematical scales (e.g., `total_day_minutes` spans up to \~350, while `customer_service_calls` is bounded near 10). If we use distance-based models (KNN) or regularized models (LASSO) later, we must ensure these features are standardized so large numbers do not artificially dominate the model. 2. **Presence of Outliers:** There are severe right-tail outliers in almost all usage metrics (the black dots beyond the whiskers). Standard logistic regression can be sensitive to outliers, hinting that robust tree-based models might be safer. 3. **The Categorical Trap:** The boxplot for `area_code` looks highly unnatural, clustered entirely around the 400-500 range. This visually flags that `area_code` is not a continuous measurement, but rather a discrete geographic label (e.g., 408, 415, 510) that must be converted to a categorical factor in our next step.
-
-## Hunting for Traps: Checking Business Logic
-
-**Possible Exam Question:** *"Analyze the variables in the raw dataset. Test for high cardinality, disguised categories, and perfect multicollinearity. Explain your findings."*
-
-**Exam-Ready Written Reasoning:** Before modifying the dataset, we must run diagnostic tests to find "illegal" or problematic variables. 1. **Disguised Categories:** We suspect `area_code` is a geographic label, not a math variable. We will check how many unique values it has. 2. **High Cardinality:** We suspect `state` has too many unique text values, which would create an explosion of dummy variables and risk severe overfitting. We will count them. 3. **Perfect Multicollinearity:** We suspect telecom billing uses a flat rate (Minutes \* Rate = Charge). We will test the correlation; if it is near 1.0, it will make our design matrix singular and crash a logistic regression.
-
-```{r t2_business_tests}
-# 1. TEST AREA CODE (Disguised Category Trap)
-unique(df_customer_raw$area_code)
-
-# 2. TEST STATE (High Cardinality Trap)
-length(unique(df_customer_raw$state))
-
-# 3. TEST MULTICOLLINEARITY (Minutes vs Charge Trap)
-cor(df_customer_raw$total_day_minutes, df_customer_raw$total_day_charge)
-```
-
-**Written analysis of findings/output:** The tests confirm our three suspicions. First, `area_code` outputs only `415, 408, 510`, proving it is a discrete category, not a continuous number. Second, `state` outputs `51`; leaving it in would force the model to create 50 dummy variables, almost guaranteeing overfitting. Third, the correlation between day minutes and day charge is exactly `1`. Including both would cause perfect multicollinearity.
-
-## Executing the Cleaning Pipeline
-
-**Possible Exam Question:** *"Based on your diagnostic tests, clean the dataset. Remove redundant or harmful variables and ensure all categorical variables are correctly formatted as factors for classification."*
-
-**Exam-Ready Written Reasoning:** Because our diagnostic tests proved the presence of high cardinality and perfect multicollinearity, we must drop the `state` variable and all four `charge` columns. Furthermore, R's classification algorithms (like logistic regression and random forests) strictly require the outcome variable and categorical predictors to be stored as `factors`. We will execute these changes to create our final, safe modeling dataset.
-
-```{r t2_clean_execution}
-# EXECUTE THE CLEANING PIPELINE based strictly on prior findings
-df_clean <- df_customer_raw %>%
-  # Drop state (overfitting) and charge columns (perfect multicollinearity)
-  select(-state, -total_day_charge, -total_eve_charge, -total_night_charge, -total_intl_charge) %>%
-  # Convert target and categorical variables to factors
-  mutate(
-    churn = as.factor(churn),
-    area_code = as.factor(area_code),
-    international_plan = as.factor(international_plan),
-    voice_mail_plan = as.factor(voice_mail_plan)
-  )
-
-# Verify the final clean dimensions
-dim(df_clean)
-```
-
-**Written analysis of findings/output:** The cleaning pipeline successfully executed. The output `2666 15` confirms that our row count remains intact (no data was lost), but our column count has been successfully reduced from 20 to 15 by stripping out the 5 harmful variables. `df_clean` is now mathematically safe for modeling.
-
-## Target Distribution (Class Imbalance)
-
-**Possible Exam Question:** *"Analyze the distribution of the target variable. Explain why this distribution dictates how you will evaluate your classification models later."*
-
-**Exam-Ready Written Reasoning:** In binary classification, verifying the balance of the target classes is the most critical pre-modeling step. If a vast majority of the dataset belongs to one class, a naive model can achieve high overall accuracy simply by guessing the majority class every time (the "Accuracy Paradox"). Identifying severe imbalance forces us to abandon raw accuracy as our primary metric and instead rely on the Confusion Matrix, Sensitivity, and Specificity.
-
-```{r t2_imbalance}
-# Calculate exact proportions for the target variable
-prop.table(table(df_clean$churn))
-
-# Create a clean bar plot to visually display the imbalance
-ggplot(df_clean, aes(x = churn, fill = churn)) +
-  geom_bar(color = "black") +
-  theme_minimal() +
-  labs(title = "Distribution of Customer Churn", subtitle = "Checking for Class Imbalance")
-```
-
-**Written analysis of findings/output:** The output reveals "The Big Catch": severe class imbalance. Approximately 85.4% of the customers belong to the negative class (`FALSE`), while only 14.6% belong to the positive class (`TRUE`). Because our operational goal is to identify churners, any model we build must be evaluated on its ability to correctly catch that 14.6% (Sensitivity). A model that just predicts "FALSE" for everyone achieves 85.4% accuracy but is entirely useless for the business.
-
-## 2.4 Visualizing Predictors: The Learning Process (Scatter vs. Density)
-
-**Possible Exam Question:** *"Use graphs to find potentially useful predictors for churn. Discuss the limitations of scatter plots for binary outcomes and provide a superior alternative. Are we dealing with normal distributions, and does it matter?"*
-
-**Exam-Ready Written Reasoning:** To find useful predictors, we must visualize them against the target. A naive attempt is a jittered scatter plot. However, plotting continuous variables against a binary target results in severe overplotting, and class imbalance heavily distorts the visual. The mathematically superior approach is using **Overlapping Density Plots**, which abstract away point counts and display the normalized *shape* of the distribution. If a variable is a strong predictor, its density curve for the "TRUE" class will be visibly shifted compared to the "FALSE" class. Note: This is a classic exam trap; Logistic regression DOES NOT require predictor variables (X) to be normally distributed, it only assumes the log-odds relate linearly to X.
-
-```{r t2_visual_learning}
-# ATTEMPT 1: JITTERED SCATTER PLOTS (The problematic approach)
-df_clean %>%
-  select(where(is.numeric), churn) %>%
-  pivot_longer(cols = -churn, names_to = "variable", values_to = "value") %>%
-  ggplot(aes(x = churn, y = value, color = churn)) +
-  geom_jitter(alpha = 0.3, width = 0.2) + # Jitter adds horizontal noise, but overplotting is still severe
-  facet_wrap(~variable, scales = "free_y") +
-  theme_minimal() + theme(legend.position = "none") +
-  labs(title = "Attempt 1: Jittered Scatter Plots (Suffers from Overplotting)")
-
-# ATTEMPT 2: OVERLAPPING DENSITY PLOTS (The optimal approach for continuous variables)
-df_clean %>%
-  select(where(is.numeric), churn) %>%
-  pivot_longer(cols = -churn, names_to = "variable", values_to = "value") %>%
-  ggplot(aes(x = value, fill = churn)) +
-  geom_density(alpha = 0.5) + # alpha=0.5 makes curves transparent to see overlap
-  facet_wrap(~variable, scales = "free") +
-  theme_minimal() +
-  labs(title = "Attempt 2: Density Plots (Clear visualization of discriminatory power)")
-
-# ATTEMPT 3: CATEGORICAL PREDICTORS (Stacked Bar Charts)
-# For categorical predictors, we use position = "fill" to see standardized proportions
-ggplot(df_clean, aes(x = international_plan, fill = churn)) +
-  geom_bar(position = "fill", color = "black") +
-  theme_minimal() +
-  labs(title = "Churn Rate by International Plan", y = "Proportion of Customers")
-```
-
-**Written analysis of findings/output:** The scatter plot proved ineffective due to overplotting. The density plots, however, revealed clear patterns. Variables like `total_day_minutes` show a distinct rightward shift for the blue curve (`TRUE`), indicating that higher daily minutes correlate with higher churn. Conversely, `total_day_calls` shows perfectly overlapping curves, providing no mathematical separation between classes. Furthermore, the stacked bar chart reveals that the proportion of churn is drastically higher for customers who possess an `international_plan`.
-
-## 2.5 Tabular Summary and EDA Master Conclusion
-
-**Possible Exam Question:** *"Present your descriptive findings as a table. Based on all your EDA, summarize which variables have the highest discriminatory power and which appear useless. How might non-linear variables affect model choice?"*
-
-**Exam-Ready Written Reasoning:** Visual intuition must always be backed up by hard mathematical numbers in an exam. By grouping the dataset by churn status and calculating the mean for all numeric columns, we establish a tabular baseline to definitively prove which variables separate the classes.
-
-```{r t2_summary_table}
-# CREATE A GROUPED SUMMARY TABLE
-df_clean %>%
-  group_by(churn) %>%
-  # Calculate the mean for every numeric column
-  summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE))) %>%
-  t() # Transpose for readability in the console
-```
-
-<<<<<<< Updated upstream
 **Written analysis of findings/output (Master EDA Conclusion):** The grouped means table mathematically confirms our visual findings: 1. **Star Predictors:** The mean for `total_day_minutes` jumps substantially from 175.1 (FALSE) to 205.2 (TRUE), and `customer_service_calls` jumps from 1.45 to 2.2. These will be the primary drivers in our models. 2. **Useless Predictors:** `total_day_calls`, `total_eve_calls`, and `total_night_calls` have nearly identical means across both classes. We expect these to have high p-values and near-zero coefficients in a baseline logistic regression. 3. **Non-Linearity:** `number_vmail_messages` is severely zero-inflated (massive spike at 0 in the density plot), and `customer_service_calls` likely has a threshold effect (churn spikes exponentially after a few calls). Because standard logistic regression assumes a strictly linear relationship between predictors and log-odds, this non-linear structure strongly suggests that a flexible, tree-based model (like a Random Forest) might ultimately extract more signal from this dataset.
-=======
+
 # Task 2: Classification (Predicting Churn)
 
 ## 2.0 Historical Exam Context & Strategy
@@ -537,7 +409,37 @@ cor_matrix %>%
        subtitle = "Dark red squares outside the diagonal indicate severe collinearity")
 ```
 
-**Written analysis of findings/output:** The heatmap clearly identifies four instances of perfect positive collinearity (correlation = 1.0). `total_day_minutes` is perfectly correlated with `total_day_charge`, and this pattern repeats for evening, night, and international calls. This is a structural artifact of telecom billing (minutes dictate charge). We must remove all `charge` variables to prevent multicollinearity from destabilizing our logistic regression model. No other numeric predictors show significant correlation with one another.
+**Written analysis of findings/output:** **1. What the Heatmap Tells Us (The Findings)**
+
+-   **The Four Red Blocks (Perfect Positive Correlation):** Outside of the standard diagonal line, there are four distinct, dark red 2x2 squares. These represent perfect (or near-perfect) positive correlation (r≈1.0) between four specific pairs of variables:
+
+    -   `total_day_minutes` and `total_day_charge`
+
+    -   `total_eve_minutes` and `total_eve_charge`
+
+    -   `total_night_minutes` and `total_night_charge`
+
+    -   `total_intl_minutes` and `total_intl_charge`
+
+-   **The Sea of White (Independence):** Every other intersection on the heatmap is essentially white (r≈0). This means variables like `customer_service_calls`, `account_length`, and the various `calls` variables are completely uncorrelated with one another.
+
+**2. Model Implications According to the Curriculum (ISLR)**
+
+According to the statistical learning curriculum, these findings dictate specific actions for parametric models like Logistic Regression:
+
+-   **The Collinearity Trap (The Red Blocks):** When two predictors are perfectly correlated, they suffer from extreme **collinearity**.
+
+    -   *The Math Problem:* In logistic (and linear) regression, the algorithm attempts to isolate the individual effect of one predictor while holding the other constant. If `minutes` and `charge` always move together, the model cannot mathematically distinguish their individual effects.
+
+    -   *The Consequence:* This causes **Variance Inflation**. The standard errors of the coefficient estimates will explode toward infinity, making the p-values meaningless and destroying the statistical power of the model. In extreme cases, the design matrix becomes singular (non-invertible), causing R's `glm()` function to either crash or arbitrarily drop one of the variables with an `NA` coefficient.
+
+    -   *The Action:* We **must** manually remove one variable from each correlated pair prior to modeling. Dropping the `charge` variables (since they are just a mathematical derivative of minutes) is the correct move.
+
+-   **Unique Information (The White Space):**
+
+    -   The lack of correlation among the remaining variables is highly desirable for an additive model like Logistic Regression. It means that `customer_service_calls`, `total_day_minutes`, and `number_vmail_messages` each capture a completely unique, non-overlapping dimension of customer behavior. When we put them together in a model, they will independently contribute to explaining the variance in `churn` without stepping on each other's toes.
+
+*(Note: We already wrote the code to drop these `charge` columns in Section 2.3, but if the exam asks you **why** you dropped them, this heatmap and the explanation of "Variance Inflation" and "Singular Matrices" is your ultimate, A-grade answer!)*
 
 ## 2.3 Data Preprocessing and Feature Selection
 
@@ -624,4 +526,417 @@ df_clean %>%
 ```
 
 **Written analysis of findings/output:** The conditional means confirm our visual analysis. `total_day_minutes` increases from a mean of 175.1 for non-churners to 205.2 for churners, and `customer_service_calls` increases from 1.45 to 2.2. These features provide strong separation. In contrast, `total_day_calls` and `total_night_calls` show virtually identical conditional means (\~100 calls), confirming they provide negligible information for classification. We expect these non-discriminatory variables to be statistically insignificant in our baseline models.
->>>>>>> Stashed changes
+
+## 2.7 Data Splitting and Evaluation Strategy
+
+**Possible Exam Question:** *"Split the data into a training and test set. In some tasks, you evaluate models on all data, while in others, you use a test set. Motivate your choice to use training/test data for predicting churn." (Based on 2024 Task 2b/2i)*
+
+**Exam-Ready Written Reasoning:** The choice of data depends strictly on the analytical goal. If the objective is *inference or explanation* (e.g., answering "Why do customers churn?"), we fit the model on the full dataset to maximize our sample size, reduce standard errors, and obtain the most accurate coefficient estimates. However, if the objective is *prediction* (e.g., "Will a new customer churn?"), evaluating a model on the same data it was trained on will result in an artificially optimistic accuracy rate due to overfitting. Therefore, for predictive tasks, we must hold out a test set to honestly estimate the model's out-of-sample generalization error.
+
+Furthermore, because of our severe class imbalance (85% vs 15%), simple random sampling carries a slight risk of producing a training set with too few actual churners to train on. While a dataset of this size (\~2600 rows) usually protects against this via the Law of Large Numbers, we must mathematically verify that the class proportions in our new train and test sets remain representative of the original population.
+
+```{r t2_data_split}
+# 1. SET THE SEED FOR REPRODUCIBILITY
+# This locks the random number generator so the split is identical every time.
+set.seed(123)
+
+# 2. CREATE THE RANDOM INDEX
+# We draw a random sample of row numbers equal to exactly 50% of the dataset
+idx_t2 <- sample(seq_len(nrow(df_clean)), size = floor(nrow(df_clean) / 2))
+
+# 3. SPLIT THE DATA
+# Extract the training rows
+train_t2 <- df_clean[idx_t2, ]
+# Extract the remaining rows for the test set
+test_t2  <- df_clean[-idx_t2, ]
+
+# 4. VERIFY THE PROPORTIONS (Checking for Sampling Bias)
+# We check if the 85/15 ratio survived the simple random split
+print("Training Set Proportions:")
+prop.table(table(train_t2$churn))
+
+print("Test Set Proportions:")
+prop.table(table(test_t2$churn))
+```
+
+**Written analysis of findings/output:** The data splitting was successful. The `prop.table()` outputs confirm that the training set contains 15.6% churners, and the test set contains 13.5% churners. Because the sample size was large enough, simple random sampling did not introduce extreme sampling bias. We have enough churners in our training set to train the model, and a representative proportion in our test set to evaluate its Sensitivity accurately.
+
+## 2.8 Baseline Logistic Regression & Coefficient Interpretation
+
+**Possible Exam Question:** *"Fit a logistic regression with all valid variables to predict churn. Interpret the coefficients associated with your strongest predictors. For all coefficients, are the signs as you expected based on your EDA?" (Based on 2023 Task 2c)*
+
+**Exam-Ready Written Reasoning:** We begin our predictive modeling with a baseline Logistic Regression. Logistic regression is a parametric method that models the probability of the response belonging to a particular category. Specifically, it assumes a linear relationship between the predictors and the *log-odds* of the outcome. We train this model exclusively on `train_t2`. We expect variables that showed clear separation in our density plots (like `total_day_minutes`) to have positive, statistically significant coefficients, while perfectly overlapping variables (like `total_day_calls`) should be statistically insignificant.
+
+```{r t2_logistic_baseline}
+# FIT THE LOGISTIC REGRESSION MODEL
+# We use glm() (Generalized Linear Model). 
+# family = "binomial" tells R to use logistic regression rather than linear regression.
+# churn ~ . means "predict churn using all other variables in the dataset".
+log_model <- glm(churn ~ ., data = train_t2, family = "binomial")
+
+# DISPLAY THE SUMMARY
+# This shows the coefficient estimates, standard errors, z-values, and p-values.
+summary(log_model)
+```
+
+**Written analysis of findings/output:** The logistic regression output perfectly validates our EDA hypotheses: 1. **Statistical Significance & Expected Signs:** Variables that showed distinct separation in EDA (`total_day_minutes`, `customer_service_calls`, `international_planYes`) all have highly significant p-values (`< 2e-16`) and positive coefficients. The positive sign means that as usage or service calls increase, the log-odds of churning increase. 2. **Useless Predictors:** As predicted by our perfectly overlapping density plots, variables like `total_day_calls` ($p = 0.31$) and `total_eve_calls` ($p = 0.64$) are completely insignificant. They provide no statistical value in distinguishing between classes. 3. **Coefficient Interpretation:** The coefficient estimate for `customer_service_calls` is `0.616`. According to logistic regression mechanics, this means that for every 1 additional customer service call a person makes, their log-odds of churning increases by 0.616, holding all other variables constant.
+
+**What the Output Tells us combined:**
+
+1.  **The Data Split:** The training set has 15.6% churners and the test set has 13.5% churners. This is a very safe split. If the test set had dropped to 1% or 2%, we would have had to redo it. Simple random sampling worked.
+
+2.  **The "Star" Predictors:** `customer_service_calls`, `total_day_minutes`, and `international_planYes` all have p-values of basically `0` (`< 2e-16`). This means there is almost a 0% chance their relationship with churn is a coincidence.
+
+3.  **The "Useless" Predictors:** `total_day_calls` (p=0.31), `total_eve_calls` (p=0.64), and `area_code` (p≈0.69) are totally insignificant. This perfectly matches our overlapping density plots!
+
+4.  **The Coefficient Interpretation:** The coefficient for `customer_service_calls` is `0.616`. Because this is *logistic* regression, this means: *Holding all else constant, for every 1 additional customer service call a person makes, their log-odds of churning increases by 0.616.*
+
+## 2.9 Evaluation, Asymmetric Costs, and Threshold Tuning
+
+**Possible Exam Question:** *"Evaluate the predictions of the logistic model on the test data. Use a threshold of 0.5. Then, imagine a decision problem where it costs more to predict a claim as a 'non-claim' (False Negative) than vice versa. Compute a confusion matrix and argue for your choice of a new threshold." (Based on 2021 Task 3c and 2025 Task 2c)*
+
+**Exam-Ready Written Reasoning:** To evaluate a logistic regression model, we generate predicted probabilities on the unseen test data. The default threshold to convert probabilities into binary classes is `0.5`. However, in imbalanced datasets (where only 13.5% of the test set churns), the model will rarely output a probability above `0.5`. Consequently, it will predict `FALSE` for almost everyone. This yields a high overall "Accuracy" but a terrible "Sensitivity" (True Positive Rate).
+
+In telecom churn (or insurance claims), a False Negative (failing to identify a customer who is about to leave) is far more expensive than a False Positive (sending a retention discount to a loyal customer). To minimize business cost, we must consciously lower our classification threshold (e.g., to `0.2`) to increase our Sensitivity, explicitly trading off an increase in False Positives to minimize False Negatives.
+
+```{r t2_evaluation}
+# 1. GENERATE PREDICTED PROBABILITIES ON TEST DATA
+# type = "response" ensures the output is a probability between 0 and 1, not log-odds
+log_probs <- predict(log_model, newdata = test_t2, type = "response")
+
+# 2. EVALUATE WITH DEFAULT 0.5 THRESHOLD
+# If probability > 0.5, predict TRUE, else FALSE
+pred_class_05 <- ifelse(log_probs > 0.5, "TRUE", "FALSE")
+
+print("Confusion Matrix (Threshold = 0.5):")
+table(Predicted = pred_class_05, Actual = test_t2$churn)
+
+# 3. TUNING THE THRESHOLD FOR ASYMMETRIC COSTS
+# We lower the threshold to 0.2 to catch more churners (Increase Sensitivity)
+pred_class_02 <- ifelse(log_probs > 0.2, "TRUE", "FALSE")
+
+print("Confusion Matrix (Threshold = 0.2):")
+table(Predicted = pred_class_02, Actual = test_t2$churn)
+```
+
+**Written analysis of findings/output:** At the default `0.5` threshold, the model behaves exactly as feared: it misses a massive portion of the actual churners (133 False Negatives) and only catches 47 (Sensitivity ≈ 26%). It yields an overall accuracy of 86.5%, but this is the "Accuracy Paradox" at work—it achieves high accuracy simply by predicting the majority class, rendering it ineffective for a retention campaign.
+
+By lowering the threshold to `0.2`, we dramatically decrease our False Negatives (from 133 down to 69), catching 111 true churners (Sensitivity jumps to ≈ 62%). As expected by the Bias-Variance tradeoff, this comes at the cost of increasing our False Positives (from 47 up to 233). However, given the asymmetric business cost—where losing a customer entirely is far more expensive than sending a retention discount to a loyal customer—the `0.2` threshold provides a vastly superior operational model.
+
+### 2.9b Systematic Threshold Grid Search
+
+**Possible Exam Question:** *"Use a systematic approach to find the threshold that maximizes overall accuracy. Discuss the trade-off between sensitivity and accuracy across different thresholds." (Based on 2022 Task 1e)*
+
+**Exam-Ready Written Reasoning:** To formally find the "optimal" threshold, we can perform a grid search. We will test a sequence of thresholds from 0.1 to 0.9 and calculate the resulting Accuracy, Sensitivity (ability to catch churners), and Specificity (ability to identify non-churners) for each. As the threshold increases, the model becomes more conservative in predicting "TRUE". Mathematically, this guarantees that Sensitivity will decrease while Specificity increases. If the exam asks to maximize *Accuracy*, we look for the highest overall percentage. If the exam asks to minimize *False Negatives*, we look for a threshold with high Sensitivity.
+
+```{r t2_threshold_search}
+# 1. DEFINE A GRID OF THRESHOLDS
+thresholds <- seq(0.1, 0.8, by = 0.1)
+
+# 2. CREATE AN EMPTY DATAFRAME TO STORE RESULTS
+results <- data.frame(Threshold = numeric(), Accuracy = numeric(), 
+                      Sensitivity = numeric(), Specificity = numeric())
+
+# 3. LOOP THROUGH EACH THRESHOLD AND CALCULATE METRICS
+for(thresh in thresholds) {
+  # Generate predictions for this specific threshold
+  preds <- ifelse(log_probs > thresh, "TRUE", "FALSE")
+  
+  # Build confusion matrix (using factor to ensure 2x2 matrix even if no TRUEs predicted)
+  cm <- table(Predicted = factor(preds, levels = c("FALSE", "TRUE")), 
+              Actual = test_t2$churn)
+  
+  # Extract matrix components
+  TN <- cm[1,1]  # True Negative
+  FN <- cm[1,2]  # False Negative
+  FP <- cm[2,1]  # False Positive
+  TP <- cm[2,2]  # True Positive
+  
+  # Calculate Metrics
+  acc <- (TP + TN) / sum(cm)
+  sens <- TP / (TP + FN)  # How many actual churners did we catch?
+  spec <- TN / (TN + FP)  # How many actual non-churners did we keep?
+  
+  # Append to results
+  results <- rbind(results, data.frame(Threshold = thresh, Accuracy = round(acc, 3), 
+                                       Sensitivity = round(sens, 3), Specificity = round(spec, 3)))
+}
+
+# 4. PRINT THE TABLE
+print(results)
+```
+
+**Written analysis of findings/output:** *(Note for exam: Read the table to answer the specific exam prompt)* The grid search perfectly illustrates the Bias-Variance threshold trade-off. If our goal is to strictly maximize overall **Accuracy** (as requested in the 2022 exam), the table shows the optimal threshold is near `[Look at table]`. However, at this threshold, Sensitivity is extremely low. Conversely, if our goal is to catch churners for a retention campaign, lowering the threshold to `0.2` or `0.3` drastically improves Sensitivity while only sacrificing a few percentage points of overall Accuracy.
+
+**Looking at the table**
+
+1.  **The "Accuracy Trap" (Threshold = 0.7):** Look at the second column. The absolute highest accuracy in the entire table is **87.0%** at a threshold of `0.7`. But look at the Sensitivity at that threshold: **0.078 (7.8%)**. That means the model achieves its maximum possible accuracy while missing 92% of the churners!
+
+2.  **The Default (Threshold = 0.5):** At `0.5`, Accuracy is 86.5%, but Sensitivity is only 26.1%.
+
+3.  **The Sweet Spot (Threshold = 0.2 or 0.3):** Look at `0.2`. We sacrificed about 9% of our overall accuracy (dropping to 77.3%), but our Sensitivity skyrocketed to **61.7%**. At `0.3`, we keep an excellent 83.6% accuracy while catching **51.1%** of churners.
+
+**Written analysis of findings/output:** The grid search perfectly illustrates the danger of the "Accuracy Paradox" in imbalanced datasets. If our goal is strictly to maximize overall **Accuracy** (as requested in the 2022 exam), the table shows the mathematically optimal threshold is `0.7` (achieving 87.0% accuracy). However, at this threshold, Sensitivity is a catastrophic `0.078`—meaning the model misses 92% of all actual churners, simply defaulting to "FALSE" almost every time.
+
+If this model is deployed for a business retention campaign, we must focus on Sensitivity. Lowering the threshold to `0.2` provides the optimal operational trade-off: we sacrifice roughly 9% in overall Accuracy (dropping to 77.3%), but Sensitivity skyrockets to `0.617`, allowing us to successfully identify and target the majority of customers who are preparing to churn.
+
+## 2.10 The Interpretable Non-Linear Model: Classification Trees
+
+**Possible Exam Question:** *"Fit a classification tree, using all available variables, and plot it. Give an example of how to interpret a branch of the tree. Evaluate the model fit." (Based on 2022 Task 1d and 2024 Task 2e)*
+
+**Exam-Ready Written Reasoning:** While Logistic Regression is powerful, it assumes a strict linear relationship between predictors and the log-odds of the outcome. During our EDA, we observed non-linear threshold effects (e.g., churn skyrocketing after a certain number of `customer_service_calls`). Classification and Regression Trees (CART) are non-parametric models that automatically handle these non-linearities and threshold effects by recursively splitting the predictor space. Furthermore, single trees are highly interpretable. However, this interpretability comes at the cost of high variance (the tree is highly sensitive to the training data) and typically lower predictive accuracy than advanced ensemble methods.
+
+```{r t2_single_tree}
+# 1. FIT THE CLASSIFICATION TREE
+# We use the tree() function. It automatically detects 'churn' is a factor and builds a classification tree.
+tree_model <- tree(churn ~ ., data = train_t2)
+
+# 2. PLOT THE TREE
+# plot() draws the branches, text() adds the variable names and split criteria
+plot(tree_model)
+text(tree_model, pretty = 0, cex = 0.8)
+title("Classification Tree for Customer Churn")
+
+# 3. EVALUATE ON TEST DATA
+# type = "class" returns the direct TRUE/FALSE prediction based on the tree's internal majority voting
+tree_preds <- predict(tree_model, newdata = test_t2, type = "class")
+
+print("Confusion Matrix (Single Tree):")
+table(Predicted = tree_preds, Actual = test_t2$churn)
+```
+
+**Written analysis of findings/output:** The classification tree successfully captured the non-linear threshold effects we suspected during EDA.
+
+1.  **Interpreting a Branch:** The tree algorithm recursively partitions the predictor space. By convention, if a condition is met, we traverse the left branch; if not, we traverse right. The most important variable sits at the root node: `customer_service_calls < 3.5`. If a customer makes 4 or more calls (traversing right), and their `total_day_minutes < 172.55` (traversing left), the tree immediately predicts `TRUE` (Churn). This captures complex interactions that a rigid linear model cannot.
+2.  **Model Evaluation & The Danger of High Variance:** The confusion matrix reveals a massive improvement, correctly identifying 120 churners (Sensitivity ≈ 66.7%) while maintaining an overall Accuracy of 93.3% (1244/1333) without any manual threshold tuning.
+3.  **Curriculum Warning:** However, it is extremely dangerous to base business decisions on this single tree. According to the ISLR curriculum, single trees suffer from **high variance**. They are highly sensitive to the specific training data; a slightly different random split could result in a completely different tree structure. This current high performance could simply be the result of lucky random variation. To smooth out this variance and build a model we can actually trust, we must use an ensemble method.
+
+**The Concepts: Bagging vs. Random Forest vs. Pruning vs. Boosting**
+
+1.  **Pruning:** Pruning is only used on a **single tree**. You grow a massive tree, and then "prune" it back to prevent it from overfitting.
+
+2.  **Bagging (Bootstrap Aggregation):** Instead of pruning, Bagging says: "Let's grow 500 massive, unpruned trees on 500 bootstrapped samples of the data, and average their predictions." Because we average them, the high variance of the individual trees cancels out.
+
+3.  **Random Forest:** Random Forest **IS** Bagging, but with one genius tweak. If there is a super-strong predictor (like `total_day_minutes`), every single bagged tree will use it at the very top split. This makes all 500 trees look very similar (they are highly correlated). Random Forest fixes this by forcing the model to only consider a random subset of variables at each split (usually ≈p). This **decorrelates** the trees, making the final average much more reliable.
+
+4.  **Boosting:** This is a totally different algorithm. While Random Forest builds 500 deep trees independently in parallel, Boosting builds shallow trees *sequentially*, where each tree tries to fix the specific errors of the previous tree.
+
+So, by using `randomForest()`, **you are automatically doing Bagging with feature randomness**. You do not need to prune it.
+
+**Analyzing Your Output**
+
+-   **The Confusion Matrix:** Your Random Forest stabilized the predictions. It caught 107 churners (Sensitivity = 59.4%) and only made 18 False Positive mistakes. The single tree's 66% sensitivity was indeed a bit of a "lucky" overfit. The Random Forest gives us a robust 93.2% accuracy that we can trust on future data.
+
+-   **The Variable Importance Plot:** Look at both charts (MeanDecreaseAccuracy and MeanDecreaseGini). The top 3 variables are exactly what we predicted in Section 2.5 and 2.6: `total_day_minutes`, `customer_service_calls`, and `international_plan`. The bottom variables are `area_code` and the `calls` variables—exactly the ones we proved were useless in our EDA!
+
+Here is the updated **Section 2.11** with much heavier, curriculum-based comments in the code and the final written analysis tailored exactly to your numbers. this section is related to the direct below, and a little above. keep this in mind on exam.
+
+## 2.11 Ensemble Methods: Random Forest & Variable Importance
+
+**Possible Exam Question:** *"Can you improve the predictions by using bagging or a random forest? Compute a variable importance measure and interpret it. Explain the logic behind the measure for variable importance that you are using." (Based on 2024 Task 2f and 2022 Task 2g)*
+
+**Exam-Ready Written Reasoning:** To solve the high variance of a single tree, we use a Random Forest. Random Forest is an extension of **Bagging** (Bootstrap Aggregation). It builds hundreds of deep, unpruned trees on bootstrapped samples of the training data and averages their predictions to reduce variance. Furthermore, Random Forest introduces **Feature Randomness**: at each split in the tree, the algorithm is only allowed to choose from a random subset of predictors. This prevents a single dominant variable from being chosen at the top of every tree, effectively decorrelating the trees and making the ensemble average much more reliable. Because the resulting model is a "black box," we rely on Variable Importance measures to understand which features were most critical.
+
+```{r t2_random_forest}
+# 1. FIT THE RANDOM FOREST
+# Setting a seed because the bootstrap sampling involves randomness
+set.seed(123)
+
+# importance = TRUE calculates Mean Decrease in Accuracy & Gini.
+# ntree = 500 tells it to build 500 independent trees (Bagging).
+# By default for classification, mtry (variables tried per split) is roughly sqrt(14) ≈ 3.
+rf_model <- randomForest(churn ~ ., data = train_t2, importance = TRUE, ntree = 500)
+
+# 2. EVALUATE ON TEST DATA
+rf_preds <- predict(rf_model, newdata = test_t2)
+
+print("Confusion Matrix (Random Forest):")
+table(Predicted = rf_preds, Actual = test_t2$churn)
+
+# 3. COMPUTE AND PLOT VARIABLE IMPORTANCE
+# varImpPlot plots the Mean Decrease in Accuracy (left) and Mean Decrease in Gini (right)
+varImpPlot(rf_model, main = "Random Forest Variable Importance")
+```
+
+**Written analysis of findings/output:** The Random Forest model effectively mitigated the high variance of the single tree, providing a highly robust predictive model. 1. **Model Evaluation:** The confusion matrix shows 107 True Positives (Sensitivity ≈ 59.4%) and only 18 False Positives. It achieved an outstanding overall Accuracy of 93.2%. By aggregating 500 decorrelated trees, the ensemble smoothed out the single tree's lucky overfit, providing a stable boundary we can trust in production. 2. **Variable Importance (Logic & Interpretation):** Because a forest cannot be plotted like a single tree, we evaluate importance using "Mean Decrease in Accuracy" (how much accuracy drops if we scramble a variable) and "Mean Decrease in Gini" (the total decrease in node impurity that results from splits over a given variable, averaged over all trees). A higher number on the x-axis means the variable played a more critical role in cleanly separating Churners from Non-Churners. 3. **Validating EDA:** The Variable Importance plot flawlessly validates our initial EDA. Both charts definitively rank `total_day_minutes`, `customer_service_calls`, and `international_plan` as the top three most powerful predictors. Conversely, variables like `area_code` and `total_night_calls` sit at the very bottom, mathematically confirming they add almost no value to the model's predictive capability.
+
+## 2.12 Gradient Boosting (GBM)
+
+**Possible Exam Question:** *"Fit a boosted tree and evaluate the predictions. Compare with the logistic model and the random forest." (Based on 2021 Task 3d and 2025 Task 2e)*
+
+**Exam-Ready Written Reasoning:** While Random Forests reduce *variance* by building hundreds of independent, deep trees (Bagging), Boosting takes a fundamentally different approach. Gradient Boosting reduces *bias* by building shallow trees *sequentially*. Each new tree is fit to the residuals (the mistakes) of the previous trees, slowly learning the signal in areas where the model is struggling. *Note on R syntax:* The `gbm` package for classification strictly requires the target variable to be numeric (0 and 1) rather than a factor. We must temporarily convert our `churn` variable before fitting the model.
+
+```{r t2_boosting}
+# 1. PREPARE DATA FOR GBM
+# gbm requires the binary outcome to be 0 or 1, not a factor.
+train_t2_gbm <- train_t2 %>% mutate(churn_num = ifelse(churn == "TRUE", 1, 0))
+
+# 2. FIT THE BOOSTED MODEL
+# distribution = "bernoulli" is used for binary classification (logistic loss)
+# n.trees = 500 sets the number of iterations
+# interaction.depth = 4 allows the trees to capture 4-way variable interactions
+set.seed(123)
+boost_model <- gbm(churn_num ~ . - churn, data = train_t2_gbm, 
+                   distribution = "bernoulli", 
+                   n.trees = 500, 
+                   interaction.depth = 4, 
+                   shrinkage = 0.01) # Shrinkage is the learning rate
+
+# 3. PREDICT ON TEST DATA
+# n.trees must be specified in the predict function. type="response" gives probabilities.
+boost_probs <- predict(boost_model, newdata = test_t2, n.trees = 500, type = "response")
+
+# 4. EVALUATE PREDICTIONS
+# We will use the default 0.5 threshold to compare fairly with the baseline Random Forest
+boost_preds <- ifelse(boost_probs > 0.5, "TRUE", "FALSE")
+
+print("Confusion Matrix (Gradient Boosting):")
+table(Predicted = factor(boost_preds, levels = c("FALSE", "TRUE")), Actual = test_t2$churn)
+```
+
+**The Math:**
+
+-   **Accuracy:** (1128 + 117) / 1333 = **93.4%**
+
+-   **Sensitivity:** 117 / (117 + 63) = **65.0%**
+
+**What does this tell us?**
+
+It tells us that **Gradient Boosting beat Random Forest** in both overall accuracy (93.4% vs 93.2%) and, more importantly, in Sensitivity (65.0% vs 59.4%) at the default `0.5` threshold!
+
+**Why did this happen? (The ISLR theory):** Random Forest reduces *variance* by taking 500 independent guesses and averaging them out. But Gradient Boosting reduces *bias*. It builds tree #1, sees which churners it missed, and tells tree #2: *"Focus specifically on these hard-to-predict churners."* Because our dataset has a severe class imbalance, Boosting's strategy of sequentially attacking the errors allowed it to catch 10 more churners (117 vs 107) than the Random Forest did.
+
+**Written analysis of findings/output:** The Gradient Boosting model provides another highly robust non-linear boundary, but with a slight edge over the Random Forest. By sequentially learning from its errors and focusing on the hardest-to-predict observations, GBM achieved 117 True Positives (Sensitivity = 65.0%) and an overall accuracy of 93.4% at the default `0.5` threshold.
+
+When comparing the ensembles, GBM outperformed Random Forest in both Accuracy (93.4% vs 93.2%) and Sensitivity (65.0% vs 59.4%). This perfectly illustrates the curriculum's distinction between the two methods: while Random Forest successfully reduced model variance through bagging, Boosting actively reduced model bias by iteratively attacking the false negatives. Ultimately, both ensemble methods vastly outperform the baseline parametric logistic regression by naturally mapping the non-linear threshold effects (like `customer_service_calls`) without requiring manual feature engineering.
+
+## 2.13 The Parsimonious Logistic Model (Subset Selection)
+
+**Possible Exam Question:** *"Fit a logistic regression model with a selection of variables. Are the predictions improved if you remove some variables from the model?" (Based on 2025 Task 2b and 2023 Task 2d)*
+
+**Exam-Ready Written Reasoning:** The principle of parsimony (Occam's Razor) states that we should prefer the simplest model that explains the data well. In our baseline logistic regression (Section 2.8) and Random Forest variable importance plot (Section 2.11), we proved that many variables (like `total_night_calls` and `area_code`) contain no signal. Including "noise" variables increases model variance and standard errors without reducing bias. By dropping them and fitting a model with only our "Star Predictors," we aim to achieve similar predictive accuracy while drastically improving model interpretability. We will compare the AIC (Akaike Information Criterion) of the two models; a lower AIC indicates a better trade-off between goodness-of-fit and complexity.
+
+```{r t2_parsimonious_model}
+# 1. FIT THE PARSIMONIOUS MODEL
+# We select only the top predictors identified in EDA and RF Importance
+log_model_simple <- glm(churn ~ total_day_minutes + customer_service_calls + international_plan, 
+                        data = train_t2, family = "binomial")
+
+# 2. COMPARE AIC
+print(paste("AIC of Full Model:", round(AIC(log_model), 2)))
+print(paste("AIC of Simple Model:", round(AIC(log_model_simple), 2)))
+
+# 3. EVALUATE PREDICTIONS (Using our optimal 0.2 business threshold from earlier)
+simple_probs <- predict(log_model_simple, newdata = test_t2, type = "response")
+simple_preds <- ifelse(simple_probs > 0.2, "TRUE", "FALSE")
+
+print("Confusion Matrix (Parsimonious Logistic, Threshold = 0.2):")
+table(Predicted = factor(simple_preds, levels = c("FALSE", "TRUE")), Actual = test_t2$churn)
+```
+
+**Written analysis of findings/output:** The parsimonious model successfully proves the business value of subset selection. The AIC of the simple model increased slightly to 925.13 (compared to 885.97 for the full model), which is expected mathematically when dropping 11 variables. However, the true test is predictive power.
+
+At the operational `0.2` threshold, the massive 14-variable baseline model caught 111 churners. Our simple 3-variable model caught 104 churners. By relying exclusively on our top features (`total_day_minutes`, `customer_service_calls`, and `international_plan`), we discarded 78% of the model's complexity while retaining nearly 94% of its ability to detect churners out-of-sample. From a business deployment perspective, this simple model is vastly superior: it prevents overfitting to noise, is completely transparent to stakeholders, and relies on collecting only three key metrics.
+
+## 2.14 Subset Selection: Backward Stepwise Logistic Regression
+
+**Possible Exam Question:** *"Use a formal variable selection method to fit a subset model. Are the predictions improved if you remove some variables? Discuss the AIC." (Based on 2023 Task 2d and ISLR Chapter 6)*
+
+**Exam-Ready Written Reasoning:** While our baseline logistic model included all 14 predictors, the principle of parsimony suggests we should remove variables that do not contribute to predictive power, thereby reducing model variance and complexity. According to the ISLR curriculum, we can systematically achieve this using Backward Stepwise Selection. The algorithm starts with the full model and iteratively removes the least useful predictor one at a time, evaluating the Akaike Information Criterion (AIC) at each step. It stops when removing another variable would harm the model more than it helps.
+
+-   **Forward Selection:** Starts with an empty model (just an intercept) and adds variables one by one. It is mandatory when **p\>n** (when you have more variables than rows, like in genetic testing), because you mathematically cannot fit a full model to start with.
+
+-   **Backward Selection:** Starts with the full model and removes variables one by one. It requires **n\>p** (more rows than variables).
+
+-   **Why we chose Backward:** In our dataset, n=2666 and p=14. Because n≫p, we have the luxury of fitting the full model first. Backward selection is heavily preferred by statisticians when possible because it evaluates the **joint effect** of all variables together before making a decision to drop one. Forward selection can sometimes miss a variable that is only statistically significant when paired with another variable.
+
+```{r t2_stepwise_model}
+# 1. RUN BACKWARD STEPWISE SELECTION
+# trace = 0 hides the massive output wall of every single step.
+log_step_model <- step(log_model, direction = "backward", trace = 0)
+
+# 2. VIEW THE CHOSEN FORMULA AND AIC
+print("Formula chosen by Stepwise Selection:")
+formula(log_step_model)
+
+print(paste("AIC of Full Model:", round(AIC(log_model), 2)))
+print(paste("AIC of Stepwise Model:", round(AIC(log_step_model), 2)))
+
+# 3. EVALUATE PREDICTIONS (Using our optimal 0.2 threshold)
+step_probs <- predict(log_step_model, newdata = test_t2, type = "response")
+step_preds <- ifelse(step_probs > 0.2, "TRUE", "FALSE")
+
+print("Confusion Matrix (Stepwise Logistic, Threshold = 0.2):")
+table(Predicted = factor(step_preds, levels = c("FALSE", "TRUE")), Actual = test_t2$churn)
+```
+
+**Written analysis of findings/output:** Because our dataset has far more observations than predictors ($n \gg p$), we safely utilized Backward Stepwise Selection rather than Forward Selection, allowing the algorithm to evaluate the joint effects of all variables before dropping any. The algorithm stripped away 4 useless variables (like `area_code` and `total_day_calls`), keeping 10.
+
+This formal selection improved the model's Akaike Information Criterion (AIC dropped from 885.97 to 877.39), proving a better trade-off between goodness-of-fit and complexity. More importantly, at the 0.2 threshold, it achieved the exact same Sensitivity (61.7%, catching 111 churners) as the massive baseline model. It mathematically proves that removing statistical noise improves model parsimony without sacrificing predictive power.
+
+## 2.15 Master Model Comparison Table
+
+**Possible Exam Question:** *"Compare the performance of all models used in this task. Which model do you recommend for deployment and why?"*
+
+**Exam-Ready Written Reasoning:** To objectively recommend a final model, we must compile the evaluation metrics across all algorithms tested. We will calculate Accuracy, Sensitivity (True Positive Rate), and Specificity (True Negative Rate) for each model evaluated on the unseen test set.
+
+```{r t2_model_comparison}
+# HELPER FUNCTION to calculate metrics from a given prediction vector
+get_metrics <- function(preds, actual) {
+  # Ensure factors have the same levels to avoid matrix dimension errors
+  cm <- table(Predicted = factor(preds, levels = c("FALSE", "TRUE")), 
+              Actual = actual)
+  
+  TN <- cm[1,1]; FN <- cm[1,2]; FP <- cm[2,1]; TP <- cm[2,2]
+  
+  acc <- (TP + TN) / sum(cm)
+  sens <- TP / (TP + FN)  # Ability to catch churners
+  spec <- TN / (TN + FP)  # Ability to identify loyal customers
+  
+  return(c(Accuracy = round(acc, 3), Sensitivity = round(sens, 3), Specificity = round(spec, 3)))
+}
+
+# COMPILE THE TIBBLE
+# We extract the predictions we already generated in previous chunks
+model_comparison <- tibble(
+  Model = c("1. Logistic Baseline (Thresh=0.5)", 
+            "2. Logistic Tuned (Thresh=0.2)",
+            "3. Stepwise Logistic (Thresh=0.2)",
+            "4. Single Classification Tree", 
+            "5. Random Forest (Ensemble)", 
+            "6. Gradient Boosting (Ensemble)"),
+  
+  # Bind the metrics using our helper function
+  bind_rows(
+    get_metrics(pred_class_05, test_t2$churn),
+    get_metrics(pred_class_02, test_t2$churn),
+    get_metrics(step_preds, test_t2$churn),
+    get_metrics(tree_preds, test_t2$churn),
+    get_metrics(rf_preds, test_t2$churn),
+    get_metrics(boost_preds, test_t2$churn)
+  )
+)
+
+# PRINT THE FINAL COMPARISON TABLE
+print(model_comparison)
+```
+
+**Written analysis of findings/output:** The compiled model comparison table perfectly summarizes the statistical narrative of this dataset:
+
+1.  **The Logistic Threshold Hack:** The baseline logistic model at `0.5` is useless for a retention campaign (Sensitivity = 26.1%). We had to manually force the threshold down to `0.2` to achieve an acceptable Sensitivity (61.7%), but this came at the cost of heavy False Positives, dropping overall Accuracy to 77.1%.
+2.  **The High-Variance Illusion:** The single Classification Tree appears to be the best model overall (Accuracy = 93.3%, Sensitivity = 66.7%). However, ISLR warns that single trees suffer from massive variance and overfit to the training set. We cannot trust this performance out-of-sample.
+3.  **The True Winners (Ensembles):** Gradient Boosting (GBM) emerges as the ultimate production model. Without needing any manual threshold adjustments, it achieved a 93.4% Accuracy and a 65.0% Sensitivity. It beat the Random Forest's Sensitivity (59.4%) because Boosting actively reduces bias by iteratively attacking the hardest-to-predict churners (the False Negatives).
+
+**Conclusion:** The superiority of the tree-based ensembles (GBM, RF, and the Single Tree) over the Logistic models proves that the underlying data generating process contains severe non-linearities and threshold effects (e.g., the `customer_service_calls` threshold). Gradient Boosting mapped these non-linearities perfectly, providing the most robust, highly-sensitive model for deployment.
+
+## 2.17 The Master Conclusion: Model Comparison and Business Insights
+
+**Possible Exam Question:** *"Based on your analysis, what are the typical features of customers who churn? Compare the models and recommend a final approach." (Based on 2023 Task 2f, 2024 Task 2g, 2025 Task 2e)*
+
+**Exam-Ready Written Reasoning (Template to adapt on exam day):** Based on the exhaustive EDA, parametric, and non-parametric modeling, we can confidently answer the business problem.
+
+**1. The Typical Churner:** Customers who churn are not acting randomly. They are characterized by three distinct features: \* **High Usage:** They consume significantly more `total_day_minutes` than average customers. \* **Service Friction:** They make 4 or more `customer_service_calls`. The classification tree explicitly mapped this threshold effect, indicating that after 3 calls, customer patience evaporates. \* **International Plans:** Customers subscribed to the international plan have a disproportionately high churn rate, suggesting the plan may be overpriced or underperforming compared to competitors.
+
+**2. Model Comparison:** \* **Logistic Regression:** Provided excellent interpretability (log-odds) but suffered slightly in predictive accuracy due to its inability to map the non-linear threshold of customer service calls. \* **Classification Trees:** Handled the non-linearities naturally but suffered from high variance, making a single tree too unstable for production. \* **Ensembles (Random Forest & GBM):** Provided the highest overall test accuracy and stability by averaging out variance (Bagging) or systematically reducing bias (Boosting). The Variable Importance plots mathematically validated our EDA.
+
+**3. Final Recommendation:** Due to the severe class imbalance (85% vs 15%), standard accuracy metrics are deeply misleading (the "Accuracy Paradox"). If the goal is a retention campaign, the business must implement an ensemble model (like the Random Forest) but **must manually lower the classification threshold (e.g., to 0.2)**. While this increases False Positives (sending discounts to loyal customers), it drastically reduces False Negatives, ensuring the business successfully identifies and saves its highest-risk churners.
